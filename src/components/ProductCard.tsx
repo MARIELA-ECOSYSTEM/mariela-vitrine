@@ -331,57 +331,57 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
 
   // Layout em grade (vertical - padrão)
   return (
-    <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
+    <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
       <CardContent className="p-0 flex flex-col flex-1">
         <Link to={`/products/${produto.id}`} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 
             src={imagemAtual} 
             alt={produto.nome}
-            className="transition-all duration-700 group-hover:scale-110 group-hover:rotate-1 group-hover:brightness-110"
+            className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
             slideDirection={slideDirection}
           />
-          {/* Navigation Arrows */}
+          {/* Navigation Arrows - sempre visíveis em mobile */}
           {produto.imagens.length > 1 && (
             <>
               <button
                 onClick={handlePrevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
+                className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/80 flex items-center justify-center opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-background active:scale-95"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </button>
               <button
                 onClick={handleNextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
+                className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/80 flex items-center justify-center opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-background active:scale-95"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </button>
             </>
           )}
           {/* Efeito de brilho diagonal */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none hidden sm:block">
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
           </div>
-          <div className="absolute top-3 right-3 flex flex-col gap-2">
+          <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2">
             {produto.emPromocao && (
-              <Badge className="bg-destructive text-destructive-foreground">
-                PROMOÇÃO
+              <Badge className="bg-destructive text-destructive-foreground text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5">
+                PROMO
               </Badge>
             )}
             {produto.isNovidade && (
-              <Badge className="bg-primary text-primary-foreground">
-                Novidade
+              <Badge className="bg-primary text-primary-foreground text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5">
+                Novo
               </Badge>
             )}
           </div>
           {/* Image indicators */}
           {produto.imagens.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            <div className="absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5 sm:gap-1">
               {produto.imagens.map((_, idx) => (
                 <span
                   key={idx}
                   className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all",
-                    idx === currentImageIndex ? "bg-primary w-3" : "bg-muted-foreground/50"
+                    "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full transition-all",
+                    idx === currentImageIndex ? "bg-primary w-2 sm:w-3" : "bg-muted-foreground/50"
                   )}
                 />
               ))}
@@ -389,15 +389,15 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
           )}
         </Link>
         
-        <div className="p-5 flex flex-col gap-3 flex-1">
+        <div className="p-2.5 sm:p-4 md:p-5 flex flex-col gap-1.5 sm:gap-3 flex-1">
           <div>
-            <h3 className="font-medium text-lg mb-2 text-foreground line-clamp-1">
+            <h3 className="font-medium text-sm sm:text-base md:text-lg mb-1 sm:mb-2 text-foreground line-clamp-1">
               {produto.nome}
             </h3>
-            <p className="text-sm text-muted-foreground mb-2 line-clamp-2 min-h-[2.5rem]">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2 line-clamp-1 sm:line-clamp-2 min-h-[1rem] sm:min-h-[2.5rem] hidden xs:block">
               {produto.descricao}
             </p>
-            <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground min-h-[1.25rem]">
+            <div className="hidden sm:flex items-center gap-1 flex-wrap text-xs text-muted-foreground min-h-[1.25rem]">
               <span className="font-medium">Cores:</span>
               {coresDisponiveis.slice(0, 3).map((cor, index) => (
                 <span key={cor}>
@@ -408,25 +408,43 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                 <span className="text-primary">+{coresDisponiveis.length - 3}</span>
               )}
             </div>
+            {/* Mobile: apenas bolinhas de cores */}
+            <div className="flex sm:hidden items-center gap-1 mt-1">
+              {coresDisponiveis.slice(0, 4).map((cor) => (
+                <span
+                  key={cor}
+                  className="w-3 h-3 rounded-full border border-muted-foreground/20 shadow-sm"
+                  style={{ 
+                    backgroundColor: COLOR_MAP[cor] || "#94A3B8",
+                    boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
+                  }}
+                  title={cor}
+                />
+              ))}
+              {coresDisponiveis.length > 4 && (
+                <span className="text-[10px] text-muted-foreground">+{coresDisponiveis.length - 4}</span>
+              )}
+            </div>
           </div>
           
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {produto.emPromocao && precoOriginalFormatado && (
-                <p className="text-sm text-muted-foreground line-through">
+                <p className="text-[10px] sm:text-sm text-muted-foreground line-through">
                   {precoOriginalFormatado}
                 </p>
               )}
-              <p className={`text-xl font-semibold ${produto.emPromocao ? 'text-destructive' : 'text-primary'}`}>
+              <p className={`text-base sm:text-lg md:text-xl font-semibold ${produto.emPromocao ? 'text-destructive' : 'text-primary'}`}>
                 {precoFormatado}
               </p>
             </div>
             
+            {/* Seleção de cor e tamanho - escondido em mobile pequeno */}
             {!isAcessorio && (
-              <div className="min-h-[4.5rem]">
+              <div className="hidden xs:block min-h-[4rem] sm:min-h-[4.5rem]">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Selecione a Cor:</p>
-                  <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-y-auto">
+                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">Cor:</p>
+                  <div className="flex flex-wrap gap-0.5 sm:gap-1 max-h-[2.5rem] sm:max-h-[3.5rem] overflow-y-auto">
                     {coresDisponiveis.map((cor) => {
                       const isSelected = corSelecionada === cor;
                       const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
@@ -437,18 +455,18 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                           size="sm"
                           onClick={() => handleSelectColor(cor)}
                           className={cn(
-                            "text-xs h-7 gap-1.5",
-                            isHighlighted && !isSelected && "ring-2 ring-primary"
+                            "text-[10px] sm:text-xs h-5 sm:h-7 gap-0.5 sm:gap-1.5 px-1.5 sm:px-2.5",
+                            isHighlighted && !isSelected && "ring-1 sm:ring-2 ring-primary"
                           )}
                         >
                           <span 
-                            className="w-3 h-3 rounded-full border border-background shadow-sm flex-shrink-0"
+                            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-background shadow-sm flex-shrink-0"
                             style={{ 
                               backgroundColor: COLOR_MAP[cor] || "#94A3B8",
                               boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
                             }}
                           />
-                          {cor}
+                          <span className="hidden sm:inline">{cor}</span>
                         </Button>
                       );
                     })}
@@ -456,16 +474,16 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                 </div>
                 
                 {corSelecionada && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
-                    <div className="flex flex-wrap gap-1">
+                  <div className="mt-1 sm:mt-2">
+                    <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">Tam:</p>
+                    <div className="flex flex-wrap gap-0.5 sm:gap-1">
                       {tamanhosDisponiveis.map((tamanho) => (
                         <Button
                           key={tamanho}
                           variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                           size="sm"
                           onClick={() => setTamanhoSelecionado(tamanho)}
-                          className="text-xs h-7"
+                          className="text-[10px] sm:text-xs h-5 sm:h-7 px-1.5 sm:px-2.5"
                         >
                           {tamanho}
                         </Button>
@@ -476,23 +494,24 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
               </div>
             )}
             
-            <div className="flex gap-2">
+            {/* Botões de ação */}
+            <div className="flex gap-1 sm:gap-2 mt-auto">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleAdicionarCarrinho}
-                className="flex-1 gap-2"
+                className="flex-1 gap-1 sm:gap-2 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
               >
-                <ShoppingCart className="h-4 w-4" />
-                Adicionar
+                <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Carrinho</span>
               </Button>
               <Button
                 size="sm"
                 onClick={handleWhatsApp}
-                className="flex-1 gap-2"
+                className="flex-1 gap-1 sm:gap-2 h-7 sm:h-9 text-[10px] sm:text-sm px-1.5 sm:px-3"
               >
-                <MessageCircle className="h-4 w-4" />
-                WhatsApp
+                <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">WhatsApp</span>
               </Button>
             </div>
           </div>

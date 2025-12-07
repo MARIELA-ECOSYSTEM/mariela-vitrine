@@ -219,21 +219,21 @@ const Products = () => {
     <div className="min-h-screen">
       {loading && <LoadingOverlay />}
       <Header />
-      <main className="py-24 bg-background">
-        <div className="container mx-auto px-6">
+      <main className="pt-20 sm:pt-24 pb-12 bg-background">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6">
           <Breadcrumbs currentPage="Todos os Produtos" />
           
           {/* Cabeçalho */}
-          <div className="text-center mb-12 animate-fade-in">
-            <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4 text-foreground">
+          <div className="text-center mb-6 sm:mb-8 md:mb-12 animate-fade-in">
+            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 text-foreground">
               Todos os Produtos
             </h1>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-6">
+            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl mx-auto mb-4 sm:mb-6">
               Confira nossa coleção completa
             </p>
             
             {/* Busca com autocomplete */}
-            <div className="flex justify-center">
+            <div className="flex justify-center px-2 sm:px-0">
               <ProductSearch
                 produtos={produtos}
                 onSearch={setSearchQuery}
@@ -243,7 +243,7 @@ const Products = () => {
           </div>
 
           {/* Filtros Rápidos - Promoção e Novidades */}
-          <div className="flex justify-center gap-3 mb-8 animate-fade-in">
+          <div className="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
             <Button
               variant={mostrarPromocao ? "default" : "outline"}
               onClick={() => {
@@ -251,14 +251,15 @@ const Products = () => {
                 setMostrarNovidades(false);
                 setPaginaAtual(1);
               }}
-              size="lg"
-              className="gap-2 transition-all hover:scale-105"
+              size="sm"
+              className="gap-1 sm:gap-2 transition-all hover:scale-105 text-xs sm:text-sm px-2 sm:px-4"
             >
-              <Tag className="h-5 w-5" />
-              <span>Promoção</span>
+              <Tag className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+              <span className="hidden xs:inline">Promoção</span>
+              <span className="xs:hidden">Promo</span>
               <Badge 
                 variant={mostrarPromocao ? "secondary" : "outline"}
-                className="ml-1"
+                className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs px-1 sm:px-2"
               >
                 {produtos.filter(p => p.emPromocao).length}
               </Badge>
@@ -270,14 +271,15 @@ const Products = () => {
                 setMostrarPromocao(false);
                 setPaginaAtual(1);
               }}
-              size="lg"
-              className="gap-2 transition-all hover:scale-105"
+              size="sm"
+              className="gap-1 sm:gap-2 transition-all hover:scale-105 text-xs sm:text-sm px-2 sm:px-4"
             >
-              <Sparkles className="h-5 w-5" />
-              <span>Novidades</span>
+              <Sparkles className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+              <span className="hidden xs:inline">Novidades</span>
+              <span className="xs:hidden">Novo</span>
               <Badge 
                 variant={mostrarNovidades ? "secondary" : "outline"}
-                className="ml-1"
+                className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs px-1 sm:px-2"
               >
                 {produtos.filter(p => p.isNovidade).length}
               </Badge>
@@ -287,9 +289,9 @@ const Products = () => {
           {/* Área de Produtos */}
           <div>
               {/* Barra de Controles */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+              <div className="flex flex-wrap gap-2 sm:gap-4 justify-between items-center mb-4 sm:mb-6">
                 {/* Botão Filtros - Esquerda */}
-                <div className="order-1 sm:order-1">
+                <div className="order-1">
                   <ProductFilters
                     categoriaSelecionada={categoriaSelecionada}
                     setCategoriaSelecionada={setCategoriaSelecionada}
@@ -312,16 +314,16 @@ const Products = () => {
                   />
                 </div>
 
-                {/* Contador - Centro */}
-                <span className="text-sm font-medium text-muted-foreground order-2 sm:order-2">
-                  {produtosOrdenados.length} {produtosOrdenados.length === 1 ? 'produto encontrado' : 'produtos encontrados'}
+                {/* Contador - Centro (escondido em telas muito pequenas) */}
+                <span className="hidden xs:block text-xs sm:text-sm font-medium text-muted-foreground order-3 sm:order-2 w-full sm:w-auto text-center">
+                  {produtosOrdenados.length} {produtosOrdenados.length === 1 ? 'produto' : 'produtos'}
                 </span>
 
                 {/* Ordenação e Visualização - Direita */}
-                <div className="flex gap-2 order-3 sm:order-3">
+                <div className="flex gap-1.5 sm:gap-2 order-2 sm:order-3">
                   <Select value={ordenarPor} onValueChange={setOrdenarPor}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Ordenar por" />
+                    <SelectTrigger className="w-[120px] sm:w-[180px] h-8 sm:h-10 text-xs sm:text-sm">
+                      <SelectValue placeholder="Ordenar" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="padrao">Padrão</SelectItem>
@@ -330,23 +332,23 @@ const Products = () => {
                     </SelectContent>
                   </Select>
                   
-                  {/* Toggle de visualização */}
-                  <div className="flex border border-border rounded-lg overflow-hidden">
+                  {/* Toggle de visualização - escondido em mobile muito pequeno */}
+                  <div className="hidden xs:flex border border-border rounded-lg overflow-hidden">
                     <Button
                       variant={visualizacao === "grade" ? "default" : "ghost"}
                       size="icon"
                       onClick={() => setVisualizacao("grade")}
-                      className="rounded-none"
+                      className="rounded-none h-8 w-8 sm:h-10 sm:w-10"
                     >
-                      <Grid3x3 className="h-4 w-4" />
+                      <Grid3x3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant={visualizacao === "lista" ? "default" : "ghost"}
                       size="icon"
                       onClick={() => setVisualizacao("lista")}
-                      className="rounded-none"
+                      className="rounded-none h-8 w-8 sm:h-10 sm:w-10"
                     >
-                      <List className="h-4 w-4" />
+                      <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>
@@ -356,8 +358,8 @@ const Products = () => {
               {loading ? (
                 <div className={`${
                   visualizacao === "grade"
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                    : "space-y-4"
+                    ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                    : "space-y-3 sm:space-y-4"
                 }`}>
                   {Array.from({ length: produtosPorPagina }).map((_, index) => (
                     <ProductSkeleton 
@@ -370,8 +372,8 @@ const Products = () => {
                 <>
                   <div className={`${
                     visualizacao === "grade"
-                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                      : "space-y-4"
+                      ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                      : "space-y-3 sm:space-y-4"
                   }`}>
                     {produtosOrdenados
                       .slice((paginaAtual - 1) * produtosPorPagina, paginaAtual * produtosPorPagina)
