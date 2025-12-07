@@ -147,6 +147,16 @@ All colors MUST be HSL.
   }
 }
 
+/* Safe area for mobile bottom bar */
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Gradient radial for spotlight effects */
+.bg-gradient-radial {
+  background: radial-gradient(ellipse at center, var(--tw-gradient-from) 0%, var(--tw-gradient-to) 70%);
+}
+
 /* Wave loading animation */
 @keyframes wave {
   0%, 100% {
