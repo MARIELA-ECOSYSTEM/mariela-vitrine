@@ -108,30 +108,74 @@ function converterProduto(produtoExterno: ExternalProduct): Produto {
   };
 }
 
-// Função para buscar produtos da API externa diretamente
-export async function fetchProdutos(): Promise<Produto[]> {
+// Configurações de timeout e retry
+const API_TIMEOUT = 15000; // 15 segundos
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 segundos entre tentativas
+
+// Função para fazer fetch com timeout
+async function fetchWithTimeout(url: string, timeout: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
   try {
-    const response = await fetch('https://mariela-pdv-backend.onrender.com/api/vitrine');
-    
-    if (!response.ok) {
-      console.error('Erro ao buscar produtos da API:', response.status);
-      return [];
-    }
-    
-    const data = await response.json();
-    
-    if (!data || !Array.isArray(data)) {
-      console.error('Resposta inválida da API:', data);
-      return [];
-    }
-    
-    // Converter produtos da API externa para formato interno
-    const produtos = data.map((produto: ExternalProduct) => converterProduto(produto));
-    console.log('Produtos carregados:', produtos.length);
-    
-    return produtos;
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
   } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
-    return [];
+    clearTimeout(timeoutId);
+    throw error;
   }
+}
+
+// Função para aguardar um tempo
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Função para buscar produtos da API externa diretamente com retry
+export async function fetchProdutos(): Promise<Produto[]> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`Tentativa ${attempt}/${MAX_RETRIES} de buscar produtos...`);
+      
+      const response = await fetchWithTimeout(
+        'https://mariela-pdv-backend.onrender.com/api/vitrine',
+        API_TIMEOUT
+      );
+      
+      if (!response.ok) {
+        throw new Error(`API retornou status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Resposta inválida da API');
+      }
+      
+      // Converter produtos da API externa para formato interno
+      // Filtrar produtos com quantidade 0 (esgotados)
+      const produtos = data
+        .filter((produto: ExternalProduct) => produto.totalAvailable > 0)
+        .map((produto: ExternalProduct) => converterProduto(produto));
+      
+      console.log(`Produtos carregados com sucesso: ${produtos.length} (tentativa ${attempt})`);
+      
+      return produtos;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Erro desconhecido');
+      console.error(`Erro na tentativa ${attempt}:`, lastError.message);
+      
+      if (attempt < MAX_RETRIES) {
+        console.log(`Aguardando ${RETRY_DELAY}ms antes da próxima tentativa...`);
+        await delay(RETRY_DELAY);
+      }
+    }
+  }
+  
+  console.error(`Falha ao buscar produtos após ${MAX_RETRIES} tentativas:`, lastError);
+  return [];
 }
