@@ -46,7 +46,10 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 
       // Buscar da API
       setError(null);
-      if (!isFromCache) {
+      
+      // Só mostrar loading se não temos dados ainda
+      const hasData = produtos.length > 0;
+      if (!hasData && !forceNetwork) {
         setLoading(true);
       }
 
@@ -59,20 +62,22 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         setCacheAge(null);
         setLoading(false);
         return true;
-      } else if (!isFromCache) {
+      } else if (produtos.length === 0) {
         // Se não temos cache e a API falhou
         setError("Não foi possível carregar os produtos");
         setLoading(false);
         return false;
       }
       
+      setLoading(false);
       return true;
     } catch (err) {
       console.error('Erro ao carregar produtos:', err);
       
       // Se temos cache, continuar usando
-      if (isFromCache && produtos.length > 0) {
+      if (produtos.length > 0) {
         console.log("Erro na API, mantendo cache");
+        setLoading(false);
         return true;
       }
       
@@ -80,7 +85,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return false;
     }
-  }, [isFromCache, produtos.length]);
+  }, [produtos.length]);
 
   // Refresh normal (usa cache se válido)
   const refreshProducts = useCallback(async (): Promise<boolean> => {
