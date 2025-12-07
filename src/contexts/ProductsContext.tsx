@@ -1,11 +1,15 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { Produto, fetchProdutos } from "@/data/products";
+import { saveToCache, loadFromCache, isCacheValid, getCacheAge } from "@/lib/productCache";
 
 interface ProductsContextType {
   produtos: Produto[];
   loading: boolean;
   error: string | null;
+  isFromCache: boolean;
+  cacheAge: number | null;
   refreshProducts: () => Promise<boolean>;
+  forceRefresh: () => Promise<boolean>;
 }
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
@@ -14,33 +18,96 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFromCache, setIsFromCache] = useState(false);
+  const [cacheAge, setCacheAge] = useState<number | null>(null);
 
-  const loadProducts = useCallback(async (): Promise<boolean> => {
+  // Carregar produtos da API com cache
+  const loadProducts = useCallback(async (forceNetwork = false): Promise<boolean> => {
     try {
-      setLoading(true);
+      // Primeiro, tentar carregar do cache para exibição rápida
+      if (!forceNetwork) {
+        const cachedProducts = loadFromCache();
+        if (cachedProducts && cachedProducts.length > 0) {
+          setProdutos(cachedProducts);
+          setIsFromCache(true);
+          setCacheAge(getCacheAge());
+          setLoading(false);
+          
+          // Se o cache ainda é válido, não buscar da rede
+          if (isCacheValid()) {
+            console.log("Usando cache válido");
+            return true;
+          }
+          
+          // Cache expirado, buscar em background
+          console.log("Cache expirado, buscando em background...");
+        }
+      }
+
+      // Buscar da API
       setError(null);
+      if (!isFromCache) {
+        setLoading(true);
+      }
+
       const data = await fetchProdutos();
-      setProdutos(data);
+      
+      if (data && data.length > 0) {
+        setProdutos(data);
+        saveToCache(data);
+        setIsFromCache(false);
+        setCacheAge(null);
+        setLoading(false);
+        return true;
+      } else if (!isFromCache) {
+        // Se não temos cache e a API falhou
+        setError("Não foi possível carregar os produtos");
+        setLoading(false);
+        return false;
+      }
+      
       return true;
     } catch (err) {
       console.error('Erro ao carregar produtos:', err);
+      
+      // Se temos cache, continuar usando
+      if (isFromCache && produtos.length > 0) {
+        console.log("Erro na API, mantendo cache");
+        return true;
+      }
+      
       setError('Erro ao carregar produtos');
-      return false;
-    } finally {
       setLoading(false);
+      return false;
     }
-  }, []);
+  }, [isFromCache, produtos.length]);
 
+  // Refresh normal (usa cache se válido)
   const refreshProducts = useCallback(async (): Promise<boolean> => {
-    return await loadProducts();
+    return await loadProducts(false);
+  }, [loadProducts]);
+
+  // Force refresh (ignora cache)
+  const forceRefresh = useCallback(async (): Promise<boolean> => {
+    setLoading(true);
+    setIsFromCache(false);
+    return await loadProducts(true);
   }, [loadProducts]);
 
   useEffect(() => {
-    loadProducts();
+    loadProducts(false);
   }, []);
 
   return (
-    <ProductsContext.Provider value={{ produtos, loading, error, refreshProducts }}>
+    <ProductsContext.Provider value={{ 
+      produtos, 
+      loading, 
+      error, 
+      isFromCache, 
+      cacheAge,
+      refreshProducts,
+      forceRefresh 
+    }}>
       {children}
     </ProductsContext.Provider>
   );

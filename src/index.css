@@ -146,3 +146,37 @@ All colors MUST be HSL.
     transform: translateX(100%);
   }
 }
+
+/* Wave loading animation */
+@keyframes wave {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Pull to refresh styles */
+.pull-indicator {
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+/* Smooth content transition during pull */
+.pull-content {
+  transition: transform 0.3s ease-out;
+}
+
+/* Offline indicator animation */
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.offline-indicator {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
