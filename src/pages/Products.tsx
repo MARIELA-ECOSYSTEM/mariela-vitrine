@@ -1,18 +1,19 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ProductCard } from "@/components/ProductCard";
-import { ProductSkeleton } from "@/components/ProductSkeleton";
+import { ProductSkeleton, ProductsLoadingSkeleton } from "@/components/ProductSkeleton";
 import { ProductFilters } from "@/components/ProductFilters";
 import { ProductSearch } from "@/components/ProductSearch";
-import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Grid3x3, List, Tag, Sparkles } from "lucide-react";
+import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw } from "lucide-react";
 import { CATEGORIAS_DB } from "@/data/categories";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -22,7 +23,8 @@ import {
 } from "@/components/ui/select";
 
 const Products = () => {
-  const { produtos, loading } = useProducts();
+  const { produtos, loading, isFromCache, forceRefresh } = useProducts();
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todas");
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
@@ -100,6 +102,23 @@ const Products = () => {
   useEffect(() => {
     setPaginaAtual(1);
   }, [categoriaSelecionada, mostrarPromocao, mostrarNovidades, coresSelecionadas, tamanhosSelecionados]);
+
+  // Handler para pull-to-refresh
+  const handlePullRefresh = useCallback(async () => {
+    const success = await forceRefresh();
+    if (success) {
+      toast({
+        title: "Produtos atualizados!",
+        description: "A lista foi atualizada com sucesso.",
+      });
+    } else {
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar. Usando dados salvos.",
+        variant: "destructive",
+      });
+    }
+  }, [forceRefresh, toast]);
 
   // Filtrar produtos primeiro (sem cor e tamanho)
   const produtosFiltradosParcial = useMemo(() => {
@@ -216,21 +235,38 @@ const Products = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      {loading && <LoadingOverlay />}
-      <Header />
-      <main className="pt-20 sm:pt-24 pb-12 bg-background">
-        <div className="container mx-auto px-3 sm:px-4 md:px-6">
-          <Breadcrumbs currentPage="Todos os Produtos" />
-          
-          {/* Cabeçalho */}
-          <div className="text-center mb-6 sm:mb-8 md:mb-12 animate-fade-in">
-            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 text-foreground">
-              Todos os Produtos
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl mx-auto mb-4 sm:mb-6">
-              Confira nossa coleção completa
-            </p>
+    <PullToRefresh onRefresh={handlePullRefresh} disabled={loading}>
+      <div className="min-h-screen">
+        <Header />
+        <main className="pt-20 sm:pt-24 pb-12 bg-background">
+          <div className="container mx-auto px-3 sm:px-4 md:px-6">
+            <Breadcrumbs currentPage="Todos os Produtos" />
+            
+            {/* Indicador de cache/offline */}
+            {isFromCache && !loading && (
+              <div className="flex items-center justify-center gap-2 mb-4 py-2 px-4 bg-muted/50 rounded-lg text-sm text-muted-foreground animate-fade-in">
+                <WifiOff className="h-4 w-4" />
+                <span>Exibindo dados salvos</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handlePullRefresh}
+                  className="h-6 gap-1 text-xs"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Atualizar
+                </Button>
+              </div>
+            )}
+            
+            {/* Cabeçalho */}
+            <div className="text-center mb-6 sm:mb-8 md:mb-12 animate-fade-in">
+              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 text-foreground">
+                Todos os Produtos
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl mx-auto mb-4 sm:mb-6">
+                Confira nossa coleção completa
+              </p>
             
             {/* Busca com autocomplete */}
             <div className="flex justify-center px-2 sm:px-0">
@@ -447,6 +483,7 @@ const Products = () => {
       </main>
       <Footer />
     </div>
+    </PullToRefresh>
   );
 };
 
