@@ -35,10 +35,22 @@ export const Mannequin3D = ({
 
   const getImageForColor = (produto: Produto | null, cor: string) => {
     if (!produto) return produtoGenerico;
+    if (!produto.imagens || produto.imagens.length === 0) return produtoGenerico;
+    
+    // Se não há cor selecionada, retorna a primeira imagem
     if (!cor) return produto.imagens[0] || produtoGenerico;
     
-    const imagemIndex = produto.variants.findIndex(v => v.cor === cor);
-    return produto.imagens[imagemIndex >= 0 ? imagemIndex : 0] || produto.imagens[0] || produtoGenerico;
+    // Buscar o índice da variante pela cor
+    const coresUnicas = [...new Set(produto.variants.map(v => v.cor))];
+    const corIndex = coresUnicas.findIndex(c => c === cor);
+    
+    // Se encontrou a cor e há imagem correspondente, retorna ela
+    if (corIndex >= 0 && produto.imagens[corIndex]) {
+      return produto.imagens[corIndex];
+    }
+    
+    // Fallback: retorna a primeira imagem disponível
+    return produto.imagens[0] || produtoGenerico;
   };
 
   const getAnimationClass = (category: string) => {

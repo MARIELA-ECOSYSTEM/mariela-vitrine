@@ -7,6 +7,9 @@ import { CartProvider } from "@/contexts/CartContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
 import { useApiWakeup } from "@/hooks/useApiWakeup";
 import { PageTransition } from "@/components/PageTransition";
+import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator";
+import { InstallPWAPrompt } from "@/components/InstallPWAPrompt";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -21,17 +24,22 @@ const AppContent = () => {
   const location = useLocation();
   
   return (
-    <PageTransition key={location.pathname}>
-      <Routes location={location}>
-        <Route path="/" element={<Index />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/products/:id" element={<ProductDetail />} />
-        <Route path="/monte-seu-look" element={<MonteSeuLook />} />
-        <Route path="/cart" element={<Cart />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </PageTransition>
+    <>
+      <PageTransition key={location.pathname}>
+        <Routes location={location}>
+          <Route path="/" element={<Index />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/monte-seu-look" element={<MonteSeuLook />} />
+          <Route path="/cart" element={<Cart />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </PageTransition>
+      <NetworkStatusIndicator />
+      <InstallPWAPrompt />
+      <NotificationPrompt />
+    </>
   );
 };
 

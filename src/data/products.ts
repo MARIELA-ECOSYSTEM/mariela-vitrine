@@ -100,10 +100,11 @@ function converterProduto(produtoExterno: ExternalProduct): Produto {
     variants: variants,
     precoCusto: produtoExterno.precoVenda * 0.6, // Estimativa de 60% do preço de venda
     precoVenda: produtoExterno.precoVenda, // Sempre o preço original
-    precoPromocional: produtoExterno.isOnSale && produtoExterno.precoPromocional 
+    precoPromocional: produtoExterno.precoPromocional 
       ? produtoExterno.precoPromocional 
       : undefined,
-    emPromocao: produtoExterno.isOnSale && !!produtoExterno.precoPromocional,
+    // Produto está em promoção se isOnSale=true OU se tem precoPromocional definido
+    emPromocao: produtoExterno.isOnSale || (produtoExterno.precoPromocional !== null && produtoExterno.precoPromocional !== undefined && produtoExterno.precoPromocional > 0),
     isNovidade: produtoExterno.isNew
   };
 }
