@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base Colors - Clean & Minimal */
+    --background: 0 0% 100%;
+    --foreground: 270 15% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 270 15% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 15% 20%;
+
+    /* Primary - Lilac Purple */
+    --primary: 270 65% 70%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 270 70% 85%;
+    --primary-dark: 270 60% 55%;
+
+    /* Secondary - Soft Purple */
+    --secondary: 270 30% 95%;
+    --secondary-foreground: 270 15% 20%;
+
+    /* Muted - Light Gray */
+    --muted: 270 10% 96%;
+    --muted-foreground: 270 10% 50%;
+
+    /* Accent - Deep Lilac */
+    --accent: 280 55% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 270 15% 90%;
+    --input: 270 15% 90%;
+    --ring: 270 65% 70%;
+
+    --radius: 0.75rem;
+
+    /* Clean Design Tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(270 65% 70%) 0%, hsl(280 55% 65%) 100%);
+    --gradient-soft: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(270 70% 98%) 100%);
+    
+    --shadow-clean: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 24px rgba(122, 79, 179, 0.15);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 270 20% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 270 15% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 270 15% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 270 65% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 20% 20%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 270 15% 18%;
+    --muted-foreground: 270 10% 65%;
+
+    --accent: 280 55% 60%;
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 270 20% 20%;
+    --input: 270 20% 20%;
+    --ring: 270 65% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "liga" 1, "calt" 1;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Improved transitions */
+  button, a, .card {
+    @apply transition-all duration-300;
+  }
+}
+
+@layer utilities {
+  /* Card hover effects with shine animation */
+  .card-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-shine::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    transition: left 0.6s ease;
+    z-index: 1;
+  }
+  
+  .card-shine:hover::before {
+    left: 100%;
+  }
+}
+
+/* Shimmer animation for skeleton loading */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
