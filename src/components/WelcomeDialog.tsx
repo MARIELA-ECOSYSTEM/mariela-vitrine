@@ -78,21 +78,25 @@ export const WelcomeDialog = () => {
               <div className="flex gap-2.5 sm:gap-3 items-start">
                 <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 sm:mt-1 flex-shrink-0" />
                 <p className="text-foreground/80 text-sm sm:text-base">
-                  Nossa vitrine virtual traz todas as peças em estoque. 🛍️
+                  Nossa vitrine virtual traz todas as peças que estão em estoque na loja física. 
+                  Dá uma olhada e se apaixone! 🛍️
                 </p>
               </div>
               
               <div className="flex gap-2.5 sm:gap-3 items-start">
                 <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 sm:mt-1 flex-shrink-0" />
                 <p className="text-foreground/80 text-sm sm:text-base">
-                  Use o <span className="font-semibold text-primary">Monte Seu Look</span> para criar combinações! 🤩
+                  Use o <span className="font-semibold text-primary">Monte Seu Look</span>  para 
+                  criar combinações incríveis! Escolha as peças que mais combinam com você e veja 
+                  como ficam juntas antes de garantir as suas. É diversão e praticidade no mesmo lugar! 🤩
                 </p>
               </div>
               
               <div className="flex gap-2.5 sm:gap-3 items-start">
                 <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 sm:mt-1 flex-shrink-0" />
                 <p className="text-foreground/80 text-sm sm:text-base">
-                  Chame no WhatsApp para finalizar seu pedido! 💬
+                  Viu algo que amou? É só chamar a gente no WhatsApp que a gente ajuda
+                  a finalizar seu pedido com todo carinho! 💬
                 </p>
               </div>
             </div>
