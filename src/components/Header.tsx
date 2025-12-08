@@ -1,17 +1,26 @@
-import { Instagram, Menu, ShoppingCart, MessageCircle, RefreshCw, Check } from "lucide-react";
+import { Instagram, Menu, ShoppingCart, MessageCircle, RefreshCw, Check, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoText from "@/assets/logo-text.png";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/hooks/useProducts";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [refreshState, setRefreshState] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
   const { items } = useCart();
   const { refreshProducts } = useProducts();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (refreshState === 'success') {
@@ -19,6 +28,24 @@ export const Header = () => {
       return () => clearTimeout(timer);
     }
   }, [refreshState]);
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const dismissed = localStorage.getItem('pwa-banner-dismissed');
+    const dismissedAt = dismissed ? parseInt(dismissed) : 0;
+    const daysSinceDismissed = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
+    
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      if (!isStandalone && daysSinceDismissed > 3) {
+        setTimeout(() => setShowInstallBanner(true), 3000);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
 
   const handleLogoClick = async () => {
     if (refreshState === 'loading') return;
@@ -37,9 +64,50 @@ export const Header = () => {
     }
   };
 
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+    }
+  };
+
+  const dismissBanner = () => {
+    setShowInstallBanner(false);
+    localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 animate-fade-in-down">
-      <div className="container mx-auto px-4 sm:px-6 py-4">
+    <>
+      {/* Install Banner for Mobile */}
+      {showInstallBanner && isMobile && deferredPrompt && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground px-4 py-2.5 animate-slide-up">
+          <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Download className="h-4 w-4 shrink-0" />
+              <span className="text-sm font-medium truncate">Instale o App Mariela!</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleInstall}
+                className="h-7 text-xs px-3"
+              >
+                Instalar
+              </Button>
+              <button onClick={dismissBanner} className="p-1 hover:bg-white/10 rounded">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <header className={`fixed left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 animate-fade-in-down ${showInstallBanner && isMobile ? 'top-10' : 'top-0'}`}>
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 mobile-header-condensed">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <button 
@@ -202,7 +270,8 @@ export const Header = () => {
             </Link>
           </div>
         )}
-      </div>
-    </header>
+        </div>
+      </header>
+    </>
   );
 };
