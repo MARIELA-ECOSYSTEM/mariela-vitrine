@@ -9,13 +9,15 @@ import {
   ChevronUp, 
   Check,
   Sparkles,
-  Eye
+  Eye,
+  Loader2
 } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { Produto } from "@/data/products";
 import confetti from "canvas-confetti";
 import produtoGenerico from "@/assets/produto-generico.png";
 import { cn } from "@/lib/utils";
+import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 
 interface SelectedItems {
   blusa: number | null;
@@ -58,9 +60,10 @@ const categoryConfig: Array<{
 
 export const MobileLookBuilder = () => {
   const { produtos, loading } = useProducts();
-  const isLoading = loading && produtos.length === 0; // Só mostra loading se não tem produtos
+  const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [animatingItem, setAnimatingItem] = useState<string | null>(null);
   
   const [selectedItems, setSelectedItems] = useState<SelectedItems>({
     blusa: null,
@@ -143,6 +146,10 @@ export const MobileLookBuilder = () => {
   };
 
   const selectItem = (category: CategoryKey, productId: number, clearCategories?: CategoryKey[]) => {
+    // Trigger animation
+    setAnimatingItem(`${category}-${productId}`);
+    setTimeout(() => setAnimatingItem(null), 400);
+
     const newItems = { ...selectedItems, [category]: productId };
     const newSizes = { ...selectedSizes, [category]: "" };
     const newColors = { ...selectedColors, [category]: "" };
@@ -215,10 +222,6 @@ export const MobileLookBuilder = () => {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const getCategoryCount = (key: CategoryKey) => {
-    return productsByCategory[key].length;
-  };
-
   const isCategoryDisabled = (key: CategoryKey) => {
     if (key === 'blusa' || key === 'bottom') return isFullOutfit;
     if (key === 'vestido') return isFullOutfit && !selectedProducts.vestido;
@@ -228,18 +231,28 @@ export const MobileLookBuilder = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-        <div className="relative w-20 h-20">
-          <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
-          <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-        <p className="mt-4 text-muted-foreground font-medium">Carregando produtos...</p>
+      <div className="space-y-3 animate-fade-in">
+        {categoryConfig.map((cat, index) => (
+          <div 
+            key={cat.key}
+            className="bg-card rounded-2xl border border-border p-4"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-muted category-skeleton" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-muted category-skeleton rounded w-24" />
+                <div className="h-3 bg-muted category-skeleton rounded w-16" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="relative pb-24 lg:pb-0">
+    <div className="relative pb-28 lg:pb-0">
       {/* Desktop Layout */}
       <div className="hidden lg:grid lg:grid-cols-2 gap-8">
         {/* Preview Side */}
@@ -278,6 +291,8 @@ export const MobileLookBuilder = () => {
               selectedSize={selectedSizes[cat.key]}
               isExpanded={expandedCategory === cat.key}
               isDisabled={isCategoryDisabled(cat.key)}
+              isLoading={loading}
+              animatingItem={animatingItem}
               onToggle={() => setExpandedCategory(expandedCategory === cat.key ? null : cat.key)}
               onSelect={(id) => selectItem(cat.key, id, cat.clearOnSelect)}
               onRemove={() => removeItem(cat.key)}
@@ -293,7 +308,41 @@ export const MobileLookBuilder = () => {
       </div>
 
       {/* Mobile Layout */}
-      <div className="lg:hidden space-y-3">
+      <div className="lg:hidden space-y-2.5">
+        {/* Mini Preview Bar */}
+        {hasAnySelection && (
+          <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 rounded-2xl p-3 border border-primary/20 animate-pop-in">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <span className="text-xs text-muted-foreground shrink-0">Seu Look:</span>
+              {Object.entries(selectedProducts).map(([key, product]) => {
+                if (!product) return null;
+                const color = selectedColors[key as CategoryKey];
+                return (
+                  <div 
+                    key={key} 
+                    className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border-2 border-primary/30 bg-background animate-pop-in"
+                  >
+                    <img
+                      src={getImageForColor(product, color)}
+                      alt={product.nome}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                );
+              })}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPreview(true)}
+                className="shrink-0 h-8 gap-1 text-xs text-primary"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Ver
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Category List */}
         {categoryConfig.map((cat) => (
           <CategorySection
@@ -305,6 +354,8 @@ export const MobileLookBuilder = () => {
             selectedSize={selectedSizes[cat.key]}
             isExpanded={expandedCategory === cat.key}
             isDisabled={isCategoryDisabled(cat.key)}
+            isLoading={loading}
+            animatingItem={animatingItem}
             onToggle={() => setExpandedCategory(expandedCategory === cat.key ? null : cat.key)}
             onSelect={(id) => selectItem(cat.key, id, cat.clearOnSelect)}
             onRemove={() => removeItem(cat.key)}
@@ -320,56 +371,76 @@ export const MobileLookBuilder = () => {
 
       {/* Mobile Fixed Bottom Bar */}
       {hasAnySelection && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border p-4 z-50 animate-slide-up safe-area-bottom">
-          <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground">Total do Look</p>
-              <p className="text-xl font-bold text-primary">
-                R$ {totalValue.toFixed(2).replace('.', ',')}
-              </p>
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border z-50 animate-bottom-sheet safe-area-bottom">
+          <div className="p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total do Look</p>
+                <p className="text-lg sm:text-xl font-bold text-primary truncate">
+                  R$ {totalValue.toFixed(2).replace('.', ',')}
+                </p>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowPreview(true)}
+                className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 touch-feedback"
+              >
+                <Eye className="h-5 w-5" />
+              </Button>
+              
+              <Button
+                onClick={handleWhatsApp}
+                className="bg-green-600 hover:bg-green-700 text-white gap-2 shrink-0 h-10 sm:h-11 px-4 sm:px-6 touch-feedback"
+              >
+                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Enviar</span>
+                <span className="sm:hidden">WhatsApp</span>
+              </Button>
             </div>
-            
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowPreview(true)}
-              className="shrink-0"
-            >
-              <Eye className="h-5 w-5" />
-            </Button>
-            
-            <Button
-              onClick={handleWhatsApp}
-              className="bg-green-600 hover:bg-green-700 text-white gap-2 shrink-0"
-            >
-              <MessageCircle className="h-4 w-4" />
-              Enviar
-            </Button>
           </div>
         </div>
       )}
 
-      {/* Mobile Preview Modal */}
+      {/* Mobile Preview Modal - Full Screen Bottom Sheet */}
       {showPreview && (
-        <div className="lg:hidden fixed inset-0 bg-background/95 backdrop-blur-lg z-50 overflow-auto animate-fade-in">
-          <div className="p-4 pb-24">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-serif font-bold">Pré-Visualização</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)}>
+        <div className="lg:hidden fixed inset-0 z-[60] flex flex-col">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+            onClick={() => setShowPreview(false)}
+          />
+          
+          {/* Bottom Sheet */}
+          <div className="mt-auto bg-background rounded-t-3xl max-h-[90vh] overflow-hidden animate-bottom-sheet relative">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
+            </div>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
+              <h3 className="text-lg font-serif font-bold">Pré-Visualização</h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)} className="touch-feedback">
                 <X className="h-5 w-5" />
               </Button>
             </div>
             
-            <PreviewPanel
-              selectedProducts={selectedProducts}
-              selectedColors={selectedColors}
-              selectedSizes={selectedSizes}
-              totalValue={totalValue}
-              hasAnySelection={hasAnySelection}
-              onClear={clearAllSelections}
-              onWhatsApp={handleWhatsApp}
-              getImageForColor={getImageForColor}
-            />
+            {/* Content */}
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-4 pb-8">
+              <PreviewPanel
+                selectedProducts={selectedProducts}
+                selectedColors={selectedColors}
+                selectedSizes={selectedSizes}
+                totalValue={totalValue}
+                hasAnySelection={hasAnySelection}
+                onClear={clearAllSelections}
+                onWhatsApp={handleWhatsApp}
+                getImageForColor={getImageForColor}
+                isMobile
+              />
+            </div>
           </div>
         </div>
       )}
@@ -386,6 +457,8 @@ interface CategorySectionProps {
   selectedSize: string;
   isExpanded: boolean;
   isDisabled: boolean;
+  isLoading: boolean;
+  animatingItem: string | null;
   onToggle: () => void;
   onSelect: (id: number) => void;
   onRemove: () => void;
@@ -402,6 +475,8 @@ const CategorySection = ({
   selectedSize,
   isExpanded,
   isDisabled,
+  isLoading,
+  animatingItem,
   onToggle,
   onSelect,
   onRemove,
@@ -421,62 +496,65 @@ const CategorySection = ({
     <div className={cn(
       "bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300",
       isDisabled && "opacity-50 pointer-events-none",
-      selectedProduct && "border-primary/30 bg-primary/5"
+      selectedProduct && "border-primary/40 bg-primary/5 shadow-sm"
     )}>
       {/* Header */}
       <button
         onClick={onToggle}
-        className="w-full p-4 flex items-center gap-3 text-left"
+        className="w-full p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 text-left touch-feedback"
       >
-        <span className="text-2xl">{category.emoji}</span>
+        <span className="text-xl sm:text-2xl">{category.emoji}</span>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground">{category.label}</h3>
+          <h3 className="font-semibold text-foreground text-sm sm:text-base">{category.label}</h3>
           {selectedProduct ? (
-            <p className="text-sm text-primary truncate">{selectedProduct.nome}</p>
+            <p className="text-xs sm:text-sm text-primary truncate">{selectedProduct.nome}</p>
           ) : (
-            <p className="text-sm text-muted-foreground">{products.length} disponíveis</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{products.length} disponíveis</p>
           )}
         </div>
         
         {selectedProduct && (
-          <img
-            src={getImageForColor(selectedProduct, selectedColor)}
-            alt={selectedProduct.nome}
-            className="w-12 h-12 object-cover rounded-lg border border-border"
-          />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border border-border shrink-0 animate-pop-in">
+            <img
+              src={getImageForColor(selectedProduct, selectedColor)}
+              alt={selectedProduct.nome}
+              className="w-full h-full object-cover"
+            />
+          </div>
         )}
         
-        {isExpanded ? (
-          <ChevronUp className="h-5 w-5 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
-        )}
+        <div className={cn(
+          "shrink-0 transition-transform duration-200",
+          isExpanded && "rotate-180"
+        )}>
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        </div>
       </button>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-4 animate-fade-in">
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3 sm:space-y-4 animate-fade-in">
           {/* Color & Size Selection for selected product */}
           {selectedProduct && (
-            <div className="space-y-3 bg-secondary/30 rounded-xl p-3">
+            <div className="space-y-2.5 sm:space-y-3 bg-secondary/30 rounded-xl p-2.5 sm:p-3 animate-pop-in">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Cor & Tamanho</span>
-                <Button variant="ghost" size="sm" onClick={onRemove} className="h-8 text-destructive">
-                  <X className="h-4 w-4 mr-1" />
+                <span className="text-xs sm:text-sm font-medium">Cor & Tamanho</span>
+                <Button variant="ghost" size="sm" onClick={onRemove} className="h-7 sm:h-8 text-destructive text-xs touch-feedback">
+                  <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   Remover
                 </Button>
               </div>
               
               {availableColors.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {availableColors.map((cor) => (
                     <button
                       key={cor}
                       onClick={() => onColorChange(cor)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                        "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all touch-feedback",
                         selectedColor === cor
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-primary text-primary-foreground animate-glow-pulse"
                           : "bg-background border border-border hover:border-primary/50"
                       )}
                     >
@@ -488,15 +566,15 @@ const CategorySection = ({
               )}
               
               {selectedColor && availableSizes.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 animate-fade-in">
                   {availableSizes.map((tamanho) => (
                     <button
                       key={tamanho}
                       onClick={() => onSizeChange(tamanho)}
                       className={cn(
-                        "w-10 h-10 rounded-lg text-sm font-medium transition-all",
+                        "w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all touch-feedback",
                         selectedSize === tamanho
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-primary text-primary-foreground animate-pop-in"
                           : "bg-background border border-border hover:border-primary/50"
                       )}
                     >
@@ -508,40 +586,48 @@ const CategorySection = ({
             </div>
           )}
 
-          {/* Product Grid */}
-          <div className="grid grid-cols-3 gap-2">
-            {products.map((produto) => (
-              <button
-                key={produto.id}
-                onClick={() => onSelect(produto.id)}
-                className={cn(
-                  "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                  selectedProduct?.id === produto.id
-                    ? "border-primary ring-2 ring-primary/30"
-                    : "border-transparent hover:border-primary/30"
-                )}
-              >
-                <img
-                  src={produto.imagens[0] || produtoGenerico}
-                  alt={produto.nome}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = produtoGenerico;
-                  }}
-                />
-                {selectedProduct?.id === produto.id && (
-                  <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                    <Check className="h-6 w-6 text-primary-foreground bg-primary rounded-full p-1" />
-                  </div>
-                )}
-                {produto.emPromocao && (
-                  <div className="absolute top-1 left-1 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 rounded-full">
-                    Oferta
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+          {/* Product Grid with Loading */}
+          {isLoading && products.length === 0 ? (
+            <CategorySkeleton count={6} />
+          ) : (
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              {products.map((produto) => {
+                const isAnimating = animatingItem === `${category.key}-${produto.id}`;
+                return (
+                  <button
+                    key={produto.id}
+                    onClick={() => onSelect(produto.id)}
+                    className={cn(
+                      "relative aspect-square rounded-xl overflow-hidden border-2 transition-all touch-feedback",
+                      selectedProduct?.id === produto.id
+                        ? "border-primary ring-2 ring-primary/30"
+                        : "border-transparent hover:border-primary/30",
+                      isAnimating && "animate-pop-in"
+                    )}
+                  >
+                    <img
+                      src={produto.imagens[0] || produtoGenerico}
+                      alt={produto.nome}
+                      className="w-full h-full object-cover transition-transform duration-300"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = produtoGenerico;
+                      }}
+                    />
+                    {selectedProduct?.id === produto.id && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center animate-fade-in">
+                        <Check className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground bg-primary rounded-full p-0.5 sm:p-1" />
+                      </div>
+                    )}
+                    {produto.emPromocao && (
+                      <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 bg-destructive text-destructive-foreground text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full">
+                        Oferta
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -558,6 +644,7 @@ interface PreviewPanelProps {
   onClear: () => void;
   onWhatsApp: () => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
+  isMobile?: boolean;
 }
 
 const PreviewPanel = ({
@@ -569,21 +656,25 @@ const PreviewPanel = ({
   onClear,
   onWhatsApp,
   getImageForColor,
+  isMobile = false,
 }: PreviewPanelProps) => {
   const isFullOutfit = selectedProducts.vestido || selectedProducts.conjunto;
   
   return (
-    <div className="bg-gradient-to-br from-secondary/30 via-background to-secondary/50 rounded-3xl p-4 lg:p-6 border border-border">
+    <div className="bg-gradient-to-br from-secondary/30 via-background to-secondary/50 rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 border border-border">
       {/* Look Preview Area */}
-      <div className="relative aspect-[3/4] max-w-xs mx-auto mb-6 rounded-2xl overflow-hidden bg-gradient-to-b from-secondary/40 to-secondary/70">
+      <div className={cn(
+        "relative mx-auto mb-4 sm:mb-6 rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-b from-secondary/40 to-secondary/70",
+        isMobile ? "aspect-[4/3] max-w-sm" : "aspect-[3/4] max-w-xs"
+      )}>
         {/* Spotlight Effect */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/3 bg-gradient-radial from-primary/10 to-transparent" />
         
         {hasAnySelection ? (
-          <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+          <div className="relative w-full h-full flex flex-col items-center justify-center p-3 sm:p-4">
             {isFullOutfit ? (
               /* Full Outfit */
-              <div className="relative w-full h-full flex items-center justify-center animate-fade-in">
+              <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
                 <img
                   src={getImageForColor(
                     selectedProducts.vestido || selectedProducts.conjunto,
@@ -602,11 +693,11 @@ const PreviewPanel = ({
                     <img
                       src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
                       alt={selectedProducts.blusa.nome}
-                      className="max-w-full max-h-full object-contain drop-shadow-xl animate-fade-in"
+                      className="max-w-full max-h-full object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                      <span className="text-3xl opacity-30">👚</span>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                      <span className="text-2xl sm:text-3xl opacity-30">👚</span>
                     </div>
                   )}
                 </div>
@@ -617,11 +708,11 @@ const PreviewPanel = ({
                     <img
                       src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
                       alt={selectedProducts.bottom.nome}
-                      className="max-w-full max-h-full object-contain drop-shadow-xl animate-fade-in"
+                      className="max-w-full max-h-full object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center mt-4">
-                      <span className="text-2xl opacity-30">👖</span>
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center mt-4">
+                      <span className="text-xl sm:text-2xl opacity-30">👖</span>
                     </div>
                   )}
                 </div>
@@ -630,7 +721,7 @@ const PreviewPanel = ({
             
             {/* Bolsa Floating */}
             {selectedProducts.bolsa && (
-              <div className="absolute right-2 top-1/3 w-16 h-16 bg-background/90 backdrop-blur rounded-xl p-1 shadow-lg border border-primary/20 animate-fade-in">
+              <div className="absolute right-2 top-1/3 w-12 h-12 sm:w-16 sm:h-16 bg-background/90 backdrop-blur rounded-lg sm:rounded-xl p-1 shadow-lg border border-primary/20 animate-pop-in">
                 <img
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={selectedProducts.bolsa.nome}
@@ -641,17 +732,17 @@ const PreviewPanel = ({
           </div>
         ) : (
           /* Empty State */
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
-            <div className="relative w-24 h-24 mb-4">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6">
+            <div className="relative w-16 h-16 sm:w-24 sm:h-24 mb-3 sm:mb-4">
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 animate-pulse" />
               <div className="absolute inset-2 rounded-full bg-background/80 flex items-center justify-center">
-                <Sparkles className="h-10 w-10 text-primary animate-bounce" />
+                <Sparkles className="h-6 w-6 sm:h-10 sm:w-10 text-primary animate-bounce" />
               </div>
             </div>
-            <p className="text-lg font-serif font-semibold text-foreground text-center">
+            <p className="text-base sm:text-lg font-serif font-semibold text-foreground text-center">
               Monte Seu Look
             </p>
-            <p className="text-sm text-muted-foreground text-center mt-2">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center mt-1 sm:mt-2">
               Selecione as peças acima para começar
             </p>
           </div>
@@ -660,13 +751,13 @@ const PreviewPanel = ({
 
       {/* Selected Items Summary */}
       {hasAnySelection && (
-        <div className="space-y-3 animate-fade-in">
-          <h4 className="font-semibold text-foreground flex items-center gap-2">
+        <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
+          <h4 className="font-semibold text-foreground flex items-center gap-2 text-sm sm:text-base">
             <ShoppingBag className="h-4 w-4" />
             Resumo do Look
           </h4>
           
-          <div className="space-y-2 text-sm">
+          <div className="space-y-1.5 sm:space-y-2 text-sm">
             {Object.entries(selectedProducts).map(([key, product]) => {
               if (!product) return null;
               const color = selectedColors[key as CategoryKey];
@@ -674,21 +765,21 @@ const PreviewPanel = ({
               const price = product.precoPromocional || product.precoVenda;
               
               return (
-                <div key={key} className="flex items-center justify-between bg-secondary/30 rounded-lg p-2">
+                <div key={key} className="flex items-center justify-between bg-secondary/30 rounded-lg p-2 animate-pop-in">
                   <div className="flex items-center gap-2 min-w-0">
                     <img
                       src={getImageForColor(product, color)}
                       alt={product.nome}
-                      className="w-8 h-8 object-cover rounded"
+                      className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
                     />
                     <div className="min-w-0">
-                      <p className="font-medium truncate">{product.nome}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium truncate text-xs sm:text-sm">{product.nome}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         {color && `${color}`}{color && size && " • "}{size && `Tam. ${size}`}
                       </p>
                     </div>
                   </div>
-                  <span className="font-medium text-primary shrink-0">
+                  <span className="font-medium text-primary shrink-0 text-xs sm:text-sm">
                     R$ {price.toFixed(2).replace('.', ',')}
                   </span>
                 </div>
@@ -696,21 +787,21 @@ const PreviewPanel = ({
             })}
           </div>
 
-          <div className="pt-3 border-t border-border">
+          <div className="pt-2 sm:pt-3 border-t border-border">
             <div className="flex items-center justify-between">
-              <span className="font-semibold">Total:</span>
-              <span className="text-2xl font-bold text-primary">
+              <span className="font-semibold text-sm sm:text-base">Total:</span>
+              <span className="text-xl sm:text-2xl font-bold text-primary">
                 R$ {totalValue.toFixed(2).replace('.', ',')}
               </span>
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={onClear} className="flex-1">
+          <div className="flex gap-2 pt-1 sm:pt-2">
+            <Button variant="outline" onClick={onClear} className="flex-1 h-10 sm:h-11 touch-feedback">
               <RefreshCw className="h-4 w-4 mr-2" />
               Limpar
             </Button>
-            <Button onClick={onWhatsApp} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+            <Button onClick={onWhatsApp} className="flex-1 bg-green-600 hover:bg-green-700 text-white h-10 sm:h-11 touch-feedback">
               <MessageCircle className="h-4 w-4 mr-2" />
               WhatsApp
             </Button>

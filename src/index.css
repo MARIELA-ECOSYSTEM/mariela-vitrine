@@ -206,3 +206,103 @@ All colors MUST be HSL.
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
 }
+
+/* Selection animations */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px hsl(var(--primary) / 0.3);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 1.5s ease-in-out infinite;
+}
+
+/* Mobile optimized touch feedback */
+.touch-feedback {
+  @apply active:scale-95 transition-transform duration-100;
+}
+
+/* Category skeleton shimmer */
+@keyframes category-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.category-skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted-foreground) / 0.1) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: category-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Bottom sheet animation */
+@keyframes bottom-sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-bottom-sheet {
+  animation: bottom-sheet 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Mobile header condensed */
+@media (max-width: 768px) {
+  .mobile-header-condensed {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
+/* Install PWA button glow */
+.pwa-install-glow {
+  position: relative;
+}
+
+.pwa-install-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pwa-install-glow:hover::after {
+  opacity: 0.5;
+}
