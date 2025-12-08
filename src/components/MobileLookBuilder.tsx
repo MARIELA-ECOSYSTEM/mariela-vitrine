@@ -129,12 +129,36 @@ export const MobileLookBuilder = () => {
 
   useEffect(() => {
     if (isLookComplete && !prevIsLookComplete.current) {
+      // Trigger heavy haptic on look complete
+      if ('vibrate' in navigator) {
+        navigator.vibrate([50, 30, 50, 30, 100]);
+      }
+      
+      // Fire confetti
       confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 150,
+        spread: 80,
         origin: { y: 0.6 },
-        colors: ['#a855f7', '#ec4899', '#f59e0b', '#10b981']
+        colors: ['#a855f7', '#ec4899', '#f59e0b', '#10b981', '#8b5cf6']
       });
+      
+      // Second burst for more impact
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#a855f7', '#ec4899', '#f59e0b']
+        });
+        confetti({
+          particleCount: 80,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#10b981', '#8b5cf6', '#f59e0b']
+        });
+      }, 150);
     }
     prevIsLookComplete.current = !!isLookComplete;
   }, [isLookComplete]);
@@ -145,7 +169,22 @@ export const MobileLookBuilder = () => {
     setSelectedColors({ blusa: "", bottom: "", bolsa: "", vestido: "", conjunto: "" });
   };
 
+  // Haptic feedback utility
+  const triggerHaptic = (type: 'light' | 'medium' | 'heavy' = 'light') => {
+    if ('vibrate' in navigator) {
+      const patterns = {
+        light: [10],
+        medium: [20],
+        heavy: [30, 10, 30]
+      };
+      navigator.vibrate(patterns[type]);
+    }
+  };
+
   const selectItem = (category: CategoryKey, productId: number, clearCategories?: CategoryKey[]) => {
+    // Trigger haptic feedback
+    triggerHaptic('medium');
+    
     // Trigger animation
     setAnimatingItem(`${category}-${productId}`);
     setTimeout(() => setAnimatingItem(null), 400);
@@ -550,7 +589,10 @@ const CategorySection = ({
                   {availableColors.map((cor) => (
                     <button
                       key={cor}
-                      onClick={() => onColorChange(cor)}
+                      onClick={() => {
+                        if ('vibrate' in navigator) navigator.vibrate(10);
+                        onColorChange(cor);
+                      }}
                       className={cn(
                         "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all touch-feedback",
                         selectedColor === cor
@@ -570,7 +612,10 @@ const CategorySection = ({
                   {availableSizes.map((tamanho) => (
                     <button
                       key={tamanho}
-                      onClick={() => onSizeChange(tamanho)}
+                      onClick={() => {
+                        if ('vibrate' in navigator) navigator.vibrate(10);
+                        onSizeChange(tamanho);
+                      }}
                       className={cn(
                         "w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all touch-feedback",
                         selectedSize === tamanho

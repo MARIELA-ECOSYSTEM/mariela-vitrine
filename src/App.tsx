@@ -15,6 +15,7 @@ import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import MonteSeuLook from "./pages/MonteSeuLook";
 import Cart from "./pages/Cart";
+import Instalar from "./pages/Instalar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const AppContent = () => {
           <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/monte-seu-look" element={<MonteSeuLook />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/instalar" element={<Instalar />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
