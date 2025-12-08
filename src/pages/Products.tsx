@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw } from "lucide-react";
 import { CATEGORIAS_DB } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -278,8 +279,8 @@ const Products = () => {
             </div>
           </div>
 
-          {/* Filtros Rápidos - Promoção e Novidades */}
-          <div className="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6 md:mb-8 animate-fade-in">
+          {/* Filtros Rápidos - Promoção e Novidades - Badge Style */}
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 animate-fade-in px-2">
             <Button
               variant={mostrarPromocao ? "default" : "outline"}
               onClick={() => {
@@ -288,14 +289,16 @@ const Products = () => {
                 setPaginaAtual(1);
               }}
               size="sm"
-              className="gap-1 sm:gap-2 transition-all hover:scale-105 text-xs sm:text-sm px-2 sm:px-4"
+              className={cn(
+                "gap-1.5 sm:gap-2 transition-all hover:scale-105 rounded-full px-3 sm:px-5 h-9 sm:h-10 text-xs sm:text-sm touch-feedback",
+                mostrarPromocao && "shadow-md"
+              )}
             >
-              <Tag className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-              <span className="hidden xs:inline">Promoção</span>
-              <span className="xs:hidden">Promo</span>
+              <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              Promoção
               <Badge 
                 variant={mostrarPromocao ? "secondary" : "outline"}
-                className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs px-1 sm:px-2"
+                className="ml-0.5 h-5 px-1.5 text-[10px] sm:text-xs"
               >
                 {produtos.filter(p => p.emPromocao).length}
               </Badge>
@@ -308,14 +311,16 @@ const Products = () => {
                 setPaginaAtual(1);
               }}
               size="sm"
-              className="gap-1 sm:gap-2 transition-all hover:scale-105 text-xs sm:text-sm px-2 sm:px-4"
+              className={cn(
+                "gap-1.5 sm:gap-2 transition-all hover:scale-105 rounded-full px-3 sm:px-5 h-9 sm:h-10 text-xs sm:text-sm touch-feedback",
+                mostrarNovidades && "shadow-md"
+              )}
             >
-              <Sparkles className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-              <span className="hidden xs:inline">Novidades</span>
-              <span className="xs:hidden">Novo</span>
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              Novidades
               <Badge 
                 variant={mostrarNovidades ? "secondary" : "outline"}
-                className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs px-1 sm:px-2"
+                className="ml-0.5 h-5 px-1.5 text-[10px] sm:text-xs"
               >
                 {produtos.filter(p => p.isNovidade).length}
               </Badge>

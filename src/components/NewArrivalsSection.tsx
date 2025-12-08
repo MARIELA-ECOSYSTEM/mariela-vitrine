@@ -118,39 +118,41 @@ export const NewArrivalsSection = () => {
   }
 
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-muted/20 relative overflow-hidden">
+    <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
       {/* Background decorativo */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-16 animate-fade-in">
-          <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-primary/10 rounded-full">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <span className="text-primary font-semibold">Recém Chegados</span>
-          </div>
-          <h2 className="font-serif text-4xl md:text-5xl font-bold mb-4 text-foreground">
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
+        <div className="text-center mb-10 sm:mb-14 animate-fade-in">
+          <span className="inline-block text-primary font-medium text-sm uppercase tracking-wider mb-3">
+            Recém Chegados
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-foreground">
             Novidades
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">
             Confira as últimas peças que acabaram de chegar à nossa coleção
           </p>
         </div>
 
-        {/* Filtros de Categoria */}
+        {/* Filtros de Categoria - Badge style */}
         {!loading && produtos.filter(p => p.isNovidade).length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2 mb-12 animate-fade-in">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8 sm:mb-12 animate-fade-in px-2">
             {categoriasComProdutos.map((cat) => (
               <Button
                 key={cat.value}
                 variant={categoriaFiltro === cat.value ? "default" : "outline"}
                 onClick={() => setCategoriaFiltro(cat.value)}
                 size="sm"
-                className="gap-2 transition-all duration-300 hover:scale-105"
+                className={cn(
+                  "gap-1.5 sm:gap-2 transition-all duration-300 hover:scale-105 rounded-full px-3 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm touch-feedback",
+                  categoriaFiltro === cat.value && "shadow-md"
+                )}
               >
                 {cat.label}
                 <Badge 
                   variant={categoriaFiltro === cat.value ? "secondary" : "outline"}
-                  className="transition-all duration-300"
+                  className="transition-all duration-300 h-5 px-1.5 text-[10px] sm:text-xs"
                 >
                   {categoriasCount[cat.value]}
                 </Badge>
@@ -265,16 +267,15 @@ export const NewArrivalsSection = () => {
             <Link to="/products?filter=novidades">
               <Button 
                 size="lg" 
-                className="gap-2 px-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                className="gap-2 px-6 sm:px-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 h-12 sm:h-14 text-sm sm:text-base touch-feedback"
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                 Ver Todas as Novidades
                 {produtosNovidade.length > 9 && (
-                  <Badge variant="secondary" className="ml-2">
+                  <Badge variant="secondary" className="ml-1 sm:ml-2">
                     +{produtosNovidade.length - 9}
                   </Badge>
                 )}
-                <span className="text-lg">→</span>
               </Button>
             </Link>
           </div>

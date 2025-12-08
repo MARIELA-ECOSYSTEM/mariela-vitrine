@@ -10,7 +10,8 @@ import {
   Check,
   Sparkles,
   Eye,
-  Loader2
+  Loader2,
+  PartyPopper
 } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { Produto } from "@/data/products";
@@ -18,6 +19,7 @@ import confetti from "canvas-confetti";
 import produtoGenerico from "@/assets/produto-generico.png";
 import { cn } from "@/lib/utils";
 import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
+import { toast } from "@/hooks/use-toast";
 
 interface SelectedItems {
   blusa: number | null;
@@ -133,6 +135,12 @@ export const MobileLookBuilder = () => {
       if ('vibrate' in navigator) {
         navigator.vibrate([50, 30, 50, 30, 100]);
       }
+      
+      // Show congratulations toast
+      toast({
+        title: "🎉 Look Completo!",
+        description: "Parabéns! Seu look está montado e pronto para arrasar!",
+      });
       
       // Fire confetti
       confetti({
@@ -706,19 +714,19 @@ const PreviewPanel = ({
   const isFullOutfit = selectedProducts.vestido || selectedProducts.conjunto;
   
   return (
-    <div className="bg-gradient-to-br from-secondary/30 via-background to-secondary/50 rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 border border-border">
-      {/* Look Preview Area */}
+    <div className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 border border-primary/20 shadow-lg">
+      {/* Look Preview Area - Improved layout */}
       <div className={cn(
-        "relative mx-auto mb-4 sm:mb-6 rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-b from-secondary/40 to-secondary/70",
-        isMobile ? "aspect-[4/3] max-w-sm" : "aspect-[3/4] max-w-xs"
+        "relative mx-auto mb-4 rounded-2xl overflow-hidden bg-gradient-to-b from-secondary/20 via-background to-secondary/30",
+        isMobile ? "aspect-square max-w-[320px]" : "aspect-[3/4] max-w-sm"
       )}>
         {/* Spotlight Effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/3 bg-gradient-radial from-primary/10 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-gradient-radial from-primary/15 to-transparent" />
         
         {hasAnySelection ? (
-          <div className="relative w-full h-full flex flex-col items-center justify-center p-3 sm:p-4">
+          <div className="relative w-full h-full flex flex-col items-center justify-center p-2">
             {isFullOutfit ? (
-              /* Full Outfit */
+              /* Full Outfit - Larger display */
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
                 <img
                   src={getImageForColor(
@@ -726,47 +734,47 @@ const PreviewPanel = ({
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
                   )}
                   alt="Look"
-                  className="max-w-full max-h-full object-contain drop-shadow-2xl"
+                  className="w-[85%] h-[85%] object-contain drop-shadow-2xl"
                 />
               </div>
             ) : (
-              /* Layered Outfit */
-              <div className="relative w-full h-full">
-                {/* Top */}
-                <div className="absolute top-0 left-0 right-0 h-1/2 flex items-center justify-center p-2">
+              /* Layered Outfit - Tighter spacing, larger images */
+              <div className="relative w-full h-full flex flex-col items-center justify-center gap-0">
+                {/* Top - More overlap */}
+                <div className="flex-1 flex items-end justify-center w-full pb-0 z-10">
                   {selectedProducts.blusa ? (
                     <img
                       src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
                       alt={selectedProducts.blusa.nome}
-                      className="max-w-full max-h-full object-contain drop-shadow-xl animate-pop-in"
+                      className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                      <span className="text-2xl sm:text-3xl opacity-30">👚</span>
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-background/50">
+                      <span className="text-3xl sm:text-4xl opacity-40">👚</span>
                     </div>
                   )}
                 </div>
                 
-                {/* Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-1/2 flex items-start justify-center p-2">
+                {/* Bottom - Overlapping with top */}
+                <div className="flex-1 flex items-start justify-center w-full pt-0 -mt-6 sm:-mt-8">
                   {selectedProducts.bottom ? (
                     <img
                       src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
                       alt={selectedProducts.bottom.nome}
-                      className="max-w-full max-h-full object-contain drop-shadow-xl animate-pop-in"
+                      className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center mt-4">
-                      <span className="text-xl sm:text-2xl opacity-30">👖</span>
+                    <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-background/50">
+                      <span className="text-2xl sm:text-3xl opacity-40">👖</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
             
-            {/* Bolsa Floating */}
+            {/* Bolsa Floating - Better positioned */}
             {selectedProducts.bolsa && (
-              <div className="absolute right-2 top-1/3 w-12 h-12 sm:w-16 sm:h-16 bg-background/90 backdrop-blur rounded-lg sm:rounded-xl p-1 shadow-lg border border-primary/20 animate-pop-in">
+              <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in">
                 <img
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={selectedProducts.bolsa.nome}
@@ -777,18 +785,18 @@ const PreviewPanel = ({
           </div>
         ) : (
           /* Empty State */
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6">
-            <div className="relative w-16 h-16 sm:w-24 sm:h-24 mb-3 sm:mb-4">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 animate-pulse" />
-              <div className="absolute inset-2 rounded-full bg-background/80 flex items-center justify-center">
-                <Sparkles className="h-6 w-6 sm:h-10 sm:w-10 text-primary animate-bounce" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+            <div className="relative w-20 h-20 sm:w-28 sm:h-28 mb-4">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 animate-pulse" />
+              <div className="absolute inset-3 rounded-full bg-background/90 flex items-center justify-center shadow-inner">
+                <Sparkles className="h-8 w-8 sm:h-12 sm:w-12 text-primary animate-bounce" />
               </div>
             </div>
-            <p className="text-base sm:text-lg font-serif font-semibold text-foreground text-center">
+            <p className="text-lg sm:text-xl font-serif font-bold text-foreground text-center">
               Monte Seu Look
             </p>
-            <p className="text-xs sm:text-sm text-muted-foreground text-center mt-1 sm:mt-2">
-              Selecione as peças acima para começar
+            <p className="text-sm text-muted-foreground text-center mt-2 max-w-[200px]">
+              Selecione as peças para visualizar seu look completo
             </p>
           </div>
         )}
