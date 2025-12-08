@@ -1,5 +1,6 @@
-import { Instagram, Download, Smartphone } from "lucide-react";
+import { Instagram, Download, Smartphone, MapPin, MessageCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -35,62 +36,112 @@ export const Footer = () => {
   };
 
   return (
-    <footer className="bg-background border-t border-border py-8 sm:py-12">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col gap-6">
-            {/* Main Footer Content */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-              <div className="text-center md:text-left">
-                <h3 className="font-serif text-xl sm:text-2xl font-bold text-primary mb-1 sm:mb-2">
-                  Mariela
-                </h3>
-                <p className="text-muted-foreground text-xs sm:text-sm">
-                  Moda feminina com elegância
-                </p>
-              </div>
+    <footer className="bg-gradient-to-t from-secondary/30 via-background to-background border-t border-border/50">
+      <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-14">
+        <div className="max-w-6xl mx-auto">
+          {/* Main Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mb-8">
+            {/* Brand Column */}
+            <div className="text-center md:text-left">
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-primary mb-2">
+                Mariela
+              </h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Moda Feminina
+              </p>
+              <p className="text-muted-foreground text-sm italic">
+                Elegância e estilo atemporal
+              </p>
+            </div>
 
-              <div className="flex flex-col items-center gap-2 sm:gap-3">
+            {/* Links Column */}
+            <div className="text-center">
+              <h4 className="font-semibold text-foreground mb-4 text-sm uppercase tracking-wide">
+                Navegação
+              </h4>
+              <nav className="flex flex-col gap-2">
+                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Início
+                </Link>
+                <Link to="/products" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  Produtos
+                </Link>
+                <Link to="/monte-seu-look" className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center justify-center gap-1">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Monte Seu Look
+                </Link>
+                <Link to="/instalar" className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center justify-center gap-1">
+                  <Download className="h-3.5 w-3.5" />
+                  Instalar App
+                </Link>
+              </nav>
+            </div>
+
+            {/* Contact Column */}
+            <div className="text-center md:text-right">
+              <h4 className="font-semibold text-foreground mb-4 text-sm uppercase tracking-wide">
+                Contato
+              </h4>
+              <div className="flex flex-col gap-3">
                 <a 
                   href="https://www.instagram.com/marielaloja_/" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-foreground hover:text-primary transition-colors touch-feedback"
+                  className="flex items-center justify-center md:justify-end gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
                 >
-                  <Instagram className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="text-xs sm:text-sm font-medium">@marielaloja_</span>
+                  <Instagram className="h-4 w-4" />
+                  @marielaloja_
                 </a>
-              </div>
-
-              <div className="text-center md:text-right">
-                <p className="text-muted-foreground text-xs sm:text-sm">
-                  © {new Date().getFullYear()} Mariela
+                <a 
+                  href="https://wa.me/5583987373396?text=Olá!%20Vi%20o%20site%20e%20quero%20saber%20mais!"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center md:justify-end gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp
+                </a>
+                <p className="flex items-center justify-center md:justify-end gap-2 text-muted-foreground text-sm">
+                  <MapPin className="h-4 w-4" />
+                  Campina Grande, PB
                 </p>
               </div>
             </div>
+          </div>
 
-            {/* PWA Install Section - Mobile Only */}
-            {!isInstalled && deferredPrompt && (
-              <div className="md:hidden bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-xl p-4 border border-primary/20 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/20 rounded-full p-2.5 shrink-0">
-                    <Smartphone className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground text-sm">Adicione à Tela Inicial</p>
-                    <p className="text-xs text-muted-foreground">Acesse o Site Mariela como um app</p>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    onClick={handleInstall}
-                    className="gap-1.5 shrink-0 touch-feedback"
-                  >
-                    <Download className="h-4 w-4" />
-                    Instalar
-                  </Button>
+          {/* PWA Install Section - Mobile Only */}
+          {!isInstalled && deferredPrompt && (
+            <div className="md:hidden bg-gradient-to-r from-primary/15 via-accent/10 to-primary/15 rounded-2xl p-4 border border-primary/20 mb-8 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/20 rounded-full p-3 shrink-0">
+                  <Smartphone className="h-5 w-5 text-primary" />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground text-sm">Adicione à Tela Inicial</p>
+                  <p className="text-xs text-muted-foreground">Acesse como um aplicativo</p>
+                </div>
+                <Button 
+                  size="sm" 
+                  onClick={handleInstall}
+                  className="gap-1.5 shrink-0 touch-feedback"
+                >
+                  <Download className="h-4 w-4" />
+                  Instalar
+                </Button>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="border-t border-border/50 pt-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <p className="text-muted-foreground text-xs sm:text-sm">
+                © {new Date().getFullYear()} Mariela. Todos os direitos reservados.
+              </p>
+              <p className="text-muted-foreground/60 text-xs">
+                Feito com 💜 em Campina Grande
+              </p>
+            </div>
           </div>
         </div>
       </div>

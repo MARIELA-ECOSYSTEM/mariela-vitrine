@@ -145,7 +145,7 @@ export const Header = () => {
               Início
             </Link>
             <Link to="/products" className="text-sm font-medium text-foreground hover:text-primary transition-colors">Produtos</Link>
-            <Link to="/monte-seu-look" className="text-sm font-medium text-foreground hover:text-primary transition-colors">Monte Seu Look Mariela</Link>
+            <Link to="/monte-seu-look" className="text-sm font-medium text-foreground hover:text-primary transition-colors">Monte Seu Look</Link>
             <Link 
               to="/" 
               onClick={() => {
@@ -254,7 +254,15 @@ export const Header = () => {
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-sm font-medium text-foreground hover:text-primary"
             >
-              Monte Seu Look Mariela
+              Monte Seu Look
+            </Link>
+            <Link 
+              to="/instalar" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Instalar App
             </Link>
             <Link 
               to="/" 
