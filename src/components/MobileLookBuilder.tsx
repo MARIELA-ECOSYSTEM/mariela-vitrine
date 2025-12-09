@@ -236,7 +236,7 @@ export const MobileLookBuilder = () => {
   };
 
   const handleWhatsApp = () => {
-    const whatsappNumber = "5583987373396";
+    const whatsappNumber = "5583986567915";
     
     const validateSizes = () => {
       if (selectedProducts.blusa && !selectedSizes.blusa) return "Selecione o tamanho da blusa";

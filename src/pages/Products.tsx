@@ -243,22 +243,7 @@ const Products = () => {
           <div className="container mx-auto px-3 sm:px-4 md:px-6">
             <Breadcrumbs currentPage="Todos os Produtos" />
             
-            {/* Indicador de cache/offline */}
-            {isFromCache && !loading && (
-              <div className="flex items-center justify-center gap-2 mb-4 py-2 px-4 bg-muted/50 rounded-lg text-sm text-muted-foreground animate-fade-in">
-                <WifiOff className="h-4 w-4" />
-                <span>Exibindo dados salvos</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handlePullRefresh}
-                  className="h-6 gap-1 text-xs"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Atualizar
-                </Button>
-              </div>
-            )}
+            {/* Silent background refresh when data is stale - no visible indicator */}
             
             {/* Cabeçalho */}
             <div className="text-center mb-6 sm:mb-8 md:mb-12 animate-fade-in">

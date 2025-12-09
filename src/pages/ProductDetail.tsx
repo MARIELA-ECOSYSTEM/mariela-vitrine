@@ -45,7 +45,7 @@ const ProductDetail = () => {
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
   const [imagemSelecionadaIndex, setImagemSelecionadaIndex] = useState(0);
   
-  const whatsappNumber = "5583987373396";
+  const whatsappNumber = "5583986567915";
 
   // Obter cores disponíveis (não depende de tamanho)
   const coresDisponiveis = useMemo(() => {

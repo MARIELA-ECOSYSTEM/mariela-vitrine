@@ -1,11 +1,11 @@
 import { Instagram, Menu, ShoppingCart, MessageCircle, RefreshCw, Check, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoText from "@/assets/logo-text.png";
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -20,6 +20,7 @@ export const Header = () => {
   const { items } = useCart();
   const { refreshProducts } = useProducts();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -79,6 +80,20 @@ export const Header = () => {
     localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
   };
 
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const navLinks = [
+    { path: '/', label: 'Início', scrollTo: 'home' },
+    { path: '/products', label: 'Produtos' },
+    { path: '/monte-seu-look', label: 'Monte Seu Look' },
+    { path: '/', label: 'Contato', scrollTo: 'contact' },
+  ];
+
   return (
     <>
       {/* Install Banner for Mobile */}
@@ -109,17 +124,20 @@ export const Header = () => {
       <header className={`fixed left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 animate-fade-in-down ${showInstallBanner && isMobile ? 'top-10' : 'top-0'}`}>
         <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 mobile-header-condensed">
         <div className="flex items-center justify-between">
-          {/* Logo */}
+          {/* Logo Text - Following Reference Pattern */}
           <button 
             onClick={handleLogoClick}
             className="flex items-center gap-2 group" 
             aria-label="Atualizar produtos e ir para o início"
           >
-            <img
-              src={logoText}
-              alt="Site Mariela"
-              className="h-8 md:h-10 transition-all duration-300 dark:brightness-0 dark:invert"
-            />
+            <div className="flex flex-col items-start">
+              <span className="font-serif text-xl sm:text-2xl font-bold text-primary leading-tight">
+                Mariela
+              </span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-medium tracking-wide">
+                Moda Feminina
+              </span>
+            </div>
             {refreshState === 'loading' && (
               <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
             )}
@@ -131,32 +149,29 @@ export const Header = () => {
             )}
           </button>
 
-          {/* Navegação desktop */}
+          {/* Navegação desktop com marcador ativo */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-            <Link 
-              to="/" 
-              onClick={() => {
-                setTimeout(() => {
-                  document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Início
-            </Link>
-            <Link to="/products" className="text-sm font-medium text-foreground hover:text-primary transition-colors">Produtos</Link>
-            <Link to="/monte-seu-look" className="text-sm font-medium text-foreground hover:text-primary transition-colors">Monte Seu Look</Link>
-            <Link 
-              to="/" 
-              onClick={() => {
-                setTimeout(() => {
-                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              Contato
-            </Link>
+            {navLinks.map((link) => (
+              <Link
+                key={`${link.path}-${link.label}`}
+                to={link.path}
+                onClick={() => {
+                  if (link.scrollTo) {
+                    setTimeout(() => {
+                      document.getElementById(link.scrollTo!)?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }
+                }}
+                className={cn(
+                  "text-sm font-medium transition-colors relative py-1",
+                  isActive(link.path) && !link.scrollTo
+                    ? "text-primary nav-link-active"
+                    : "text-foreground hover:text-primary"
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
 
           {/* Ações */}
@@ -188,7 +203,7 @@ export const Header = () => {
               aria-label="WhatsApp da Mariela"
             >
               <a
-                href="https://wa.me/5583987373396?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20da%20Mariela%20Style%20Shop%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍"
+                href="https://wa.me/5583986567915?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20da%20Mariela%20Moda%20Feminina%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -238,21 +253,30 @@ export const Header = () => {
                   document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' });
                 }, 100);
               }}
-              className="text-sm font-medium text-foreground hover:text-primary"
+              className={cn(
+                "text-sm font-medium",
+                isActive('/') ? "text-primary" : "text-foreground hover:text-primary"
+              )}
             >
               Início
             </Link>
             <Link 
               to="/products" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-sm font-medium text-foreground hover:text-primary"
+              className={cn(
+                "text-sm font-medium",
+                isActive('/products') ? "text-primary" : "text-foreground hover:text-primary"
+              )}
             >
               Produtos
             </Link>
             <Link 
               to="/monte-seu-look" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-sm font-medium text-foreground hover:text-primary"
+              className={cn(
+                "text-sm font-medium",
+                isActive('/monte-seu-look') ? "text-primary" : "text-foreground hover:text-primary"
+              )}
             >
               Monte Seu Look
             </Link>

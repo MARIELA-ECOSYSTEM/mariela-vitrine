@@ -1,24 +1,25 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { 
   Download, 
-  Share, 
-  Plus, 
-  MoreVertical, 
   Smartphone, 
   CheckCircle2,
-  Apple,
-  Chrome,
-  ArrowRight,
   Sparkles,
   Home,
   Wifi,
-  Bell
+  Bell,
+  ArrowRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -28,7 +29,8 @@ interface BeforeInstallPromptEvent extends Event {
 export default function Instalar() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ios' | 'android'>('android');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
     // Check if already installed
@@ -49,9 +51,16 @@ export default function Instalar() {
     };
   }, []);
 
-  const handleInstall = async () => {
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const confirmInstall = async () => {
     if (!deferredPrompt) return;
     
+    setIsInstalling(true);
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     
@@ -59,6 +68,8 @@ export default function Instalar() {
       setIsInstalled(true);
     }
     setDeferredPrompt(null);
+    setShowConfirmDialog(false);
+    setIsInstalling(false);
   };
 
   const benefits = [
@@ -68,59 +79,11 @@ export default function Instalar() {
     { icon: Sparkles, title: "Mais Rápido", description: "Carregamento instantâneo" },
   ];
 
-  const iosSteps = [
-    { 
-      step: 1, 
-      icon: Share, 
-      title: "Toque em Compartilhar",
-      description: "No Safari, toque no ícone de compartilhamento na barra inferior",
-      image: "📤"
-    },
-    { 
-      step: 2, 
-      icon: Plus, 
-      title: "Adicionar à Tela Inicial",
-      description: "Role para baixo e toque em 'Adicionar à Tela de Início'",
-      image: "➕"
-    },
-    { 
-      step: 3, 
-      icon: CheckCircle2, 
-      title: "Confirmar",
-      description: "Toque em 'Adicionar' no canto superior direito",
-      image: "✅"
-    },
-  ];
-
-  const androidSteps = [
-    { 
-      step: 1, 
-      icon: MoreVertical, 
-      title: "Menu do Navegador",
-      description: "No Chrome, toque nos 3 pontos no canto superior direito",
-      image: "⋮"
-    },
-    { 
-      step: 2, 
-      icon: Download, 
-      title: "Instalar Aplicativo",
-      description: "Selecione 'Instalar aplicativo' ou 'Adicionar à tela inicial'",
-      image: "📲"
-    },
-    { 
-      step: 3, 
-      icon: CheckCircle2, 
-      title: "Confirmar",
-      description: "Toque em 'Instalar' para adicionar o app",
-      image: "✅"
-    },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/20 to-background">
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 max-w-2xl">
+      <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 max-w-2xl pt-24">
         {/* Hero Section */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="relative inline-block mb-4">
@@ -142,129 +105,60 @@ export default function Instalar() {
 
         {/* Already Installed */}
         {isInstalled && (
-          <Card className="mb-6 border-green-500/50 bg-green-500/10 animate-pop-in">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">App já instalado!</p>
-                <p className="text-sm text-muted-foreground">Você já tem o Mariela na sua tela inicial</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-6 border-green-500/50 bg-green-500/10 rounded-2xl p-4 animate-pop-in flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">App já instalado!</p>
+              <p className="text-sm text-muted-foreground">Você já tem o Mariela na sua tela inicial</p>
+            </div>
+          </div>
         )}
 
-        {/* Quick Install Button */}
+        {/* Install Button - Main CTA */}
         {deferredPrompt && !isInstalled && (
-          <Card className="mb-6 border-primary/50 bg-primary/5 overflow-hidden animate-pop-in">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="font-semibold text-foreground mb-1">Instalação Rápida</p>
-                  <p className="text-sm text-muted-foreground">Clique para instalar automaticamente</p>
-                </div>
-                <Button 
-                  onClick={handleInstall}
-                  size="lg"
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 animate-pwa-install-glow"
-                >
-                  <Download className="h-5 w-5 mr-2" />
-                  Instalar Agora
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-8 animate-pop-in">
+            <Button 
+              onClick={handleInstallClick}
+              size="lg"
+              className="w-full h-14 text-lg gap-3 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Download className="h-6 w-6" />
+              Instalar App Mariela
+            </Button>
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              Clique para adicionar o app à sua tela inicial
+            </p>
+          </div>
+        )}
+
+        {/* No prompt available message */}
+        {!deferredPrompt && !isInstalled && (
+          <div className="mb-8 bg-muted/50 rounded-2xl p-6 text-center animate-fade-in">
+            <Smartphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-semibold text-foreground mb-2">Instalação não disponível</h3>
+            <p className="text-sm text-muted-foreground">
+              O seu navegador não suporta instalação automática. 
+              Tente abrir este site no Chrome (Android) ou Safari (iPhone).
+            </p>
+          </div>
         )}
 
         {/* Benefits */}
         <div className="grid grid-cols-2 gap-3 mb-8">
           {benefits.map((benefit, index) => (
-            <Card 
+            <div 
               key={benefit.title} 
-              className="animate-fade-in border-border/50"
+              className="bg-card border border-border/50 rounded-2xl p-4 text-center animate-fade-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <CardContent className="p-3 sm:p-4 text-center">
-                <benefit.icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
-                <p className="font-medium text-xs sm:text-sm text-foreground">{benefit.title}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{benefit.description}</p>
-              </CardContent>
-            </Card>
+              <benefit.icon className="h-8 w-8 text-primary mx-auto mb-2" />
+              <p className="font-medium text-sm text-foreground">{benefit.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{benefit.description}</p>
+            </div>
           ))}
         </div>
-
-        {/* Platform Tabs */}
-        <div className="flex gap-2 mb-6">
-          <Button
-            variant={activeTab === 'android' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('android')}
-            className="flex-1 h-12 gap-2"
-          >
-            <Chrome className="h-5 w-5" />
-            Android
-          </Button>
-          <Button
-            variant={activeTab === 'ios' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('ios')}
-            className="flex-1 h-12 gap-2"
-          >
-            <Apple className="h-5 w-5" />
-            iPhone
-          </Button>
-        </div>
-
-        {/* Instructions */}
-        <Card className="mb-8 overflow-hidden">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-              {activeTab === 'ios' ? (
-                <>
-                  <Apple className="h-5 w-5" />
-                  Instalação no iPhone (Safari)
-                </>
-              ) : (
-                <>
-                  <Chrome className="h-5 w-5" />
-                  Instalação no Android (Chrome)
-                </>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 pb-6">
-            {(activeTab === 'ios' ? iosSteps : androidSteps).map((step, index) => (
-              <div 
-                key={step.step} 
-                className={cn(
-                  "flex gap-4 animate-fade-in",
-                  index < (activeTab === 'ios' ? iosSteps : androidSteps).length - 1 && "pb-4 border-b border-border"
-                )}
-                style={{ animationDelay: `${index * 0.15}s` }}
-              >
-                {/* Step Number */}
-                <div className="shrink-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg sm:text-xl">
-                    {step.step}
-                  </div>
-                </div>
-                
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <step.icon className="h-4 w-4 text-primary shrink-0" />
-                    <h3 className="font-semibold text-foreground text-sm sm:text-base">{step.title}</h3>
-                  </div>
-                  <p className="text-muted-foreground text-xs sm:text-sm">{step.description}</p>
-                </div>
-
-                {/* Visual */}
-                <div className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-secondary/50 rounded-xl flex items-center justify-center text-2xl sm:text-3xl">
-                  {step.image}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
 
         {/* CTA */}
         <div className="text-center animate-fade-in">
@@ -283,6 +177,50 @@ export default function Instalar() {
       </main>
 
       <Footer />
+
+      {/* Install Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-primary" />
+              Instalar App Mariela
+            </DialogTitle>
+            <DialogDescription>
+              Deseja adicionar o Mariela à sua tela inicial? Você poderá acessar a loja como um aplicativo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 py-4">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              Acesso rápido pela tela inicial
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              Funciona offline
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              Notificações de promoções
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmInstall} disabled={isInstalling} className="gap-2">
+              {isInstalling ? (
+                <>Instalando...</>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Instalar Agora
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

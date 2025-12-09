@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import logoFull from "@/assets/logo-full.png";
 import storeInterior from "@/assets/store-interior.jpg";
 import { Link } from "react-router-dom";
 import { Sparkles, MessageCircle, Instagram } from "lucide-react";
@@ -42,26 +41,24 @@ export const Hero = () => {
         }}
       >
         <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-          {/* Text Content - Mobile optimized */}
+          {/* Text Content - Mobile optimized with centered logo text */}
           <div className="text-center md:text-left order-1 animate-fade-in">
-            {/* Logo */}
-            <div className="mb-4 sm:mb-6 md:mb-8">
-              <img 
-                src={logoFull} 
-                alt="Mariela - Moda Feminina" 
-                className="h-20 xs:h-24 sm:h-32 md:h-40 lg:h-48 hover:scale-105 transition-transform duration-500 mx-auto md:mx-0" 
-              />
+            {/* Logo Text - Centered and Professional */}
+            <div className="mb-4 sm:mb-6 md:mb-8 flex flex-col items-center md:items-start">
+              <h1 className="font-serif text-5xl xs:text-6xl sm:text-7xl md:text-8xl font-bold text-primary leading-none tracking-tight">
+                Mariela
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-light tracking-widest uppercase mt-1">
+                Moda Feminina
+              </p>
             </div>
             
             {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-2 font-light italic">
-              Moda Feminina
-            </p>
-            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-foreground/80 mb-6 md:mb-8 font-serif">
+            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-foreground/80 mb-6 md:mb-8 font-serif italic">
               Elegância e estilo atemporal
             </p>
             
-            {/* CTA Buttons - Mobile friendly */}
+            {/* CTA Buttons - Mobile friendly with visible text */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <Button
                 size="lg"
@@ -79,12 +76,12 @@ export const Hero = () => {
                   asChild
                 >
                   <a 
-                    href="https://wa.me/5583987373396?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍" 
+                    href="https://wa.me/5583986567915?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍" 
                     target="_blank" 
                     rel="noopener noreferrer"
                   >
                     <MessageCircle className="h-5 w-5 mr-2" />
-                    WhatsApp
+                    <span className="inline">WhatsApp</span>
                   </a>
                 </Button>
                 <Button

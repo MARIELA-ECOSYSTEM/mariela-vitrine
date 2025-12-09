@@ -93,13 +93,13 @@ export const Footer = () => {
                   @marielaloja_
                 </a>
                 <a 
-                  href="https://wa.me/5583987373396?text=Olá!%20Vi%20o%20site%20e%20quero%20saber%20mais!"
+                  href="https://wa.me/5583986567915?text=Olá!%20Vi%20o%20site%20e%20quero%20saber%20mais!"
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-center md:justify-end gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  WhatsApp
+                  (83) 98656-7915
                 </a>
                 <p className="flex items-center justify-center md:justify-end gap-2 text-muted-foreground text-sm">
                   <MapPin className="h-4 w-4" />
