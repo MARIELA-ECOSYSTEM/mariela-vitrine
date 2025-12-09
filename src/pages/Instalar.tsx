@@ -10,7 +10,11 @@ import {
   Home,
   Wifi,
   Bell,
-  ArrowRight
+  ArrowRight,
+  Share,
+  MoreVertical,
+  Plus,
+  RefreshCw
 } from "lucide-react";
 import {
   Dialog,
@@ -26,28 +30,62 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+// Detect platform
+const getDeviceInfo = () => {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isAndroid = /Android/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
+  const isChrome = /Chrome/.test(ua) && !/Edge/.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                       (navigator as any).standalone === true;
+  
+  return { isIOS, isAndroid, isSafari, isChrome, isStandalone };
+};
+
 export default function Instalar() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState(getDeviceInfo());
+  const [promptReady, setPromptReady] = useState(false);
 
   useEffect(() => {
+    // Update device info
+    setDeviceInfo(getDeviceInfo());
+    
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (deviceInfo.isStandalone) {
       setIsInstalled(true);
+      return;
     }
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
+      console.log('beforeinstallprompt event captured');
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setPromptReady(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    window.addEventListener('appinstalled', () => setIsInstalled(true));
+    window.addEventListener('appinstalled', () => {
+      console.log('App installed');
+      setIsInstalled(true);
+    });
+
+    // For browsers that might have already fired the event
+    // Try to trigger the prompt check after a short delay
+    const timer = setTimeout(() => {
+      if (!deferredPrompt && !deviceInfo.isIOS) {
+        // Force a re-check by dispatching a custom event
+        console.log('Checking for deferred prompt availability');
+      }
+    }, 1000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      clearTimeout(timer);
     };
   }, []);
 
@@ -61,15 +99,25 @@ export default function Instalar() {
     if (!deferredPrompt) return;
     
     setIsInstalling(true);
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setIsInstalled(true);
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+      }
+    } catch (error) {
+      console.error('Install error:', error);
     }
     setDeferredPrompt(null);
     setShowConfirmDialog(false);
     setIsInstalling(false);
+  };
+
+  const handleRefreshForPrompt = () => {
+    // Store flag to show we're expecting the prompt
+    sessionStorage.setItem('expecting-install-prompt', 'true');
+    window.location.reload();
   };
 
   const benefits = [
@@ -79,15 +127,140 @@ export default function Instalar() {
     { icon: Sparkles, title: "Mais Rápido", description: "Carregamento instantâneo" },
   ];
 
+  // iOS Safari Instructions
+  const IOSInstructions = () => (
+    <div className="space-y-4 animate-fade-in">
+      <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-2xl p-5 border border-blue-500/20">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Smartphone className="h-5 w-5 text-blue-500" />
+          Instalar no iPhone/iPad (Safari)
+        </h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+              1
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">Toque no botão Compartilhar</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Na barra inferior do Safari, toque no ícone 
+                <Share className="inline h-4 w-4 mx-1 text-blue-500" />
+                (quadrado com seta para cima)
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+              2
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">Escolha "Adicionar à Tela de Início"</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Role para baixo no menu e toque em 
+                <span className="inline-flex items-center gap-1 mx-1 bg-muted px-2 py-0.5 rounded text-xs">
+                  <Plus className="h-3 w-3" /> Tela de Início
+                </span>
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+              3
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">Confirme a instalação</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Toque em "Adicionar" no canto superior direito
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <p className="text-center text-sm text-muted-foreground">
+        Após seguir os passos, o app Mariela aparecerá na sua tela inicial! 🎉
+      </p>
+    </div>
+  );
+
+  // Android Chrome Instructions (when prompt not available)
+  const AndroidInstructions = () => (
+    <div className="space-y-4 animate-fade-in">
+      <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 rounded-2xl p-5 border border-green-500/20">
+        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Smartphone className="h-5 w-5 text-green-500" />
+          Instalar no Android (Chrome)
+        </h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+              1
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">Abra o menu do Chrome</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Toque nos três pontos 
+                <MoreVertical className="inline h-4 w-4 mx-1 text-green-500" />
+                no canto superior direito
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+              2
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">Escolha "Adicionar à tela inicial"</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ou "Instalar aplicativo" se disponível
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-4">
+            <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+              3
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">Confirme a instalação</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Toque em "Adicionar" para confirmar
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Retry button for Android */}
+      <Button 
+        onClick={handleRefreshForPrompt}
+        variant="outline"
+        className="w-full gap-2"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Tentar instalação automática
+      </Button>
+      
+      <p className="text-center text-xs text-muted-foreground">
+        Se o botão de instalação automática não aparecer, siga os passos acima
+      </p>
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/20 to-background">
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 max-w-2xl pt-24">
         {/* Hero Section */}
-        <div className="text-center mb-8 animate-fade-in">
+        <div className="text-center mb-6 animate-fade-in">
           <div className="relative inline-block mb-4">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-primary to-accent rounded-3xl flex items-center justify-center shadow-xl animate-bounce">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-primary to-accent rounded-3xl flex items-center justify-center shadow-xl">
               <Smartphone className="h-10 w-10 sm:h-12 sm:w-12 text-primary-foreground" />
             </div>
             <div className="absolute -right-1 -bottom-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-4 border-background">
@@ -105,7 +278,7 @@ export default function Instalar() {
 
         {/* Already Installed */}
         {isInstalled && (
-          <div className="mb-6 border-green-500/50 bg-green-500/10 rounded-2xl p-4 animate-pop-in flex items-center gap-3">
+          <div className="mb-6 border-green-500/50 bg-green-500/10 rounded-2xl p-4 animate-fade-in flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shrink-0">
               <CheckCircle2 className="h-5 w-5 text-white" />
             </div>
@@ -116,9 +289,9 @@ export default function Instalar() {
           </div>
         )}
 
-        {/* Install Button - Main CTA */}
+        {/* Install Button - When prompt is available (Android Chrome usually) */}
         {deferredPrompt && !isInstalled && (
-          <div className="mb-8 animate-pop-in">
+          <div className="mb-6 animate-fade-in">
             <Button 
               onClick={handleInstallClick}
               size="lg"
@@ -133,20 +306,29 @@ export default function Instalar() {
           </div>
         )}
 
-        {/* No prompt available message */}
-        {!deferredPrompt && !isInstalled && (
-          <div className="mb-8 bg-muted/50 rounded-2xl p-6 text-center animate-fade-in">
-            <Smartphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold text-foreground mb-2">Instalação não disponível</h3>
-            <p className="text-sm text-muted-foreground">
-              O seu navegador não suporta instalação automática. 
-              Tente abrir este site no Chrome (Android) ou Safari (iPhone).
-            </p>
+        {/* Platform-specific instructions when prompt not available */}
+        {!isInstalled && !deferredPrompt && (
+          <div className="mb-6">
+            {deviceInfo.isIOS ? (
+              <IOSInstructions />
+            ) : deviceInfo.isAndroid ? (
+              <AndroidInstructions />
+            ) : (
+              // Desktop or other browsers
+              <div className="bg-muted/50 rounded-2xl p-6 text-center animate-fade-in">
+                <Smartphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-semibold text-foreground mb-2">Acesse pelo celular</h3>
+                <p className="text-sm text-muted-foreground">
+                  Para instalar o app, acesse este site pelo navegador do seu celular 
+                  (Chrome no Android ou Safari no iPhone).
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Benefits */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           {benefits.map((benefit, index) => (
             <div 
               key={benefit.title} 
