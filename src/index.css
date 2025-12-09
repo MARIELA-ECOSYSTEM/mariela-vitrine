@@ -8,82 +8,82 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Base Colors - Clean & Minimal */
-    --background: 0 0% 100%;
-    --foreground: 270 15% 20%;
+    /* Base Colors - Elegant Beige & Cream Theme (matching reference project) */
+    --background: 30 20% 98%;
+    --foreground: 30 10% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 270 15% 20%;
+    --card-foreground: 30 10% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 270 15% 20%;
+    --popover-foreground: 30 10% 25%;
 
-    /* Primary - Lilac Purple */
-    --primary: 270 65% 70%;
+    /* Primary - Elegant Rose/Mauve */
+    --primary: 280 45% 65%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 270 70% 85%;
-    --primary-dark: 270 60% 55%;
+    --primary-light: 280 50% 80%;
+    --primary-dark: 280 40% 50%;
 
-    /* Secondary - Soft Purple */
-    --secondary: 270 30% 95%;
-    --secondary-foreground: 270 15% 20%;
+    /* Secondary - Soft Cream */
+    --secondary: 30 25% 94%;
+    --secondary-foreground: 30 10% 25%;
 
-    /* Muted - Light Gray */
-    --muted: 270 10% 96%;
-    --muted-foreground: 270 10% 50%;
+    /* Muted - Light Beige */
+    --muted: 30 15% 95%;
+    --muted-foreground: 30 10% 50%;
 
-    /* Accent - Deep Lilac */
-    --accent: 280 55% 65%;
+    /* Accent - Soft Purple */
+    --accent: 280 40% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 270 15% 90%;
-    --input: 270 15% 90%;
-    --ring: 270 65% 70%;
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 280 45% 65%;
 
     --radius: 0.75rem;
 
-    /* Clean Design Tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(270 65% 70%) 0%, hsl(280 55% 65%) 100%);
-    --gradient-soft: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(270 70% 98%) 100%);
+    /* Elegant Design Tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(280 45% 65%) 0%, hsl(280 40% 55%) 100%);
+    --gradient-soft: linear-gradient(180deg, hsl(30 20% 98%) 0%, hsl(30 25% 94%) 100%);
     
     --shadow-clean: 0 1px 3px rgba(0, 0, 0, 0.05);
     --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-hover: 0 8px 24px rgba(122, 79, 179, 0.15);
+    --shadow-hover: 0 8px 24px rgba(168, 85, 247, 0.15);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 270 20% 10%;
-    --foreground: 0 0% 95%;
+    --background: 30 15% 8%;
+    --foreground: 30 10% 95%;
 
-    --card: 270 15% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 30 12% 10%;
+    --card-foreground: 30 10% 95%;
 
-    --popover: 270 15% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 30 12% 10%;
+    --popover-foreground: 30 10% 95%;
 
-    --primary: 270 65% 65%;
+    --primary: 280 45% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 270 20% 20%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 30 15% 15%;
+    --secondary-foreground: 30 10% 95%;
 
-    --muted: 270 15% 18%;
-    --muted-foreground: 270 10% 65%;
+    --muted: 30 10% 15%;
+    --muted-foreground: 30 8% 60%;
 
-    --accent: 280 55% 60%;
+    --accent: 280 40% 55%;
     --accent-foreground: 0 0% 95%;
 
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 270 20% 20%;
-    --input: 270 20% 20%;
-    --ring: 270 65% 65%;
+    --border: 30 15% 18%;
+    --input: 30 15% 18%;
+    --ring: 280 45% 60%;
   }
 }
 
@@ -134,6 +134,22 @@ All colors MUST be HSL.
   
   .card-shine:hover::before {
     left: 100%;
+  }
+
+  /* Active navigation link */
+  .nav-link-active {
+    position: relative;
+  }
+  
+  .nav-link-active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: hsl(var(--primary));
+    border-radius: 1px;
   }
 }
 
@@ -305,4 +321,14 @@ All colors MUST be HSL.
 
 .pwa-install-glow:hover::after {
   opacity: 0.5;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

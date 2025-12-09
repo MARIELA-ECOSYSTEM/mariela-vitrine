@@ -41,7 +41,7 @@ export const ContactSection = () => {
 
             {/* WhatsApp Card */}
             <a
-              href="https://wa.me/5583987373396?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍"
+              href="https://wa.me/5583986567915?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍"
               target="_blank"
               rel="noopener noreferrer"
               className="group bg-card hover:bg-green-500/5 border border-border hover:border-green-500/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 touch-feedback"
@@ -52,7 +52,7 @@ export const ContactSection = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground mb-1">WhatsApp</h3>
-                  <p className="text-green-600 text-sm font-medium">(83) 98737-3396</p>
+                  <p className="text-green-600 text-sm font-medium">(83) 98656-7915</p>
                 </div>
               </div>
             </a>
@@ -84,7 +84,7 @@ export const ContactSection = () => {
               asChild
             >
               <a
-                href="https://wa.me/5583987373396?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍"
+                href="https://wa.me/5583986567915?text=✨%20Olá%2C%20Mariela!%0AVi%20o%20site%20e%20quero%20saber%20mais%20sobre%20as%20peças%20😍"
                 target="_blank"
                 rel="noopener noreferrer"
               >
