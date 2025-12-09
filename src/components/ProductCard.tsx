@@ -46,7 +46,7 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
   const { addToCart } = useCart();
   const { toast } = useToast();
   
-  const whatsappNumber = "5583987373396";
+  const whatsappNumber = "5583986567915";
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
   
   // Obter cores disponíveis (não depende de tamanho)
@@ -172,7 +172,8 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
       return;
     }
     
-    const message = `✨ Olá! 👋\nVi a peça ${produto.nome} | ${corParaUsar} | ${tamanhoParaUsar} - ${precoFormatado} no Site Mariela 🤩\nAinda tá disponível?`;
+    const productLink = `${window.location.origin}/products/${produto.id}`;
+    const message = `✨ Olá! 👋\nVi a peça ${produto.nome} | ${corParaUsar} | ${tamanhoParaUsar} - ${precoFormatado} no Site Mariela 🤩\n\n🔗 Link do produto: ${productLink}\n\nAinda tá disponível?`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -408,23 +409,59 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                 <span className="text-primary">+{coresDisponiveis.length - 3}</span>
               )}
             </div>
-            {/* Mobile: apenas bolinhas de cores */}
-            <div className="flex sm:hidden items-center gap-1 mt-1">
-              {coresDisponiveis.slice(0, 4).map((cor) => (
-                <span
-                  key={cor}
-                  className="w-3 h-3 rounded-full border border-muted-foreground/20 shadow-sm"
-                  style={{ 
-                    backgroundColor: COLOR_MAP[cor] || "#94A3B8",
-                    boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
-                  }}
-                  title={cor}
-                />
-              ))}
-              {coresDisponiveis.length > 4 && (
-                <span className="text-[10px] text-muted-foreground">+{coresDisponiveis.length - 4}</span>
+            {/* Mobile: cores com label visível */}
+            <div className="flex sm:hidden flex-wrap gap-1.5 mt-1.5">
+              {coresDisponiveis.slice(0, 3).map((cor) => {
+                const isSelected = corSelecionada === cor;
+                const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
+                return (
+                  <button
+                    key={cor}
+                    onClick={() => handleSelectColor(cor)}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all",
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : isHighlighted
+                        ? "bg-primary/20 border border-primary text-foreground"
+                        : "bg-secondary border border-border text-foreground"
+                    )}
+                  >
+                    <span 
+                      className="w-3 h-3 rounded-full border border-background/50 shadow-sm flex-shrink-0"
+                      style={{ 
+                        backgroundColor: COLOR_MAP[cor] || "#94A3B8",
+                        boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
+                      }}
+                    />
+                    {cor}
+                  </button>
+                );
+              })}
+              {coresDisponiveis.length > 3 && (
+                <span className="text-[10px] text-muted-foreground self-center">+{coresDisponiveis.length - 3}</span>
               )}
             </div>
+            
+            {/* Mobile: tamanhos maiores */}
+            {corSelecionada && (
+              <div className="flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in">
+                {tamanhosDisponiveis.map((tamanho) => (
+                  <button
+                    key={tamanho}
+                    onClick={() => setTamanhoSelecionado(tamanho)}
+                    className={cn(
+                      "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
+                      tamanhoSelecionado === tamanho
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary border border-border text-foreground"
+                    )}
+                  >
+                    {tamanho}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           
           <div className="flex flex-col gap-1.5 sm:gap-2">
@@ -439,12 +476,12 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
               </p>
             </div>
             
-            {/* Seleção de cor e tamanho - escondido em mobile pequeno */}
+            {/* Desktop: Seleção de cor e tamanho */}
             {!isAcessorio && (
-              <div className="hidden xs:block min-h-[4rem] sm:min-h-[4.5rem]">
+              <div className="hidden sm:block min-h-[4.5rem]">
                 <div>
-                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">Cor:</p>
-                  <div className="flex flex-wrap gap-0.5 sm:gap-1 max-h-[2.5rem] sm:max-h-[3.5rem] overflow-y-auto">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Cor:</p>
+                  <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-y-auto">
                     {coresDisponiveis.map((cor) => {
                       const isSelected = corSelecionada === cor;
                       const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
@@ -455,18 +492,18 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                           size="sm"
                           onClick={() => handleSelectColor(cor)}
                           className={cn(
-                            "text-[10px] sm:text-xs h-5 sm:h-7 gap-0.5 sm:gap-1.5 px-1.5 sm:px-2.5",
-                            isHighlighted && !isSelected && "ring-1 sm:ring-2 ring-primary"
+                            "text-xs h-7 gap-1.5 px-2.5",
+                            isHighlighted && !isSelected && "ring-2 ring-primary"
                           )}
                         >
                           <span 
-                            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-background shadow-sm flex-shrink-0"
+                            className="w-3 h-3 rounded-full border border-background shadow-sm flex-shrink-0"
                             style={{ 
                               backgroundColor: COLOR_MAP[cor] || "#94A3B8",
                               boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
                             }}
                           />
-                          <span className="hidden sm:inline">{cor}</span>
+                          {cor}
                         </Button>
                       );
                     })}
@@ -474,16 +511,16 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                 </div>
                 
                 {corSelecionada && (
-                  <div className="mt-1 sm:mt-2">
-                    <p className="text-[10px] sm:text-xs font-medium text-muted-foreground mb-0.5 sm:mb-1">Tam:</p>
-                    <div className="flex flex-wrap gap-0.5 sm:gap-1">
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
+                    <div className="flex flex-wrap gap-1">
                       {tamanhosDisponiveis.map((tamanho) => (
                         <Button
                           key={tamanho}
                           variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                           size="sm"
                           onClick={() => setTamanhoSelecionado(tamanho)}
-                          className="text-[10px] sm:text-xs h-5 sm:h-7 px-1.5 sm:px-2.5"
+                          className="text-xs h-7 px-2.5"
                         >
                           {tamanho}
                         </Button>

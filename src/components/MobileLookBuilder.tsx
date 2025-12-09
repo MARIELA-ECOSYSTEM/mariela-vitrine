@@ -257,12 +257,17 @@ export const MobileLookBuilder = () => {
       return `R$ ${preco.toFixed(2).replace('.', ',')}`;
     };
 
+    const formatItem = (produto: Produto, size: string, color: string) => {
+      const productLink = `${window.location.origin}/products/${produto.id}`;
+      return `${produto.nome} | ${size}${color ? ` - ${color}` : ""} - ${formatPreco(produto)}\n🔗 ${productLink}`;
+    };
+
     const items: string[] = [];
-    if (selectedProducts.blusa) items.push(`${selectedProducts.blusa.nome} | ${selectedSizes.blusa}${selectedColors.blusa ? ` - ${selectedColors.blusa}` : ""} - ${formatPreco(selectedProducts.blusa)}`);
-    if (selectedProducts.bottom) items.push(`${selectedProducts.bottom.nome} | ${selectedSizes.bottom}${selectedColors.bottom ? ` - ${selectedColors.bottom}` : ""} - ${formatPreco(selectedProducts.bottom)}`);
-    if (selectedProducts.bolsa) items.push(`${selectedProducts.bolsa.nome}${selectedColors.bolsa ? ` - ${selectedColors.bolsa}` : ""} - ${formatPreco(selectedProducts.bolsa)}`);
-    if (selectedProducts.vestido) items.push(`${selectedProducts.vestido.nome} | ${selectedSizes.vestido}${selectedColors.vestido ? ` - ${selectedColors.vestido}` : ""} - ${formatPreco(selectedProducts.vestido)}`);
-    if (selectedProducts.conjunto) items.push(`${selectedProducts.conjunto.nome} | ${selectedSizes.conjunto}${selectedColors.conjunto ? ` - ${selectedColors.conjunto}` : ""} - ${formatPreco(selectedProducts.conjunto)}`);
+    if (selectedProducts.blusa) items.push(formatItem(selectedProducts.blusa, selectedSizes.blusa, selectedColors.blusa));
+    if (selectedProducts.bottom) items.push(formatItem(selectedProducts.bottom, selectedSizes.bottom, selectedColors.bottom));
+    if (selectedProducts.bolsa) items.push(`${selectedProducts.bolsa.nome}${selectedColors.bolsa ? ` - ${selectedColors.bolsa}` : ""} - ${formatPreco(selectedProducts.bolsa)}\n🔗 ${window.location.origin}/products/${selectedProducts.bolsa.id}`);
+    if (selectedProducts.vestido) items.push(formatItem(selectedProducts.vestido, selectedSizes.vestido, selectedColors.vestido));
+    if (selectedProducts.conjunto) items.push(formatItem(selectedProducts.conjunto, selectedSizes.conjunto, selectedColors.conjunto));
     
     const message = `✨ Olá!\nMontei meu look dos sonhos no Site Mariela:\n\n${items.join("\n\n")}\n\n💜 Total: R$ ${totalValue.toFixed(2).replace('.', ',')}\n\nPode me auxiliar na compra? 🤩`;
     
@@ -593,30 +598,61 @@ const CategorySection = ({
               </div>
               
               {availableColors.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {availableColors.map((cor) => (
-                    <button
-                      key={cor}
-                      onClick={() => {
-                        if ('vibrate' in navigator) navigator.vibrate(10);
-                        onColorChange(cor);
-                      }}
-                      className={cn(
-                        "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all touch-feedback",
-                        selectedColor === cor
-                          ? "bg-primary text-primary-foreground animate-glow-pulse"
-                          : "bg-background border border-border hover:border-primary/50"
-                      )}
-                    >
-                      {cor}
-                      {selectedColor === cor && <Check className="h-3 w-3 ml-1 inline" />}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  {availableColors.map((cor) => {
+                    const colorHex = {
+                      "Preto": "#000000",
+                      "Branco": "#FFFFFF",
+                      "Vermelho": "#DC2626",
+                      "Azul": "#2563EB",
+                      "Verde": "#16A34A",
+                      "Amarelo": "#EAB308",
+                      "Rosa": "#EC4899",
+                      "Roxo": "#9333EA",
+                      "Laranja": "#EA580C",
+                      "Marrom": "#92400E",
+                      "Cinza": "#6B7280",
+                      "Bege": "#D4C5B9",
+                      "Nude": "#E5D4C1",
+                      "Caqui": "#BDB76B",
+                      "Vinho": "#722F37",
+                      "Mostarda": "#FFDB58",
+                      "Off White": "#F8F8F8",
+                      "Caramelo": "#C68642",
+                    }[cor] || "#94A3B8";
+                    
+                    return (
+                      <button
+                        key={cor}
+                        onClick={() => {
+                          if ('vibrate' in navigator) navigator.vibrate(10);
+                          onColorChange(cor);
+                        }}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all touch-feedback",
+                          selectedColor === cor
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-background border border-border hover:border-primary/50"
+                        )}
+                      >
+                        <span 
+                          className="w-4 h-4 rounded-full border-2 shadow-sm flex-shrink-0"
+                          style={{ 
+                            backgroundColor: colorHex,
+                            borderColor: selectedColor === cor ? "currentColor" : "rgba(0,0,0,0.1)",
+                            boxShadow: (cor === "Branco" || cor === "Off White") ? "inset 0 0 0 1px #E2E8F0" : "none"
+                          }}
+                        />
+                        {cor}
+                        {selectedColor === cor && <Check className="h-3.5 w-3.5 ml-0.5" />}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
               
               {selectedColor && availableSizes.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 sm:gap-2 animate-fade-in">
+                <div className="flex flex-wrap gap-2 animate-fade-in">
                   {availableSizes.map((tamanho) => (
                     <button
                       key={tamanho}
@@ -625,7 +661,7 @@ const CategorySection = ({
                         onSizeChange(tamanho);
                       }}
                       className={cn(
-                        "w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all touch-feedback",
+                        "min-w-[44px] h-11 px-3 rounded-lg text-sm font-semibold transition-all touch-feedback",
                         selectedSize === tamanho
                           ? "bg-primary text-primary-foreground animate-pop-in"
                           : "bg-background border border-border hover:border-primary/50"
