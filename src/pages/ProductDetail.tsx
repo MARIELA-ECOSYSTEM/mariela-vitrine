@@ -175,25 +175,30 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Header />
-      <main className="py-24 bg-background">
-        <div className="container mx-auto px-6 animate-fade-in">
-          <Breadcrumbs 
-            items={[{ label: "Produtos", path: "/products" }]} 
-            currentPage={produto.nome} 
-          />
+      <main className="pt-20 md:pt-24 pb-8 md:pb-16">
+        <div className="container mx-auto px-4 md:px-6 animate-fade-in">
+          {/* Breadcrumbs - Hidden on mobile for cleaner look */}
+          <div className="hidden md:block mb-4">
+            <Breadcrumbs 
+              items={[{ label: "Produtos", path: "/products" }]} 
+              currentPage={produto.nome} 
+            />
+          </div>
           
+          {/* Back Button - Mobile optimized */}
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => navigate(-1)}
-            className="mb-8 gap-2 hover:scale-105 transition-all"
+            className="mb-4 md:mb-6 gap-1.5 hover:scale-105 transition-all -ml-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Voltar
+            <span className="text-sm">Voltar</span>
           </Button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12 max-w-6xl mx-auto">
             {/* Galeria de Imagens */}
             <div className="animate-fade-in">
               <ImageGallery
@@ -207,92 +212,135 @@ const ProductDetail = () => {
             </div>
 
             {/* Product Info */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
+              {/* Nome do Produto */}
               <div>
-                <h1 className="font-serif text-4xl font-bold mb-4 text-foreground">
+                <h1 className="font-serif text-2xl md:text-4xl font-bold text-foreground leading-tight">
                   {produto.nome}
                 </h1>
               </div>
 
-              <div className="flex items-center gap-3">
+              {/* Preço */}
+              <div className="flex items-baseline gap-3 flex-wrap">
                 {produto.emPromocao && precoOriginalFormatado && (
-                  <p className="text-2xl text-muted-foreground line-through">
+                  <p className="text-lg md:text-2xl text-muted-foreground line-through">
                     {precoOriginalFormatado}
                   </p>
                 )}
-                <p className={`text-4xl font-bold ${produto.emPromocao ? 'text-destructive' : 'text-primary'}`}>
+                <p className={`text-3xl md:text-4xl font-bold ${produto.emPromocao ? 'text-destructive' : 'text-primary'}`}>
                   {precoFormatado}
                 </p>
-              </div>
-
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                {produto.descricao}
-              </p>
-
-              <div className="border-t border-b border-border py-6 space-y-6">
-                <div>
-                  <p className="font-medium mb-2">Categoria</p>
-                  <Badge variant="secondary" className="capitalize">
-                    {produto.categoria}
+                {produto.emPromocao && (
+                  <Badge variant="destructive" className="text-xs">
+                    Economia de R$ {(produto.precoVenda - (produto.precoPromocional || 0)).toFixed(2).replace('.', ',')}
                   </Badge>
-                </div>
-
-                {!isAcessorio && (
-                  <>
-                    <div>
-                      <p className="font-medium text-lg mb-3">Selecione a Cor:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {coresDisponiveis.map((cor) => (
-                          <Button
-                            key={cor}
-                            variant={corSelecionada === cor ? "default" : "outline"}
-                            size="lg"
-                            onClick={() => {
-                              setCorSelecionada(cor);
-                              setTamanhoSelecionado("");
-                            }}
-                            className="transition-all hover:scale-105 gap-2"
-                          >
-                            <span 
-                              className="w-4 h-4 rounded-full border-2 border-background shadow-sm"
-                              style={{ 
-                                backgroundColor: COLOR_MAP[cor] || "#94A3B8",
-                                boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
-                              }}
-                            />
-                            {cor}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {corSelecionada && (
-                      <div>
-                        <p className="font-medium text-lg mb-3">Selecione o Tamanho:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {tamanhosDisponiveis.map((tamanho) => (
-                            <Button
-                              key={tamanho}
-                              variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                              size="lg"
-                              onClick={() => setTamanhoSelecionado(tamanho)}
-                              className="transition-all hover:scale-105"
-                            >
-                              {tamanho}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
                 )}
               </div>
 
-              <div className="space-y-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              {/* Descrição */}
+              <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+                {produto.descricao}
+              </p>
+
+              {/* Categoria Badge */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Categoria:</span>
+                <Badge variant="secondary" className="capitalize">
+                  {produto.categoria}
+                </Badge>
+              </div>
+
+              {/* Seleção de Variantes */}
+              {!isAcessorio && (
+                <div className="space-y-5 pt-2">
+                  {/* Seletor de Cor */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm md:text-base">
+                        Cor: <span className="text-primary font-semibold">{corSelecionada || "Selecione"}</span>
+                      </p>
+                      {corSelecionada && (
+                        <span className="text-xs text-muted-foreground">
+                          {coresDisponiveis.length} {coresDisponiveis.length === 1 ? 'cor disponível' : 'cores disponíveis'}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Grid de Cores - Mobile optimized */}
+                    <div className="flex flex-wrap gap-2">
+                      {coresDisponiveis.map((cor) => (
+                        <button
+                          key={cor}
+                          onClick={() => {
+                            setCorSelecionada(cor);
+                            setTamanhoSelecionado("");
+                          }}
+                          className={`group flex items-center gap-2 px-3 py-2 rounded-full border-2 transition-all active:scale-95 ${
+                            corSelecionada === cor
+                              ? "border-primary bg-primary/10 shadow-md"
+                              : "border-border hover:border-primary/50 bg-background"
+                          }`}
+                        >
+                          <span 
+                            className={`w-5 h-5 rounded-full border-2 shadow-inner transition-transform group-hover:scale-110 ${
+                              corSelecionada === cor ? "border-primary" : "border-muted"
+                            }`}
+                            style={{ 
+                              backgroundColor: COLOR_MAP[cor] || "#94A3B8",
+                              boxShadow: (cor === "Branco" || cor === "Off White") 
+                                ? "inset 0 0 0 1px #E2E8F0, 0 1px 2px rgba(0,0,0,0.1)" 
+                                : "inset 0 1px 2px rgba(0,0,0,0.2)"
+                            }}
+                          />
+                          <span className={`text-sm font-medium ${
+                            corSelecionada === cor ? "text-primary" : "text-foreground"
+                          }`}>
+                            {cor}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Seletor de Tamanho */}
+                  {corSelecionada && (
+                    <div className="space-y-3 animate-fade-in">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-sm md:text-base">
+                          Tamanho: <span className="text-primary font-semibold">{tamanhoSelecionado || "Selecione"}</span>
+                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          {tamanhosDisponiveis.length} {tamanhosDisponiveis.length === 1 ? 'tamanho disponível' : 'tamanhos disponíveis'}
+                        </span>
+                      </div>
+                      
+                      {/* Grid de Tamanhos - Mobile friendly */}
+                      <div className="flex flex-wrap gap-2">
+                        {tamanhosDisponiveis.map((tamanho) => (
+                          <button
+                            key={tamanho}
+                            onClick={() => setTamanhoSelecionado(tamanho)}
+                            className={`min-w-[48px] h-12 px-4 rounded-lg border-2 font-semibold transition-all active:scale-95 ${
+                              tamanhoSelecionado === tamanho
+                                ? "border-primary bg-primary text-primary-foreground shadow-md"
+                                : "border-border hover:border-primary/50 bg-background text-foreground"
+                            }`}
+                          >
+                            {tamanho}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Botões de Ação */}
+              <div className="space-y-3 pt-4">
                 <Button
                   size="lg"
                   onClick={handleAdicionarCarrinho}
-                  className="w-full gap-2 text-lg py-6 transition-all hover:scale-105 hover:shadow-hover"
+                  className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <ShoppingCart className="h-5 w-5" />
                   Adicionar ao Carrinho
@@ -301,11 +349,18 @@ const ProductDetail = () => {
                   size="lg"
                   variant="outline"
                   onClick={handleWhatsApp}
-                  className="w-full gap-2 text-lg py-6 transition-all hover:scale-105"
+                  className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] active:scale-[0.98] border-2"
                 >
                   <MessageCircle className="h-5 w-5" />
                   Comprar pelo WhatsApp
                 </Button>
+              </div>
+
+              {/* Info adicional mobile */}
+              <div className="md:hidden pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground text-center">
+                  Toque na imagem para ampliar • Deslize para ver mais fotos
+                </p>
               </div>
             </div>
           </div>
