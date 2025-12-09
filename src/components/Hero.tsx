@@ -96,7 +96,7 @@ export const Hero = () => {
                     rel="noopener noreferrer"
                   >
                     <Instagram className="h-5 w-5 mr-2" />
-                    <span className="hidden sm:inline">Instagram</span>
+                    <span className="inline">Instagram</span>
                   </a>
                 </Button>
               </div>

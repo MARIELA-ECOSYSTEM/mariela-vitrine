@@ -170,7 +170,8 @@ const ProductDetail = () => {
       return;
     }
     
-    const message = `✨ Olá! 👋\nVi a peça ${produto.nome} | ${corParaUsar} | ${tamanhoParaUsar} - ${precoFormatado} no Site Mariela 🤩\nAinda tá disponível?`;
+    const productLink = `${window.location.origin}/products/${produto.id}`;
+    const message = `✨ Olá! 👋\nVi a peça ${produto.nome} | ${corParaUsar} | ${tamanhoParaUsar} - ${precoFormatado} no Site Mariela 🤩\n\n🔗 Link do produto: ${productLink}\n\nAinda tá disponível?`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
