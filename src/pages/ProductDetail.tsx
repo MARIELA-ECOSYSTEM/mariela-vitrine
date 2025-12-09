@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ImageGallery } from "@/components/ImageGallery";
+import { SizeGuide } from "@/components/SizeGuide";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useProducts } from "@/hooks/useProducts";
@@ -242,12 +243,15 @@ const ProductDetail = () => {
                 {produto.descricao}
               </p>
 
-              {/* Categoria Badge */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Categoria:</span>
-                <Badge variant="secondary" className="capitalize">
-                  {produto.categoria}
-                </Badge>
+              {/* Categoria Badge + Guia de Medidas */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Categoria:</span>
+                  <Badge variant="secondary" className="capitalize">
+                    {produto.categoria}
+                  </Badge>
+                </div>
+                {!isAcessorio && <SizeGuide categoria={produto.categoria} />}
               </div>
 
               {/* Seleção de Variantes */}
