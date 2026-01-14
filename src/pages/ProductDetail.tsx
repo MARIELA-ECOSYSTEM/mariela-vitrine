@@ -68,6 +68,19 @@ const ProductDetail = () => {
     return Array.from(tamanhos);
   }, [produto, corSelecionada]);
 
+  // Mapa de cores para tamanhos disponíveis
+  const coresTamanhosMap = useMemo(() => {
+    if (!produto) return {};
+    const map: Record<string, string[]> = {};
+    produto.variants
+      .filter(v => v.disponibilidade > 0)
+      .forEach(v => {
+        if (!map[v.cor]) map[v.cor] = [];
+        if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
+      });
+    return map;
+  }, [produto]);
+
   // Sempre mostrar todas as imagens no carrossel
   const imagensParaMostrar = useMemo(() => {
     if (!produto) return [];
@@ -271,39 +284,54 @@ const ProductDetail = () => {
                       )}
                     </div>
                     
-                    {/* Grid de Cores - Mobile optimized */}
-                    <div className="flex flex-wrap gap-2">
-                      {coresDisponiveis.map((cor) => (
-                        <button
-                          key={cor}
-                          onClick={() => {
-                            setCorSelecionada(cor);
-                            setTamanhoSelecionado("");
-                          }}
-                          className={`group flex items-center gap-2 px-3 py-2 rounded-full border-2 transition-all active:scale-95 ${
-                            corSelecionada === cor
-                              ? "border-primary bg-primary/10 shadow-md"
-                              : "border-border hover:border-primary/50 bg-background"
-                          }`}
-                        >
-                          <span 
-                            className={`w-5 h-5 rounded-full border-2 shadow-inner transition-transform group-hover:scale-110 ${
-                              corSelecionada === cor ? "border-primary" : "border-muted"
-                            }`}
-                            style={{ 
-                              backgroundColor: COLOR_MAP[cor] || "#94A3B8",
-                              boxShadow: (cor === "Branco" || cor === "Off White") 
-                                ? "inset 0 0 0 1px #E2E8F0, 0 1px 2px rgba(0,0,0,0.1)" 
-                                : "inset 0 1px 2px rgba(0,0,0,0.2)"
+                    {/* Grid de Cores com Tamanhos */}
+                    <div className="flex flex-col gap-2">
+                      {coresDisponiveis.map((cor) => {
+                        const tamanhosDaCor = coresTamanhosMap[cor] || [];
+                        const isSelected = corSelecionada === cor;
+                        
+                        return (
+                          <button
+                            key={cor}
+                            onClick={() => {
+                              setCorSelecionada(cor);
+                              setTamanhoSelecionado("");
                             }}
-                          />
-                          <span className={`text-sm font-medium ${
-                            corSelecionada === cor ? "text-primary" : "text-foreground"
-                          }`}>
-                            {cor}
-                          </span>
-                        </button>
-                      ))}
+                            className={`group flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98] ${
+                              isSelected
+                                ? "border-primary bg-primary/10 shadow-md"
+                                : "border-border hover:border-primary/50 bg-background"
+                            }`}
+                          >
+                            <span 
+                              className={`w-6 h-6 rounded-full border-2 shadow-inner transition-transform group-hover:scale-110 flex-shrink-0 ${
+                                isSelected ? "border-primary" : "border-muted"
+                              }`}
+                              style={{ 
+                                backgroundColor: COLOR_MAP[cor] || "#94A3B8",
+                                boxShadow: (cor === "Branco" || cor === "Off White") 
+                                  ? "inset 0 0 0 1px #E2E8F0, 0 1px 2px rgba(0,0,0,0.1)" 
+                                  : "inset 0 1px 2px rgba(0,0,0,0.2)"
+                              }}
+                            />
+                            <div className="flex flex-col items-start gap-0.5 flex-1">
+                              <span className={`text-sm font-semibold ${
+                                isSelected ? "text-primary" : "text-foreground"
+                              }`}>
+                                {cor}
+                              </span>
+                              <span className={`text-xs ${
+                                isSelected ? "text-primary/70" : "text-muted-foreground"
+                              }`}>
+                                Tamanhos: {tamanhosDaCor.join(" · ")}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <span className="text-primary text-xs font-medium">✓</span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
