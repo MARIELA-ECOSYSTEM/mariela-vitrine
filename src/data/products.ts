@@ -55,19 +55,12 @@ const ExternalProductArraySchema = z.array(ExternalProductSchema);
 
 type ExternalProduct = z.infer<typeof ExternalProductSchema>;
 
-// Validar URL de imagem (apenas HTTPS de CDNs conhecidos)
+// Validar URL de imagem (aceitar HTTP/HTTPS válidos)
 function isValidImageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    const trustedHosts = [
-      'cloudinary.com',
-      'res.cloudinary.com',
-      'images.unsplash.com',
-      'i.imgur.com',
-      'storage.googleapis.com'
-    ];
-    return parsed.protocol === 'https:' && 
-           trustedHosts.some(host => parsed.hostname.includes(host));
+    // Aceitar HTTP e HTTPS (CDNs podem usar ambos protocolos)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
   } catch {
     return false;
   }
