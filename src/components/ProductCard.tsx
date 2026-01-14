@@ -39,7 +39,13 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps) => {
-  const [corSelecionada, setCorSelecionada] = useState("");
+  // Obter a primeira cor disponível para pré-seleção
+  const primeiraCorDisponivel = useMemo(() => {
+    const variantDisponivel = produto.variants.find(v => v.disponibilidade > 0);
+    return variantDisponivel?.cor || "";
+  }, [produto.variants]);
+
+  const [corSelecionada, setCorSelecionada] = useState(primeiraCorDisponivel);
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
