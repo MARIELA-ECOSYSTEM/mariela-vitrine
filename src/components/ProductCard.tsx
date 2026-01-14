@@ -68,6 +68,18 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     return Array.from(tamanhos);
   }, [produto.variants, corSelecionada]);
 
+  // Mapa de cores para tamanhos disponíveis (para exibição resumida)
+  const coresTamanhosMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    produto.variants
+      .filter(v => v.disponibilidade > 0)
+      .forEach(v => {
+        if (!map[v.cor]) map[v.cor] = [];
+        if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
+      });
+    return map;
+  }, [produto.variants]);
+
   // Obter imagem da cor selecionada ou do índice atual
   const imagemAtual = useMemo(() => {
     if (corSelecionada) {
@@ -398,28 +410,42 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
             <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2 line-clamp-1 sm:line-clamp-2 min-h-[1rem] sm:min-h-[2.5rem] hidden xs:block">
               {produto.descricao}
             </p>
-            <div className="hidden sm:flex items-center gap-1 flex-wrap text-xs text-muted-foreground min-h-[1.25rem]">
-              <span className="font-medium">Cores:</span>
+            {/* Desktop: cores com tamanhos disponíveis */}
+            <div className="hidden sm:flex flex-col gap-1 text-xs text-muted-foreground">
               {coresDisponiveis.slice(0, 3).map((cor, index) => (
-                <span key={cor}>
-                  {cor}{index < Math.min(coresDisponiveis.length, 3) - 1 ? " |" : ""}
-                </span>
+                <div key={cor} className="flex items-center gap-1.5">
+                  <span 
+                    className="w-2.5 h-2.5 rounded-full border border-border shadow-sm flex-shrink-0"
+                    style={{ 
+                      backgroundColor: COLOR_MAP[cor] || "#94A3B8",
+                      boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
+                    }}
+                  />
+                  <span className="font-medium text-foreground">{cor}</span>
+                  <span className="text-muted-foreground">
+                    {coresTamanhosMap[cor]?.join(" · ") || ""}
+                  </span>
+                  {index < Math.min(coresDisponiveis.length, 3) - 1 && (
+                    <span className="text-border ml-auto">|</span>
+                  )}
+                </div>
               ))}
               {coresDisponiveis.length > 3 && (
-                <span className="text-primary">+{coresDisponiveis.length - 3}</span>
+                <span className="text-primary text-[11px]">+{coresDisponiveis.length - 3} cores</span>
               )}
             </div>
-            {/* Mobile: cores com label visível */}
-            <div className="flex sm:hidden flex-wrap gap-1.5 mt-1.5">
-              {coresDisponiveis.slice(0, 3).map((cor) => {
+            {/* Mobile: cores com tamanhos */}
+            <div className="flex sm:hidden flex-col gap-1 mt-1.5">
+              {coresDisponiveis.slice(0, 2).map((cor) => {
                 const isSelected = corSelecionada === cor;
                 const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
+                const tamanhosDaCor = coresTamanhosMap[cor] || [];
                 return (
                   <button
                     key={cor}
                     onClick={() => handleSelectColor(cor)}
                     className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all",
+                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left",
                       isSelected
                         ? "bg-primary text-primary-foreground"
                         : isHighlighted
@@ -434,12 +460,18 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                         boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
                       }}
                     />
-                    {cor}
+                    <span className="font-semibold">{cor}</span>
+                    <span className={cn(
+                      "text-[10px]",
+                      isSelected ? "text-primary-foreground/80" : "text-muted-foreground"
+                    )}>
+                      {tamanhosDaCor.join(" · ")}
+                    </span>
                   </button>
                 );
               })}
-              {coresDisponiveis.length > 3 && (
-                <span className="text-[10px] text-muted-foreground self-center">+{coresDisponiveis.length - 3}</span>
+              {coresDisponiveis.length > 2 && (
+                <span className="text-[10px] text-primary font-medium">+{coresDisponiveis.length - 2} cores</span>
               )}
             </div>
             
