@@ -105,8 +105,9 @@ function mapearCategoria(categoria: string): Produto['categoria'] {
 
 // Converter produto da API externa para formato interno
 function converterProduto(produtoExterno: ExternalProduct): Produto {
-  // Extrair e validar imagens de todas as variantes
+  // Extrair imagens apenas de variantes com estoque disponível
   const todasImagens = produtoExterno.variantes
+    .filter(v => v.quantidade > 0) // Apenas variantes com estoque
     .flatMap(v => v.imagens || [])
     .filter(url => isValidImageUrl(url));
   
