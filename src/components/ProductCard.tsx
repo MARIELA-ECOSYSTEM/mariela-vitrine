@@ -101,16 +101,26 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     e.preventDefault();
     e.stopPropagation();
     setSlideDirection('right');
-    setCurrentImageIndex(prev => (prev === 0 ? produto.imagens.length - 1 : prev - 1));
-    setCorSelecionada("");
+    const newIndex = currentImageIndex === 0 ? produto.imagens.length - 1 : currentImageIndex - 1;
+    setCurrentImageIndex(newIndex);
+    // Selecionar a cor da nova imagem para mostrar os tamanhos
+    if (produto.variants[newIndex]) {
+      setCorSelecionada(produto.variants[newIndex].cor);
+      setTamanhoSelecionado("");
+    }
   };
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setSlideDirection('left');
-    setCurrentImageIndex(prev => (prev === produto.imagens.length - 1 ? 0 : prev + 1));
-    setCorSelecionada("");
+    const newIndex = currentImageIndex === produto.imagens.length - 1 ? 0 : currentImageIndex + 1;
+    setCurrentImageIndex(newIndex);
+    // Selecionar a cor da nova imagem para mostrar os tamanhos
+    if (produto.variants[newIndex]) {
+      setCorSelecionada(produto.variants[newIndex].cor);
+      setTamanhoSelecionado("");
+    }
   };
 
   const handleSelectColor = (cor: string) => {
