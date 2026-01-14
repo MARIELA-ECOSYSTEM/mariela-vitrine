@@ -105,22 +105,28 @@ function mapearCategoria(categoria: string): Produto['categoria'] {
 
 // Converter produto da API externa para formato interno
 function converterProduto(produtoExterno: ExternalProduct): Produto {
-  // Extrair imagens apenas de variantes com estoque disponível
-  const todasImagens = produtoExterno.variantes
-    .filter(v => v.quantidade > 0) // Apenas variantes com estoque
+  // Considerar uma variante (cor) "com estoque" quando houver pelo menos 1 tamanho com quantidade > 0
+  const variantesComEstoque = produtoExterno.variantes.filter(v =>
+    v.tamanhos?.some(t => t.quantidade > 0)
+  );
+
+  // Extrair imagens apenas de variantes com estoque
+  const todasImagens = variantesComEstoque
     .flatMap(v => v.imagens || [])
     .filter(url => isValidImageUrl(url));
   
-  // Criar lista de variants (um para cada combinação de cor e tamanho)
+  // Criar lista de variants (um para cada combinação de cor e tamanho) - somente com estoque
   const variants: VarianteProduto[] = [];
-  produtoExterno.variantes.forEach(variante => {
-    variante.tamanhos.forEach(tamanhoInfo => {
-      variants.push({
-        tamanho: sanitizeString(tamanhoInfo.tamanho),
-        cor: sanitizeString(variante.cor),
-        disponibilidade: tamanhoInfo.quantidade
+  variantesComEstoque.forEach(variante => {
+    variante.tamanhos
+      .filter(tamanhoInfo => tamanhoInfo.quantidade > 0)
+      .forEach(tamanhoInfo => {
+        variants.push({
+          tamanho: sanitizeString(tamanhoInfo.tamanho),
+          cor: sanitizeString(variante.cor),
+          disponibilidade: tamanhoInfo.quantidade
+        });
       });
-    });
   });
 
   return {
