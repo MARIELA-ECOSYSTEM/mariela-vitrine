@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Hand, Maximize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Hand } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ProductImageSkeleton } from "@/components/ProductImageSkeleton";
 import produtoGenerico from "@/assets/produto-generico.png";
 
 interface ImageGalleryProps {
@@ -111,11 +112,11 @@ export const ImageGallery = ({
           className="relative h-full overflow-hidden cursor-pointer"
           onClick={() => setIsDialogOpen(true)}
         >
-          <img
+          <ProductImageSkeleton
             src={imagensValidas[indiceAtual]}
             alt={`${productName} - imagem ${indiceAtual + 1}`}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            key={indiceAtual}
+            className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+            priority={indiceAtual === 0}
           />
           
           {/* Overlay com botão de zoom */}
