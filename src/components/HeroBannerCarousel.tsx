@@ -68,7 +68,7 @@ export const HeroBannerCarousel = () => {
   }, [next]);
 
   return (
-    <section className="relative w-full h-[22vh] sm:h-[30vh] md:h-[38vh] lg:h-[42vh] overflow-hidden">
+    <section className="relative w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] overflow-hidden mt-[52px] sm:mt-[64px]">
       {banners.map((banner, index) => (
         <div
           key={banner.id}
