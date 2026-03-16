@@ -8,7 +8,6 @@ import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useProducts } from "@/hooks/useProducts";
 import { Link } from "react-router-dom";
-import { ArrowRight, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
