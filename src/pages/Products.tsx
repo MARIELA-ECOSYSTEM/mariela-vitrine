@@ -15,6 +15,7 @@ import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw } from "lucide-react";
 import { CATEGORIAS_DB } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { CATEGORIAS_DB } from "@/data/categories";
 import {
   Select,
   SelectContent,
@@ -22,6 +23,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const categoryEmojis: Record<string, string> = {
+  "vestidos": "👗",
+  "blusas": "👚",
+  "calças": "👖",
+  "saias": "🩱",
+  "shorts": "🩳",
+  "short-saias": "✨",
+  "conjuntos": "💎",
+  "bolsas": "👜",
+  "acessorios": "💍",
+};
 
 const Products = () => {
   const { produtos, loading, isFromCache, forceRefresh } = useProducts();
