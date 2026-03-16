@@ -357,9 +357,9 @@ const Products = () => {
                   />
                 </div>
 
-                {/* Contador - Centro (escondido em telas muito pequenas) */}
+                {/* Contador com formato paginado */}
                 <span className="hidden xs:block text-xs sm:text-sm font-medium text-muted-foreground order-3 sm:order-2 w-full sm:w-auto text-center">
-                  {produtosOrdenados.length} {produtosOrdenados.length === 1 ? 'produto' : 'produtos'}
+                  {Math.min((paginaAtual - 1) * produtosPorPagina + 1, produtosOrdenados.length)}-{Math.min(paginaAtual * produtosPorPagina, produtosOrdenados.length)}/{produtosOrdenados.length} produtos
                 </span>
 
                 {/* Ordenação e Visualização - Direita */}
