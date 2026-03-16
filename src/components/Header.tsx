@@ -302,6 +302,24 @@ export const Header = () => {
             >
               Contato
             </Link>
+            
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors py-1"
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="h-4 w-4" />
+                  Modo Claro
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4" />
+                  Modo Escuro
+                </>
+              )}
+            </button>
           </div>
         )}
         </div>
