@@ -82,7 +82,7 @@ export const HeroBannerCarousel = () => {
             alt={banner.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
           
           <div className="absolute inset-0 flex items-end z-20">
             <div className="container mx-auto px-4 sm:px-6 pb-12 sm:pb-16 md:pb-20">
