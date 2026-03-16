@@ -34,16 +34,16 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, l
   if (!loading && displayed.length === 0) return null;
 
   return (
-    <section className="py-10 sm:py-14 bg-background">
+    <section className="py-6 sm:py-10 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="flex items-end justify-between mb-6 sm:mb-8">
+        <div className="flex items-end justify-between mb-4 sm:mb-6">
           <div>
-            <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            <h2 className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-foreground">
               {title}
             </h2>
             {subtitle && (
-              <p className="text-muted-foreground text-sm sm:text-base mt-1">
+              <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
                 {subtitle}
               </p>
             )}
@@ -59,13 +59,13 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, l
 
         {/* Products Grid */}
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <ProductSkeleton key={i} />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
             {displayed.map((produto) => (
               <ProductCard key={produto.id} produto={produto} />
             ))}
@@ -73,11 +73,11 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, l
         )}
 
         {/* Mobile CTA */}
-        <div className="mt-6 text-center sm:hidden">
-          <Button variant="outline" className="gap-2 rounded-none h-11" asChild>
+        <div className="mt-4 text-center sm:hidden">
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-none h-9 text-xs" asChild>
             <Link to={linkTo}>
               {linkLabel}
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
         </div>
