@@ -11,7 +11,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw } from "lucide-react";
+import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
