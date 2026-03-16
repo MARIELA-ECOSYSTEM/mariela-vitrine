@@ -19,7 +19,7 @@ interface Banner {
 const banners: Banner[] = [
   {
     id: 1,
-    image: storeInterior,
+    image: bannerNovidades,
     title: "Nova Coleção",
     subtitle: "Peças exclusivas para todos os estilos",
     cta: "Ver Novidades",
