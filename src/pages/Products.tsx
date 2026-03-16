@@ -317,31 +317,33 @@ const Products = () => {
           {/* Área de Produtos */}
           <div>
               {/* Barra de Controles */}
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                {/* Filtros */}
-                <ProductFilters
-                  categoriaSelecionada={categoriaSelecionada}
-                  setCategoriaSelecionada={setCategoriaSelecionada}
-                  coresSelecionadas={coresSelecionadas}
-                  setCoresSelecionadas={setCoresSelecionadas}
-                  tamanhosSelecionados={tamanhosSelecionados}
-                  setTamanhosSelecionados={setTamanhosSelecionados}
-                  faixaPreco={faixaPreco}
-                  setFaixaPreco={setFaixaPreco}
-                  coresDisponiveis={coresDisponiveis}
-                  tamanhosDisponiveis={tamanhosDisponiveis}
-                  precoMin={precoMin}
-                  precoMax={precoMax}
-                  categoriasCount={categoriasCount}
-                  produtos={produtos}
-                  produtosFiltradosParcial={produtosFiltradosParcial}
-                  onLimparFiltros={handleLimparFiltros}
-                  setPaginaAtual={setPaginaAtual}
-                  activeFiltersCount={activeFiltersCount}
-                />
+              <div className="flex flex-wrap gap-2 sm:gap-4 justify-between items-center mb-4 sm:mb-6">
+                {/* Botão Filtros - Esquerda */}
+                <div className="order-1">
+                  <ProductFilters
+                    categoriaSelecionada={categoriaSelecionada}
+                    setCategoriaSelecionada={setCategoriaSelecionada}
+                    coresSelecionadas={coresSelecionadas}
+                    setCoresSelecionadas={setCoresSelecionadas}
+                    tamanhosSelecionados={tamanhosSelecionados}
+                    setTamanhosSelecionados={setTamanhosSelecionados}
+                    faixaPreco={faixaPreco}
+                    setFaixaPreco={setFaixaPreco}
+                    coresDisponiveis={coresDisponiveis}
+                    tamanhosDisponiveis={tamanhosDisponiveis}
+                    precoMin={precoMin}
+                    precoMax={precoMax}
+                    categoriasCount={categoriasCount}
+                    produtos={produtos}
+                    produtosFiltradosParcial={produtosFiltradosParcial}
+                    onLimparFiltros={handleLimparFiltros}
+                    setPaginaAtual={setPaginaAtual}
+                    activeFiltersCount={activeFiltersCount}
+                  />
+                </div>
 
-                {/* Promoção e Novidades */}
-                <div className="flex gap-1.5 flex-1 min-w-0">
+                {/* Botões Promoção e Novidades */}
+                <div className="flex gap-1.5 sm:gap-2 order-3 sm:order-2">
                   <Button
                     variant={mostrarPromocao ? "default" : "outline"}
                     onClick={() => {
@@ -351,14 +353,13 @@ const Products = () => {
                     }}
                     size="sm"
                     className={cn(
-                      "gap-1 rounded-full px-2 sm:px-3 h-8 sm:h-9 text-[11px] sm:text-sm flex-shrink-0",
+                      "gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm",
                       mostrarPromocao && "shadow-md"
                     )}
                   >
-                    <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-                    <span className="hidden xs:inline">Promoção</span>
-                    <span className="xs:hidden">Promo</span>
-                    <Badge variant={mostrarPromocao ? "secondary" : "outline"} className="ml-0 h-4 px-1 text-[9px] sm:text-[10px]">
+                    <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Promoção
+                    <Badge variant={mostrarPromocao ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
                       {produtos.filter(p => p.emPromocao).length}
                     </Badge>
                   </Button>
@@ -371,23 +372,22 @@ const Products = () => {
                     }}
                     size="sm"
                     className={cn(
-                      "gap-1 rounded-full px-2 sm:px-3 h-8 sm:h-9 text-[11px] sm:text-sm flex-shrink-0",
+                      "gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm",
                       mostrarNovidades && "shadow-md"
                     )}
                   >
-                    <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-                    <span className="hidden xs:inline">Novidades</span>
-                    <span className="xs:hidden">Novo</span>
-                    <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0 h-4 px-1 text-[9px] sm:text-[10px]">
+                    <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Novidades
+                    <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
                       {produtos.filter(p => p.isNovidade).length}
                     </Badge>
                   </Button>
                 </div>
 
-                {/* Ordenação e Visualização */}
-                <div className="flex gap-1.5 sm:gap-2 flex-shrink-0 ml-auto">
+                {/* Ordenação e Visualização - Direita */}
+                <div className="flex gap-1.5 sm:gap-2 order-2 sm:order-3">
                   <Select value={ordenarPor} onValueChange={setOrdenarPor}>
-                    <SelectTrigger className="w-[100px] sm:w-[160px] h-8 sm:h-10 text-[11px] sm:text-sm">
+                    <SelectTrigger className="w-[120px] sm:w-[180px] h-8 sm:h-10 text-xs sm:text-sm">
                       <SelectValue placeholder="Ordenar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -397,7 +397,8 @@ const Products = () => {
                     </SelectContent>
                   </Select>
                   
-                  <div className="hidden sm:flex border border-border rounded-lg overflow-hidden">
+                  {/* Toggle de visualização - escondido em mobile muito pequeno */}
+                  <div className="hidden xs:flex border border-border rounded-lg overflow-hidden">
                     <Button
                       variant={visualizacao === "grade" ? "default" : "ghost"}
                       size="icon"
