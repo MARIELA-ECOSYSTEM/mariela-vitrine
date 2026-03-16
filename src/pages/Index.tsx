@@ -1,8 +1,8 @@
 import { Header } from "@/components/Header";
-import { Hero } from "@/components/Hero";
-import { NewArrivalsSection } from "@/components/NewArrivalsSection";
-import { PromotionsSection } from "@/components/PromotionsSection";
-import { ContactSection } from "@/components/ContactSection";
+import { HeroBannerCarousel } from "@/components/HeroBannerCarousel";
+import { CategoryNav } from "@/components/CategoryNav";
+import { FeaturedProducts } from "@/components/FeaturedProducts";
+import { QuickActions } from "@/components/QuickActions";
 import { Footer } from "@/components/Footer";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
@@ -10,16 +10,31 @@ import { useProducts } from "@/hooks/useProducts";
 
 const Index = () => {
   const { loading } = useProducts();
-  
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       {loading && <LoadingOverlay />}
       <WelcomeDialog />
       <Header />
-      <Hero />
-      <NewArrivalsSection />
-      <PromotionsSection />
-      <ContactSection />
+      <HeroBannerCarousel />
+      <CategoryNav />
+      <FeaturedProducts
+        title="Novidades"
+        subtitle="Recém-chegadas à coleção"
+        filter="novidades"
+        limit={8}
+        linkTo="/products?filter=novidades"
+        linkLabel="Ver todas as novidades"
+      />
+      <FeaturedProducts
+        title="Promoções"
+        subtitle="Descontos em peças selecionadas"
+        filter="promocoes"
+        limit={4}
+        linkTo="/products?filter=promocoes"
+        linkLabel="Ver todas as promoções"
+      />
+      <QuickActions />
       <Footer />
     </div>
   );
