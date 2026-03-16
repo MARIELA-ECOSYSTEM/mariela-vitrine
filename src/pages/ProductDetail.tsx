@@ -190,9 +190,9 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-[52px] sm:pt-[60px]">
       <Header />
-      <main className="pt-20 md:pt-24 pb-8 md:pb-16">
+      <main className="pb-8 md:pb-16">
         <div className="container mx-auto px-4 md:px-6 animate-fade-in">
           {/* Breadcrumbs - Hidden on mobile for cleaner look */}
           <div className="hidden md:block mb-4">
