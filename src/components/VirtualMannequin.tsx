@@ -48,7 +48,7 @@ interface LastAction {
 export const VirtualMannequin = () => {
   const { produtos } = useProducts();
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
-  const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const actionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [selectedItems, setSelectedItems] = useState<SelectedItems>({
     blusa: null,
