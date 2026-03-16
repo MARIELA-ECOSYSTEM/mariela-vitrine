@@ -24,7 +24,6 @@ export const CategoryNav = () => {
             <Link
               key={cat.value}
               to={`/products?categoria=${cat.value}`}
-              onClick={(e) => { e.preventDefault(); window.location.href = `/products?categoria=${cat.value}`; }}
               className="flex flex-col items-center gap-2 min-w-[64px] sm:min-w-[80px] group"
             >
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-secondary flex items-center justify-center text-2xl sm:text-3xl group-hover:bg-primary/10 group-hover:scale-110 transition-all duration-300 border border-border group-hover:border-primary/30">
