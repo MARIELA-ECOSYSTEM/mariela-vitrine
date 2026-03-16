@@ -82,25 +82,19 @@ export const HeroBannerCarousel = () => {
             alt={banner.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           
           <div className="absolute inset-0 flex items-end z-20">
-            <div className="container mx-auto px-4 sm:px-6 pb-12 sm:pb-16 md:pb-20">
+            <div className="container mx-auto px-4 sm:px-6 pb-8 sm:pb-12 md:pb-16">
               <div
                 className={cn(
-                  "max-w-lg transition-all duration-700 delay-200",
+                  "transition-all duration-700 delay-200",
                   index === current ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
                 )}
               >
-                <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white mb-2 sm:mb-3 leading-tight">
-                  {banner.title}
-                </h2>
-                <p className="text-white/80 text-sm sm:text-base md:text-lg mb-4 sm:mb-6">
-                  {banner.subtitle}
-                </p>
                 <Button
                   size="lg"
-                  className="bg-white text-foreground hover:bg-white/90 h-11 sm:h-12 px-6 sm:px-8 text-sm sm:text-base font-medium rounded-none"
+                  className="bg-white text-foreground hover:bg-white/90 h-11 sm:h-12 px-6 sm:px-8 text-sm sm:text-base font-medium rounded-none shadow-lg"
                   asChild
                 >
                   <Link to={banner.link}>{banner.cta}</Link>
