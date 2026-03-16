@@ -11,7 +11,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw } from "lucide-react";
+import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
@@ -282,6 +282,33 @@ const Products = () => {
 
           {/* Category Icons */}
           <div className="flex gap-3 sm:gap-5 overflow-x-auto pb-2 scrollbar-hide justify-start sm:justify-center mb-6 sm:mb-8 px-2">
+            {/* Ver Todos - destacado */}
+            <button
+              onClick={() => {
+                setCategoriaSelecionada("todas");
+                setPaginaAtual(1);
+              }}
+              className={cn(
+                "flex flex-col items-center gap-1.5 min-w-[56px] sm:min-w-[72px] group transition-all",
+                categoriaSelecionada === "todas" && "scale-105"
+              )}
+            >
+              <div className={cn(
+                "w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-300 border",
+                categoriaSelecionada === "todas"
+                  ? "bg-primary border-primary shadow-lg text-primary-foreground"
+                  : "bg-primary/10 border-primary/30 text-primary group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110 group-hover:shadow-lg"
+              )}>
+                <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <span className={cn(
+                "text-[10px] sm:text-xs transition-colors font-medium whitespace-nowrap",
+                categoriaSelecionada === "todas" ? "text-primary font-semibold" : "text-muted-foreground group-hover:text-primary"
+              )}>
+                Ver Todos
+              </span>
+            </button>
+
             {CATEGORIAS_DB.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
               <button
                 key={cat.value}
