@@ -312,53 +312,7 @@ const Products = () => {
             ))}
           </div>
 
-          {/* Filtros Rápidos - Promoção e Novidades - Badge Style */}
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 animate-fade-in px-2">
-            <Button
-              variant={mostrarPromocao ? "default" : "outline"}
-              onClick={() => {
-                setMostrarPromocao(!mostrarPromocao);
-                setMostrarNovidades(false);
-                setPaginaAtual(1);
-              }}
-              size="sm"
-              className={cn(
-                "gap-1.5 sm:gap-2 transition-all hover:scale-105 rounded-full px-3 sm:px-5 h-9 sm:h-10 text-xs sm:text-sm touch-feedback",
-                mostrarPromocao && "shadow-md"
-              )}
-            >
-              <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Promoção
-              <Badge 
-                variant={mostrarPromocao ? "secondary" : "outline"}
-                className="ml-0.5 h-5 px-1.5 text-[10px] sm:text-xs"
-              >
-                {produtos.filter(p => p.emPromocao).length}
-              </Badge>
-            </Button>
-            <Button
-              variant={mostrarNovidades ? "default" : "outline"}
-              onClick={() => {
-                setMostrarNovidades(!mostrarNovidades);
-                setMostrarPromocao(false);
-                setPaginaAtual(1);
-              }}
-              size="sm"
-              className={cn(
-                "gap-1.5 sm:gap-2 transition-all hover:scale-105 rounded-full px-3 sm:px-5 h-9 sm:h-10 text-xs sm:text-sm touch-feedback",
-                mostrarNovidades && "shadow-md"
-              )}
-            >
-              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Novidades
-              <Badge 
-                variant={mostrarNovidades ? "secondary" : "outline"}
-                className="ml-0.5 h-5 px-1.5 text-[10px] sm:text-xs"
-              >
-                {produtos.filter(p => p.isNovidade).length}
-              </Badge>
-            </Button>
-          </div>
+
 
           {/* Área de Produtos */}
           <div>
@@ -388,10 +342,47 @@ const Products = () => {
                   />
                 </div>
 
-                {/* Contador com formato paginado */}
-                <span className="hidden xs:block text-xs sm:text-sm font-medium text-muted-foreground order-3 sm:order-2 w-full sm:w-auto text-center">
-                  {Math.min((paginaAtual - 1) * produtosPorPagina + 1, produtosOrdenados.length)}-{Math.min(paginaAtual * produtosPorPagina, produtosOrdenados.length)}/{produtosOrdenados.length} produtos
-                </span>
+                {/* Botões Promoção e Novidades */}
+                <div className="flex gap-1.5 sm:gap-2 order-3 sm:order-2">
+                  <Button
+                    variant={mostrarPromocao ? "default" : "outline"}
+                    onClick={() => {
+                      setMostrarPromocao(!mostrarPromocao);
+                      setMostrarNovidades(false);
+                      setPaginaAtual(1);
+                    }}
+                    size="sm"
+                    className={cn(
+                      "gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm",
+                      mostrarPromocao && "shadow-md"
+                    )}
+                  >
+                    <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Promoção
+                    <Badge variant={mostrarPromocao ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
+                      {produtos.filter(p => p.emPromocao).length}
+                    </Badge>
+                  </Button>
+                  <Button
+                    variant={mostrarNovidades ? "default" : "outline"}
+                    onClick={() => {
+                      setMostrarNovidades(!mostrarNovidades);
+                      setMostrarPromocao(false);
+                      setPaginaAtual(1);
+                    }}
+                    size="sm"
+                    className={cn(
+                      "gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm",
+                      mostrarNovidades && "shadow-md"
+                    )}
+                  >
+                    <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Novidades
+                    <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
+                      {produtos.filter(p => p.isNovidade).length}
+                    </Badge>
+                  </Button>
+                </div>
 
                 {/* Ordenação e Visualização - Direita */}
                 <div className="flex gap-1.5 sm:gap-2 order-2 sm:order-3">
@@ -465,9 +456,16 @@ const Products = () => {
                       ))}
                   </div>
 
+                  {/* Contador */}
+                  <div className="text-center mt-8">
+                    <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+                      {Math.min((paginaAtual - 1) * produtosPorPagina + 1, produtosOrdenados.length)}-{Math.min(paginaAtual * produtosPorPagina, produtosOrdenados.length)}/{produtosOrdenados.length} produtos
+                    </span>
+                  </div>
+
                   {/* Paginação */}
                   {produtosOrdenados.length > produtosPorPagina && (
-                    <div className="flex items-center justify-center gap-2 mt-12 animate-fade-in">
+                    <div className="flex items-center justify-center gap-2 mt-4 animate-fade-in">
                       <Button
                         variant="outline"
                         onClick={() => {
