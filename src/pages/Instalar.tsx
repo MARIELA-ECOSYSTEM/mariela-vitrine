@@ -256,7 +256,7 @@ export default function Instalar() {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/20 to-background">
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 max-w-2xl pt-24">
+      <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 max-w-2xl pt-16 sm:pt-20">
         {/* Hero Section */}
         <div className="text-center mb-6 animate-fade-in">
           <div className="relative inline-block mb-4">
