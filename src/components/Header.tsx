@@ -125,17 +125,23 @@ export const Header = () => {
       <header className={`fixed left-0 right-0 z-50 bg-background border-b border-border/50 animate-fade-in-down ${showInstallBanner && isMobile ? 'top-10' : 'top-0'}`}>
         <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3">
         <div className="flex items-center justify-between">
-          {/* Logo Text - Following Reference Pattern */}
+          {/* Logo */}
           <button 
             onClick={handleLogoClick}
             className="flex items-center gap-2 group" 
             aria-label="Atualizar produtos e ir para o início"
           >
-            <div className="flex flex-col items-start">
-              <span className="font-serif text-xl sm:text-2xl font-bold text-primary leading-tight">
+            {/* Logo image on mobile, text on desktop */}
+            <img 
+              src={logoMariela} 
+              alt="Mariela Moda Feminina" 
+              className="h-8 sm:hidden object-contain"
+            />
+            <div className="hidden sm:flex flex-col items-start">
+              <span className="font-serif text-2xl font-bold text-primary leading-tight">
                 Mariela
               </span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-medium tracking-wide">
+              <span className="text-xs text-muted-foreground font-medium tracking-wide">
                 Moda Feminina
               </span>
             </div>
