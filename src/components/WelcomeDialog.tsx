@@ -67,7 +67,7 @@ export const WelcomeDialog = () => {
             />
           </div>
           <DialogTitle className="text-center text-xl sm:text-2xl font-serif animate-slide-down">
-            Bem-vinda ao Site Mariela! 💜
+            Bem-vinda à Mariela! 💜
           </DialogTitle>
           <DialogDescription className="text-center space-y-3 sm:space-y-4 text-sm sm:text-base animate-fade-in">
             <p className="text-foreground/90">
@@ -78,30 +78,26 @@ export const WelcomeDialog = () => {
               <div className="flex gap-2.5 sm:gap-3 items-start">
                 <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 sm:mt-1 flex-shrink-0" />
                 <p className="text-foreground/80 text-sm sm:text-base">
-                  Nossa vitrine virtual traz todas as peças que estão em estoque na loja física. 
-                  Dá uma olhada e se apaixone! 🛍️
+                  Confira todas as peças disponíveis na nossa loja — tudo prontinho pra você! 🛍️
                 </p>
               </div>
               
               <div className="flex gap-2.5 sm:gap-3 items-start">
                 <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 sm:mt-1 flex-shrink-0" />
                 <p className="text-foreground/80 text-sm sm:text-base">
-                  Use o <span className="font-semibold text-primary">Monte Seu Look</span>  para 
-                  criar combinações incríveis! Escolha as peças que mais combinam com você e veja 
-                  como ficam juntas antes de garantir as suas. É diversão e praticidade no mesmo lugar! 🤩
+                  Monte looks incríveis com o nosso <span className="font-semibold text-primary">Monte Seu Look</span> e veja como ficam antes de comprar! 🤩
                 </p>
               </div>
               
               <div className="flex gap-2.5 sm:gap-3 items-start">
                 <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 sm:mt-1 flex-shrink-0" />
                 <p className="text-foreground/80 text-sm sm:text-base">
-                  Viu algo que amou? É só chamar a gente no WhatsApp que a gente ajuda
-                  a finalizar seu pedido com todo carinho! 💬
+                  Amou alguma peça? Chama no WhatsApp que finalizamos seu pedido com carinho! 💬
                 </p>
               </div>
             </div>
 
-            {/* PWA Install Option - Mobile Only */}
+            {/* PWA Install Option */}
             {!isInstalled && deferredPrompt && (
               <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-xl p-3 sm:p-4 border border-primary/20 animate-pop-in">
                 <div className="flex items-center gap-3">
@@ -125,28 +121,17 @@ export const WelcomeDialog = () => {
             )}
 
             <p className="text-foreground/90 font-medium pt-1 sm:pt-2 text-sm sm:text-base">
-              Aproveite e monte o look dos seus sonhos! 💕
+              Aproveite e encontre o look dos seus sonhos! 💕
             </p>
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 mt-3 sm:mt-4">
+        <div className="mt-3 sm:mt-4">
           <Button
             onClick={() => setOpen(false)}
-            className="flex-1 bg-primary hover:bg-primary-dark h-11 sm:h-10 touch-feedback"
+            className="w-full bg-primary hover:bg-primary-dark h-11 sm:h-12 text-base touch-feedback"
           >
-            Explorar Produtos
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 border-primary text-primary hover:bg-primary/10 h-11 sm:h-10 touch-feedback"
-            asChild
-            onClick={() => setOpen(false)}
-          >
-            <Link to="/monte-seu-look">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Monte Seu Look
-            </Link>
+            Entrar no Site ✨
           </Button>
         </div>
       </DialogContent>
