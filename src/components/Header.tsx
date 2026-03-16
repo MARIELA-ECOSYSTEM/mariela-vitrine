@@ -178,6 +178,16 @@ export const Header = () => {
 
           {/* Ações */}
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Dark Mode Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="hover:bg-primary/10"
+              aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
             {/* Carrinho */}
             <Button
               asChild
