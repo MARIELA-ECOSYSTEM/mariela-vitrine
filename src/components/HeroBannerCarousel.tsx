@@ -27,7 +27,7 @@ const banners: Banner[] = [
   },
   {
     id: 2,
-    image: heroClean,
+    image: bannerPromocoes,
     title: "Promoções Imperdíveis",
     subtitle: "Até 50% de desconto em peças selecionadas",
     cta: "Aproveitar",
