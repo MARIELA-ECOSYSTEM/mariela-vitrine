@@ -41,10 +41,14 @@ const Products = () => {
   // Aplicar filtros da URL
   useEffect(() => {
     const filter = searchParams.get("filter");
+    const categoria = searchParams.get("categoria");
     if (filter === "promocoes") {
       setMostrarPromocao(true);
     } else if (filter === "novidades") {
       setMostrarNovidades(true);
+    }
+    if (categoria && categoria !== "todas") {
+      setCategoriaSelecionada(categoria);
     }
   }, [searchParams]);
 
