@@ -456,9 +456,16 @@ const Products = () => {
                       ))}
                   </div>
 
+                  {/* Contador */}
+                  <div className="text-center mt-8">
+                    <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+                      {Math.min((paginaAtual - 1) * produtosPorPagina + 1, produtosOrdenados.length)}-{Math.min(paginaAtual * produtosPorPagina, produtosOrdenados.length)}/{produtosOrdenados.length} produtos
+                    </span>
+                  </div>
+
                   {/* Paginação */}
                   {produtosOrdenados.length > produtosPorPagina && (
-                    <div className="flex items-center justify-center gap-2 mt-12 animate-fade-in">
+                    <div className="flex items-center justify-center gap-2 mt-4 animate-fade-in">
                       <Button
                         variant="outline"
                         onClick={() => {
