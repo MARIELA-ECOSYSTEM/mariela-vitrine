@@ -51,9 +51,9 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pt-[52px] sm:pt-[60px]">
       <Header />
-      <main className="flex-1 pt-20">
+      <main className="flex-1">
         <div className="container mx-auto px-6 py-12">
           <Breadcrumbs currentPage="Meu Carrinho" />
           <div className="max-w-4xl mx-auto">
