@@ -35,7 +35,7 @@ const banners: Banner[] = [
   },
   {
     id: 3,
-    image: heroBg,
+    image: bannerLooks,
     title: "Monte Seu Look",
     subtitle: "Combine peças e crie o visual perfeito",
     cta: "Começar",
