@@ -12,9 +12,9 @@ import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw } from "lucide-react";
-import { CATEGORIAS_DB } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { CATEGORIAS_DB } from "@/data/categories";
 import {
   Select,
   SelectContent,
@@ -22,6 +22,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const categoryEmojis: Record<string, string> = {
+  "vestidos": "👗",
+  "blusas": "👚",
+  "calças": "👖",
+  "saias": "🩱",
+  "shorts": "🩳",
+  "short-saias": "✨",
+  "conjuntos": "💎",
+  "bolsas": "👜",
+  "acessorios": "💍",
+};
 
 const Products = () => {
   const { produtos, loading, isFromCache, forceRefresh } = useProducts();
@@ -41,10 +53,14 @@ const Products = () => {
   // Aplicar filtros da URL
   useEffect(() => {
     const filter = searchParams.get("filter");
+    const categoria = searchParams.get("categoria");
     if (filter === "promocoes") {
       setMostrarPromocao(true);
     } else if (filter === "novidades") {
       setMostrarNovidades(true);
+    }
+    if (categoria && categoria !== "todas") {
+      setCategoriaSelecionada(categoria);
     }
   }, [searchParams]);
 
@@ -264,6 +280,38 @@ const Products = () => {
             </div>
           </div>
 
+          {/* Category Icons */}
+          <div className="flex gap-3 sm:gap-5 overflow-x-auto pb-2 scrollbar-hide justify-start sm:justify-center mb-6 sm:mb-8 px-2">
+            {CATEGORIAS_DB.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => {
+                  setCategoriaSelecionada(categoriaSelecionada === cat.value ? "todas" : cat.value);
+                  setPaginaAtual(1);
+                }}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 min-w-[56px] sm:min-w-[72px] group transition-all",
+                  categoriaSelecionada === cat.value && "scale-105"
+                )}
+              >
+                <div className={cn(
+                  "w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl transition-all duration-300 border",
+                  categoriaSelecionada === cat.value
+                    ? "bg-primary/15 border-primary shadow-md"
+                    : "bg-secondary border-border group-hover:bg-primary/10 group-hover:scale-110 group-hover:border-primary/30"
+                )}>
+                  {categoryEmojis[cat.value] || "🛍️"}
+                </div>
+                <span className={cn(
+                  "text-[10px] sm:text-xs transition-colors font-medium whitespace-nowrap",
+                  categoriaSelecionada === cat.value ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                )}>
+                  {cat.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
           {/* Filtros Rápidos - Promoção e Novidades - Badge Style */}
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 animate-fade-in px-2">
             <Button
@@ -340,9 +388,9 @@ const Products = () => {
                   />
                 </div>
 
-                {/* Contador - Centro (escondido em telas muito pequenas) */}
+                {/* Contador com formato paginado */}
                 <span className="hidden xs:block text-xs sm:text-sm font-medium text-muted-foreground order-3 sm:order-2 w-full sm:w-auto text-center">
-                  {produtosOrdenados.length} {produtosOrdenados.length === 1 ? 'produto' : 'produtos'}
+                  {Math.min((paginaAtual - 1) * produtosPorPagina + 1, produtosOrdenados.length)}-{Math.min(paginaAtual * produtosPorPagina, produtosOrdenados.length)}/{produtosOrdenados.length} produtos
                 </span>
 
                 {/* Ordenação e Visualização - Direita */}
