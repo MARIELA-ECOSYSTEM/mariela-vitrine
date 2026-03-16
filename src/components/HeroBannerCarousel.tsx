@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import storeInterior from "@/assets/store-interior.jpg";
-import heroClean from "@/assets/hero-clean.jpg";
-import heroBg from "@/assets/hero-bg.jpg";
+import bannerNovidades from "@/assets/banner-novidades.jpg";
+import bannerPromocoes from "@/assets/banner-promocoes.jpg";
+import bannerLooks from "@/assets/banner-looks.jpg";
 
 interface Banner {
   id: number;
