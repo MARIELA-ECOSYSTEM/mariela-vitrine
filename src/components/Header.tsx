@@ -1,10 +1,11 @@
-import { Instagram, Menu, ShoppingCart, MessageCircle, RefreshCw, Check, Download, X } from "lucide-react";
+import { Instagram, Menu, ShoppingCart, MessageCircle, RefreshCw, Check, Download, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -22,6 +23,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (refreshState === 'success') {
@@ -300,6 +302,24 @@ export const Header = () => {
             >
               Contato
             </Link>
+            
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors py-1"
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="h-4 w-4" />
+                  Modo Claro
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4" />
+                  Modo Escuro
+                </>
+              )}
+            </button>
           </div>
         )}
         </div>
