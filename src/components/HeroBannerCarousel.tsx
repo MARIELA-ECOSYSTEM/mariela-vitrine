@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import storeInterior from "@/assets/store-interior.jpg";
-import heroClean from "@/assets/hero-clean.jpg";
-import heroBg from "@/assets/hero-bg.jpg";
+import bannerNovidades from "@/assets/banner-novidades.jpg";
+import bannerPromocoes from "@/assets/banner-promocoes.jpg";
+import bannerLooks from "@/assets/banner-looks.jpg";
 
 interface Banner {
   id: number;
@@ -19,7 +19,7 @@ interface Banner {
 const banners: Banner[] = [
   {
     id: 1,
-    image: storeInterior,
+    image: bannerNovidades,
     title: "Nova Coleção",
     subtitle: "Peças exclusivas para todos os estilos",
     cta: "Ver Novidades",
@@ -27,7 +27,7 @@ const banners: Banner[] = [
   },
   {
     id: 2,
-    image: heroClean,
+    image: bannerPromocoes,
     title: "Promoções Imperdíveis",
     subtitle: "Até 50% de desconto em peças selecionadas",
     cta: "Aproveitar",
@@ -35,7 +35,7 @@ const banners: Banner[] = [
   },
   {
     id: 3,
-    image: heroBg,
+    image: bannerLooks,
     title: "Monte Seu Look",
     subtitle: "Combine peças e crie o visual perfeito",
     cta: "Começar",
