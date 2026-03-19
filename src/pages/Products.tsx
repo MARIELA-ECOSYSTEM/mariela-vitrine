@@ -253,7 +253,7 @@ const Products = () => {
 
   return (
     <PullToRefresh onRefresh={handlePullRefresh} disabled={loading}>
-      <div className="min-h-screen pt-[56px] sm:pt-[64px]">
+      <div className="min-h-screen pt-[60px] sm:pt-[68px]">
         <Header />
         <main className="pb-12 bg-background">
           <div className="container mx-auto px-3 sm:px-4 md:px-6">

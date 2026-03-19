@@ -26,7 +26,7 @@ const Cart = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col pt-[56px] sm:pt-[64px]">
+      <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
         <Header />
         <main className="flex-1">
           <div className="container mx-auto px-6 py-12">
@@ -51,7 +51,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col pt-[56px] sm:pt-[64px]">
+    <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-6 py-12">
