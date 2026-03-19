@@ -5,7 +5,7 @@ import { MobileLookBuilder } from "@/components/MobileLookBuilder";
 
 const MonteSeuLook = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/10 to-background pt-[52px] sm:pt-[60px]">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/10 to-background pt-[56px] sm:pt-[64px]">
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 md:px-6 py-6 md:py-12">

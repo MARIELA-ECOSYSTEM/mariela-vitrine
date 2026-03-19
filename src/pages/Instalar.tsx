@@ -253,7 +253,7 @@ export default function Instalar() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/20 to-background pt-[52px] sm:pt-[60px]">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/20 to-background pt-[56px] sm:pt-[64px]">
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 max-w-2xl pt-16 sm:pt-20">
