@@ -14,7 +14,7 @@ const Index = () => {
   const { loading, produtos } = useProducts();
 
   return (
-    <div className="min-h-screen bg-background pt-[56px] sm:pt-[64px]">
+    <div className="min-h-screen bg-background pt-[60px] sm:pt-[68px]">
       {loading && <LoadingOverlay />}
       <WelcomeDialog />
       <Header />
