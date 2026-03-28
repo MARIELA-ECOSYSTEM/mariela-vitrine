@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { QRCodeSVG } from "qrcode.react";
-import logoSimple from "/LOGO-03.png";
+import logoSimple from "@/assets/logo-simple.png";
 import { 
   Download, 
   Smartphone, 
