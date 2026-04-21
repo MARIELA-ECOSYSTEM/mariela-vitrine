@@ -206,7 +206,8 @@ export default function Instalar() {
         <div className="container mx-auto px-4 max-w-2xl pb-10">
           {/* Already Installed */}
           {isInstalled && (
-            <div className="mb-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-5 animate-fade-in flex items-center gap-4">
+            <div className="mb-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-5 animate-fade-in space-y-4">
+            <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shrink-0 shadow-lg">
                 <CheckCircle2 className="h-6 w-6 text-white" />
               </div>
@@ -214,6 +215,20 @@ export default function Instalar() {
                 <p className="font-bold text-foreground text-lg">App já instalado! 🎉</p>
                 <p className="text-sm text-muted-foreground">O Mariela está na sua tela inicial</p>
               </div>
+            </div>
+            {!deviceInfo.isStandalone && (
+              <Button
+                onClick={() => {
+                  // Try to open the installed PWA via the start_url
+                  window.location.href = window.location.origin + '/?utm_source=pwa_redirect';
+                }}
+                variant="outline"
+                className="w-full gap-2 rounded-xl border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/10"
+              >
+                <Smartphone className="h-4 w-4" />
+                Abrir no Aplicativo
+              </Button>
+            )}
             </div>
           )}
 
