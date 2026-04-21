@@ -41,8 +41,11 @@ const getDeviceInfo = () => {
   const isAndroid = /Android/.test(ua);
   const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
   const isChrome = /Chrome/.test(ua) && !/Edge/.test(ua);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                       (navigator as any).standalone === true;
+  const isStandalone = 
+    window.matchMedia('(display-mode: standalone)').matches || 
+    (navigator as any).standalone === true ||
+    document.referrer.includes('android-app://') ||
+    window.matchMedia('(display-mode: minimal-ui)').matches;
   const isDesktop = !isIOS && !isAndroid;
   
   return { isIOS, isAndroid, isSafari, isChrome, isStandalone, isDesktop };
@@ -216,17 +219,30 @@ export default function Instalar() {
                 <p className="text-sm text-muted-foreground">O Mariela está na sua tela inicial</p>
               </div>
             </div>
-            {!deviceInfo.isStandalone && (
+            {!deviceInfo.isStandalone && !deviceInfo.isDesktop && (
               <Button
                 onClick={() => {
-                  // Try to open the installed PWA via the start_url
-                  window.location.href = window.location.origin + '/?utm_source=pwa_redirect';
+                  // Open the installed PWA — navigate to origin with standalone intent
+                  const origin = window.location.origin;
+                  // On Android, opening the start_url triggers the installed PWA
+                  // On iOS, the PWA must be opened from the home screen icon
+                  if (deviceInfo.isAndroid) {
+                    // Android: navigating to the start_url opens the installed PWA
+                    const link = document.createElement('a');
+                    link.href = origin + '/?source=open_app';
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    link.click();
+                  } else if (deviceInfo.isIOS) {
+                    // iOS doesn't support programmatic PWA launch — guide the user
+                    alert('No iOS, abra o app Mariela diretamente pela tela inicial do seu celular.');
+                  }
                 }}
                 variant="outline"
                 className="w-full gap-2 rounded-xl border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/10"
               >
                 <Smartphone className="h-4 w-4" />
-                Abrir no Aplicativo
+                Abrir App
               </Button>
             )}
             </div>
@@ -364,6 +380,41 @@ export default function Instalar() {
               Voltar para a Loja
               <ArrowRight className="h-4 w-4" />
             </Button>
+          </div>
+
+          {/* Validação de compatibilidade */}
+          <div className="mt-8 bg-card border border-border/50 rounded-2xl p-5 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+            <h3 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              Compatibilidade
+            </h3>
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between py-1.5 border-b border-border/20">
+                <span>Android Chrome</span>
+                <span className="text-green-500 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Instalação automática
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-border/20">
+                <span>iOS Safari</span>
+                <span className="text-green-500 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Manual (3 passos)
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-border/20">
+                <span>Desktop (Chrome/Edge)</span>
+                <span className="text-green-500 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Instalação automática
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1.5">
+                <span>Seu dispositivo</span>
+                <span className="font-medium text-primary">
+                  {deviceInfo.isIOS ? '📱 iOS' : deviceInfo.isAndroid ? '📱 Android' : '🖥️ Desktop'}
+                  {deviceInfo.isStandalone ? ' (App)' : ' (Navegador)'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </main>
