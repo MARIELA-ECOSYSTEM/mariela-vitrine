@@ -1,6 +1,10 @@
-const CACHE_NAME = 'mariela-app-v2';
-const IMAGE_CACHE_NAME = 'mariela-images-cache-v2';
-const DATA_CACHE_NAME = 'mariela-data-cache-v2';
+const CACHE_NAME = 'mariela-app-v3';
+const IMAGE_CACHE_NAME = 'mariela-images-cache-v3';
+const DATA_CACHE_NAME = 'mariela-data-cache-v3';
+
+// Max cache sizes to limit storage usage
+const MAX_IMAGE_CACHE = 50;
+const MAX_DATA_CACHE = 20;
 
 // URLs to cache on install
 const STATIC_ASSETS = [
@@ -15,7 +19,6 @@ const API_ENDPOINTS = [
   'https://mariela-pdv-backend.onrender.com/api/vitrine'
 ];
 
-// Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -25,7 +28,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -43,13 +45,14 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle GET requests
   if (request.method !== 'GET') return;
+  
+  // Skip chrome-extension and non-http requests
+  if (!url.protocol.startsWith('http')) return;
 
   // Cache API responses (network first, fallback to cache)
   if (isApiRequest(request)) {
@@ -114,7 +117,6 @@ async function networkFirstApi(request) {
   }
 }
 
-// Cache-first strategy for images
 async function cacheFirstImage(request) {
   const cache = await caches.open(IMAGE_CACHE_NAME);
   
@@ -127,17 +129,21 @@ async function cacheFirstImage(request) {
     const networkResponse = await fetch(request);
     
     if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
+      // Limit cache size
+      const keys = await cache.keys();
+      if (keys.length >= MAX_IMAGE_CACHE) {
+        await cache.delete(keys[0]);
+      }
+      await cache.put(request, networkResponse.clone());
     }
     
     return networkResponse;
   } catch (error) {
-    console.error('Failed to fetch image:', error);
-    throw error;
+    // Return a transparent pixel fallback instead of throwing
+    return new Response('', { status: 408, statusText: 'Offline' });
   }
 }
 
-// Stale-while-revalidate strategy
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
   const cachedResponse = await cache.match(request);
@@ -152,7 +158,17 @@ async function staleWhileRevalidate(request) {
   return cachedResponse || fetchPromise;
 }
 
-// Push notification handling
+// Limit data cache size helper
+async function trimCache(cacheName, maxItems) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length > maxItems) {
+    for (let i = 0; i < keys.length - maxItems; i++) {
+      await cache.delete(keys[i]);
+    }
+  }
+}
+
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'Nova atualização disponível!',
