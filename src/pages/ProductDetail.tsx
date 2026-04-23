@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
 import { updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
+import { getProductPath, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -38,12 +39,14 @@ const COLOR_MAP: Record<string, string> = {
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { toast } = useToast();
   const { produtos, loading } = useProducts();
   
-  const produto = produtos.find(p => p.id === Number(id));
+  const productParam = id ?? slug;
+  const produto = produtos.find(p => matchesProductSlug(p, productParam));
   const [corSelecionada, setCorSelecionada] = useState("");
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
   const [imagemSelecionadaIndex, setImagemSelecionadaIndex] = useState(0);
@@ -123,7 +126,7 @@ const ProductDetail = () => {
         title: `${produto.nome} | ${config.nomeLoja}`,
         description: `${produto.nome} - ${colecao} - ${precoFormatadoSeo}`,
         image: produto.imagens[0],
-        url: `${window.location.origin}/products/${produto.id}`,
+        url: `${window.location.origin}${getProductPath(produto)}`,
         type: "product",
       });
     });
@@ -203,7 +206,7 @@ const ProductDetail = () => {
       return;
     }
     
-    const productLink = `${window.location.origin}/products/${produto.id}`;
+    const productLink = getTrackedProductUrl(produto);
     const colecao = produto.colecao ? ` (${produto.colecao})` : "";
     const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}, cor ${corParaUsar}, tamanho ${tamanhoParaUsar}. Link: ${productLink}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
