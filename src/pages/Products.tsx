@@ -64,6 +64,9 @@ const Products = () => {
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
   const [mostrarNovidades, setMostrarNovidades] = useState<boolean>(false);
   const [ordenarPor, setOrdenarPor] = useState<string>("padrao");
+  const [colecaoSelecionada, setColecaoSelecionada] = useState<string>("todas");
+  const [categoriasApi, setCategoriasApi] = useState<CatalogFilterOption[]>(defaultCategorias);
+  const [colecoesApi, setColecoesApi] = useState<CatalogFilterOption[]>([]);
   const [coresSelecionadas, setCoresSelecionadas] = useState<string[]>([]);
   const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
@@ -75,6 +78,7 @@ const Products = () => {
   useEffect(() => {
     const filter = searchParams.get("filter");
     const categoria = searchParams.get("categoria");
+    const colecao = searchParams.get("colecao");
     if (filter === "promocoes") {
       setMostrarPromocao(true);
     } else if (filter === "novidades") {
@@ -83,7 +87,33 @@ const Products = () => {
     if (categoria && categoria !== "todas") {
       setCategoriaSelecionada(categoria);
     }
+    if (colecao && colecao !== "todas") {
+      setColecaoSelecionada(colecao);
+    }
   }, [searchParams]);
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.allSettled([vitrineApiService.getCategorias(), vitrineApiService.getColecoes()]).then(([categoriasResult, colecoesResult]) => {
+      if (!active) return;
+
+      if (categoriasResult.status === "fulfilled") {
+        const categoriasReais = categoriasResult.value.map(normalizeCategoriaOption).filter((categoria): categoria is CatalogFilterOption => Boolean(categoria));
+        if (categoriasReais.length > 0) {
+          setCategoriasApi([defaultCategorias[0], ...categoriasReais.filter((categoria) => categoria.value !== "todas")]);
+        }
+      }
+
+      if (colecoesResult.status === "fulfilled") {
+        setColecoesApi([{ value: "todas", label: "Todas" }, ...colecoesResult.value]);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
