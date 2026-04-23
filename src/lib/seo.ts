@@ -68,7 +68,7 @@ function setJsonLd(data?: SeoOptions["jsonLd"]): void {
   const script = (existing || document.createElement("script")) as HTMLScriptElement;
   script.id = id;
   script.type = "application/ld+json";
-  script.textContent = JSON.stringify(data);
+  script.textContent = JSON.stringify(Array.isArray(data) ? { "@context": "https://schema.org", "@graph": data } : data);
   if (!existing) document.head.appendChild(script);
 }
 
