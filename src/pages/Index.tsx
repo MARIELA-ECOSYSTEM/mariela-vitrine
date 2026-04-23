@@ -65,6 +65,38 @@ const Index = () => {
         linkLabel="Ver todas as novidades"
       />
       <FeaturedProducts
+        title="Em alta"
+        subtitle="Peças em destaque na vitrine"
+        filter="em_alta"
+        limit={4}
+        linkTo="/products"
+        linkLabel="Ver produtos"
+      />
+      <FeaturedProducts
+        title="Mais procurados"
+        subtitle="Escolhas que estão chamando atenção"
+        filter="mais_procurado"
+        limit={4}
+        linkTo="/products"
+        linkLabel="Ver produtos"
+      />
+      <FeaturedProducts
+        title="Queridinhos da loja"
+        subtitle="Peças queridas pelas clientes"
+        filter="queridinho_loja"
+        limit={4}
+        linkTo="/products"
+        linkLabel="Ver produtos"
+      />
+      <FeaturedProducts
+        title="Destaques da coleção"
+        subtitle="Seleção especial da vitrine"
+        filter="destaque_colecao"
+        limit={4}
+        linkTo="/products"
+        linkLabel="Ver produtos"
+      />
+      <FeaturedProducts
         title="Promoções"
         subtitle="Descontos em peças selecionadas"
         filter="promocoes"
