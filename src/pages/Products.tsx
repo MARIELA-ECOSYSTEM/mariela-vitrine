@@ -148,10 +148,10 @@ const Products = () => {
   useEffect(() => {
     vitrineApiService.getConfig().then((config) => {
       updateSeo({
-        title: `Catálogo | ${config.nomeLoja}`,
-        description: `Confira as novidades e coleções da ${config.nomeLoja}`,
+        title: `Catálogo de Moda Feminina | ${config.nomeLoja}`,
+        description: `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`,
         image: config.logoUrl || produtosBase[0]?.imagens[0],
-        url: window.location.href,
+        url: `${window.location.origin}/catalogo`,
       });
     });
   }, [produtosBase]);

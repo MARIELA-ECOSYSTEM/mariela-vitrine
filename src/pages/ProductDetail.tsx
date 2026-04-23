@@ -11,7 +11,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
-import { updateSeo } from "@/lib/seo";
+import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
@@ -121,14 +121,34 @@ const ProductDetail = () => {
     vitrineApiService.getConfig().then((config) => {
       const preco = produto.emPromocao && produto.precoPromocional ? produto.precoPromocional : produto.precoVenda;
       const precoFormatadoSeo = `R$ ${preco.toFixed(2).replace('.', ',')}`;
-      const colecao = produto.colecao || "Coleção Mariela";
+      const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
+      const descricao = produto.descricao || `${produto.nome}${colecaoTexto}. Loja de moda feminina em Campina Grande - PB.`;
+      const imagemPrincipal = produto.imagens[0];
 
       updateSeo({
         title: `${produto.nome} | ${config.nomeLoja}`,
-        description: `${produto.nome} - ${colecao} - ${precoFormatadoSeo}`,
-        image: produto.imagens[0],
+        description: `${produto.nome}${colecaoTexto}. Disponível na ${config.nomeLoja} por ${precoFormatadoSeo}.`,
+        image: imagemPrincipal,
         url: `${window.location.origin}${getProductPath(produto)}`,
         type: "product",
+        jsonLd: {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: produto.nome,
+          image: absoluteUrl(imagemPrincipal),
+          description: descricao,
+          brand: {
+            "@type": "Brand",
+            name: config.nomeLoja,
+          },
+          offers: {
+            "@type": "Offer",
+            price: preco.toFixed(2),
+            priceCurrency: "BRL",
+            availability: "https://schema.org/InStock",
+            url: `${window.location.origin}${getProductPath(produto)}`,
+          },
+        },
       });
     });
   }, [produto]);

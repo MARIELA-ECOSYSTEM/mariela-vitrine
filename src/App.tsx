@@ -28,6 +28,7 @@ const AppContent = () => {
         <Routes location={location}>
           <Route path="/" element={<Index />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/catalogo" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/produto/:slug" element={<ProductDetail />} />
           <Route path="/monte-seu-look" element={<MonteSeuLook />} />
