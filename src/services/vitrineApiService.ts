@@ -681,12 +681,31 @@ export const vitrineApiService = {
   },
 
   async getDestaques(params?: QueryParams): Promise<ProdutoDestaquePublico[]> {
+    const normalizedParams = { limit: 50, ...params };
+    const key = stableParamsKey(normalizedParams);
+    const inFlight = inFlightDestaques.get(key);
+    if (inFlight) return inFlight;
+
+    const request = fetchCachedJson<RespostaDestaques>("/destaques", normalizedParams, CACHE_TTL.destaques, validateDestaquesResponse)
+      .then((response) => response.items)
+      .catch((error) => {
+        logVitrineWarning(getVitrineApiErrorMessage(error), error);
+        return [];
+      })
+      .finally(() => {
+        inFlightDestaques.delete(key);
+      });
+
+    inFlightDestaques.set(key, request);
+    return request;
+  },
+
+  async attachDestaquesToProdutos(produtos: Produto[]): Promise<Produto[]> {
     try {
-      const response = await fetchCachedJson<RespostaDestaques>("/destaques", { limit: 50, ...params }, CACHE_TTL.destaques, validateDestaquesResponse);
-      return response.items;
+      return applyDestaquesToProdutos(produtos, await this.getDestaques());
     } catch (error) {
       logVitrineWarning(getVitrineApiErrorMessage(error), error);
-      return [];
+      return produtos;
     }
   },
 
@@ -709,7 +728,9 @@ export const vitrineApiService = {
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
-    return mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
+    const produto = mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
+    if (!produto) return null;
+    return (await this.attachDestaquesToProdutos([produto]))[0] ?? produto;
   },
 
   async getColecoes(): Promise<FilterOption[]> {
