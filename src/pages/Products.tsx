@@ -648,7 +648,7 @@ const Products = () => {
                   {/* Contador */}
                   <div className="text-center mt-8">
                     <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {produtosOrdenados.length}/{totalProdutos || produtosOrdenados.length} produtos
+                      {produtosOrdenados.length}/{totalProdutos || produtosOrdenados.length} produtos encontrados
                     </span>
                   </div>
 
