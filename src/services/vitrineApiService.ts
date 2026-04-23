@@ -494,7 +494,7 @@ function validateProdutoDetailResponse(payload: unknown): ProdutoDetailResponse 
     logVitrineWarning("Payload de detalhe de produto inválido", payload);
     throw createInvalidPayloadError("produto detalhe");
   }
-  return { data: data as ProdutoDetail };
+  return { data: data as unknown as ProdutoDetail };
 }
 
 function validateCategoriaResponse(payload: unknown): CategoriaResponse {
