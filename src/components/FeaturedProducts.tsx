@@ -5,24 +5,29 @@ import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import type { Produto } from "@/data/products";
 
 interface FeaturedProductsProps {
   title: string;
   subtitle?: string;
   filter: "novidades" | "promocoes" | "destaque" | "em_alta" | "mais_procurado" | "queridinho_loja" | "destaque_colecao";
   limit?: number;
+  minItems?: number;
   linkTo: string;
   linkLabel: string;
+  products?: Produto[];
 }
 
 function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: string | null; destaque_publico?: string | null; recomendacao_publica?: string | null }) {
   return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
 }
 
-export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, linkLabel }: FeaturedProductsProps) => {
+export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems = 1, linkTo, linkLabel, products }: FeaturedProductsProps) => {
   const { produtos, loading } = useProducts();
 
   const filtered = useMemo(() => {
+    if (products) return products;
+
     switch (filter) {
       case "novidades":
         return produtos.filter(p => p.isNovidade);
@@ -36,11 +41,12 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, l
       case "destaque_colecao":
         return produtos.filter((p) => getBadgeValue(p) === filter);
     }
-  }, [produtos, filter, limit]);
+  }, [produtos, filter, limit, products]);
 
   const displayed = filtered.slice(0, limit);
+  const isLoading = loading && !products;
 
-  if (!loading && displayed.length === 0) return null;
+  if (!isLoading && displayed.length < minItems) return null;
 
   return (
     <section className="py-6 sm:py-10 bg-background">
@@ -67,7 +73,7 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, l
         </div>
 
         {/* Products Grid */}
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <ProductSkeleton key={i} />
