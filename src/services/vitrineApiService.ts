@@ -146,7 +146,12 @@ function buildUrl(path: string, params?: QueryParams): string {
 
 function normalizeProdutosParams(params?: QueryParams): QueryParams | undefined {
   if (!params) return undefined;
-  const normalized: QueryParams = { ...params };
+  const allowedKeys = ["busca", "categoria", "colecao", "preco_min", "preco_max", "ordem", "limit", "offset"];
+  const normalized: QueryParams = {};
+
+  allowedKeys.forEach((key) => {
+    normalized[key] = params[key];
+  });
 
   (["preco_min", "preco_max", "limit", "offset"] as const).forEach((key) => {
     const value = normalized[key];
@@ -154,6 +159,13 @@ function normalizeProdutosParams(params?: QueryParams): QueryParams | undefined 
     const numeric = Number(value);
     normalized[key] = Number.isFinite(numeric) && numeric >= 0 ? numeric : undefined;
   });
+
+  const min = Number(normalized.preco_min);
+  const max = Number(normalized.preco_max);
+  if (Number.isFinite(min) && Number.isFinite(max) && min > max) {
+    normalized.preco_min = max;
+    normalized.preco_max = min;
+  }
 
   return normalized;
 }
