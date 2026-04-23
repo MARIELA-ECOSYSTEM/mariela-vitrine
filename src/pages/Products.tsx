@@ -265,7 +265,15 @@ const Products = () => {
     setProdutosCatalogo([]);
     setPaginaAtual(1);
 
-    vitrineApiService.getProdutosPage(getProdutosQuery(0)).then((page) => {
+    const query = getProdutosQuery(0);
+    if (query.categoria) {
+      console.info("[vitrine-api] filtro categoria", {
+        selecionada: categoriaSelecionada,
+        apiValue: query.categoria,
+      });
+    }
+
+    vitrineApiService.getProdutosPage(query).then((page) => {
       if (!active) return;
       setProdutosCatalogo(page.items);
       setHasMore(page.hasMore);
@@ -281,7 +289,7 @@ const Products = () => {
     return () => {
       active = false;
     };
-  }, [getProdutosQuery]);
+  }, [categoriaSelecionada, getProdutosQuery]);
 
   const handleCarregarMais = useCallback(async () => {
     if (loadingMore || !hasMore) return;
