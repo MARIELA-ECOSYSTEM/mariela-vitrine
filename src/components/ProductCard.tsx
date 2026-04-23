@@ -181,7 +181,6 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
 
   const handleWhatsApp = () => {
     const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
-    const corParaUsar = corSelecionada || produto.variants.find((variant) => variant.disponibilidade > 0)?.cor || "não informada";
     
     if (!isAcessorio && !corSelecionada) {
       toast({
