@@ -333,7 +333,7 @@ const Products = () => {
   // Reset página quando filtros mudarem
   useEffect(() => {
     setPaginaAtual(1);
-  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
 
   // Handler para pull-to-refresh
   const handlePullRefresh = useCallback(async () => {
@@ -460,6 +460,7 @@ const Products = () => {
     setColecaoSelecionada("todas");
     setMostrarPromocao(false);
     setMostrarNovidades(false);
+    setMostrarMaisProcurados(false);
     setCoresSelecionadas([]);
     setTamanhosSelecionados([]);
     setFaixaPreco([precoMin, precoMax]);
