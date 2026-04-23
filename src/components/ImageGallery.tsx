@@ -12,6 +12,10 @@ interface ImageGalleryProps {
   productName: string;
   emPromocao?: boolean;
   isNovidade?: boolean;
+  publicBadge?: {
+    label: string;
+    description: string;
+  } | null;
   selectedIndex?: number;
   onImageSelect?: (index: number) => void;
 }
@@ -21,6 +25,7 @@ export const ImageGallery = ({
   productName, 
   emPromocao, 
   isNovidade,
+  publicBadge,
   selectedIndex,
   onImageSelect
 }: ImageGalleryProps) => {
@@ -270,14 +275,9 @@ export const ImageGallery = ({
         
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
-          {emPromocao && (
-            <Badge className="bg-destructive text-destructive-foreground shadow-lg text-xs md:text-sm px-2 md:px-3">
-              PROMOÇÃO
-            </Badge>
-          )}
-          {isNovidade && (
-            <Badge className="bg-primary text-primary-foreground shadow-lg text-xs md:text-sm px-2 md:px-3">
-              Novidade
+          {publicBadge && (
+            <Badge title={publicBadge.description} className="bg-background/90 text-foreground border border-primary/30 shadow-sm backdrop-blur-sm text-xs md:text-sm px-2 md:px-3">
+              {publicBadge.label}
             </Badge>
           )}
         </div>

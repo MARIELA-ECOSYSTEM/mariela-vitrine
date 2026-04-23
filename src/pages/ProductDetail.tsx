@@ -15,6 +15,7 @@ import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { getPublicProductBadge } from "@/services/productInsightsService";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -220,6 +221,7 @@ const ProductDetail = () => {
   }
 
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
+  const publicBadge = getPublicProductBadge(produto);
 
   const precoFormatado = produto.emPromocao && produto.precoPromocional
     ? `R$ ${produto.precoPromocional.toFixed(2).replace('.', ',')}`
@@ -321,6 +323,7 @@ const ProductDetail = () => {
                 productName={produto.nome}
                 emPromocao={produto.emPromocao}
                 isNovidade={produto.isNovidade}
+                  publicBadge={publicBadge}
                 selectedIndex={imagemSelecionadaIndex}
                 onImageSelect={handleImageSelect}
               />
