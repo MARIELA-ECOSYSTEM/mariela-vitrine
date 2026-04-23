@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
 import { vitrineApiService, type FilterOption } from "@/services/vitrineApiService";
+import type { Produto } from "@/data/products";
 import {
   Select,
   SelectContent,
@@ -67,6 +68,7 @@ const Products = () => {
   const [colecaoSelecionada, setColecaoSelecionada] = useState<string>("todas");
   const [categoriasApi, setCategoriasApi] = useState<CatalogFilterOption[]>(defaultCategorias);
   const [colecoesApi, setColecoesApi] = useState<CatalogFilterOption[]>([]);
+  const [produtosCatalogo, setProdutosCatalogo] = useState<Produto[] | null>(null);
   const [coresSelecionadas, setCoresSelecionadas] = useState<string[]>([]);
   const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
@@ -114,6 +116,30 @@ const Products = () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const categoriaApi = categoriasApi.find((categoria) => categoria.value === categoriaSelecionada)?.apiValue ?? categoriaSelecionada;
+
+    vitrineApiService.getProdutos({
+      limit: 100,
+      offset: 0,
+      busca: searchQuery.trim() || undefined,
+      categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
+      colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
+      ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
+    }).then((data) => {
+      if (active) setProdutosCatalogo(data);
+    }).catch(() => {
+      if (active) setProdutosCatalogo(null);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [categoriaSelecionada, colecaoSelecionada, ordenarPor, searchQuery, categoriasApi]);
+
+  const produtosBase = produtosCatalogo ?? produtos;
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
