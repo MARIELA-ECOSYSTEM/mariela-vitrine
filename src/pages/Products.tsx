@@ -517,6 +517,7 @@ const Products = () => {
                     setTamanhosSelecionados={setTamanhosSelecionados}
                     faixaPreco={faixaPreco}
                     setFaixaPreco={setFaixaPreco}
+                    setPrecoAlterado={setPrecoAlterado}
                     coresDisponiveis={coresDisponiveis}
                     tamanhosDisponiveis={tamanhosDisponiveis}
                     precoMin={precoMin}
