@@ -530,6 +530,7 @@ const Products = () => {
                     onLimparFiltros={handleLimparFiltros}
                     setPaginaAtual={setPaginaAtual}
                     activeFiltersCount={activeFiltersCount}
+                    precoAlterado={precoAlterado}
                   />
                 </div>
 
