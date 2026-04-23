@@ -139,6 +139,7 @@ const DEFAULT_CONFIG: VitrineConfig = {
 };
 
 const memoryCache = new Map<string, CacheEntry<unknown>>();
+const inFlightDestaques = new Map<string, Promise<ProdutoDestaquePublico[]>>();
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -227,6 +228,11 @@ function setCached<T>(key: string, value: T): void {
   const cache = readLocalStorageCache();
   cache[key] = entry as CacheEntry<unknown>;
   writeLocalStorageCache(cache);
+}
+
+function stableParamsKey(params?: QueryParams): string {
+  if (!params) return "";
+  return JSON.stringify(Object.entries(params).sort(([a], [b]) => a.localeCompare(b)));
 }
 
 function createApiError(status: number): VitrineApiError {
