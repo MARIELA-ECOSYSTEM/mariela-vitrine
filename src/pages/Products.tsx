@@ -43,7 +43,7 @@ type CatalogFilterOption = FilterOption & { apiValue?: string };
 const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) => ({
   value: categoria.value,
   label: categoria.label,
-  apiValue: categoria.dbValue ?? undefined,
+  apiValue: categoria.label,
 }));
 
 const produtosPorPagina = 12;
@@ -530,6 +530,7 @@ const Products = () => {
                     onLimparFiltros={handleLimparFiltros}
                     setPaginaAtual={setPaginaAtual}
                     activeFiltersCount={activeFiltersCount}
+                    precoAlterado={precoAlterado}
                   />
                 </div>
 
@@ -648,7 +649,7 @@ const Products = () => {
                   {/* Contador */}
                   <div className="text-center mt-8">
                     <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {produtosOrdenados.length}/{totalProdutos || produtosOrdenados.length} produtos encontrados
+                      {totalProdutos || produtosOrdenados.length} produtos encontrados
                     </span>
                   </div>
 
