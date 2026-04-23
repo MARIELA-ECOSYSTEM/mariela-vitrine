@@ -579,6 +579,38 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
   return { data };
 }
 
+function validateDestaquesResponse(payload: unknown): RespostaDestaques {
+  const items = unwrapList(payload)
+    .map(asRecord)
+    .map((item) => ({
+      produto_id: readString(item, ["produto_id", "produtoId", "id", "codigoProduto", "codigo", "sku"]),
+      badge: readString(item, ["badge", "tipo", "type"]),
+      prioridade: readNumber(item, ["prioridade", "priority"], 0),
+    }))
+    .filter((item) => item.produto_id && isPublicProductBadgeType(item.badge));
+
+  return { items };
+}
+
+function getProductHighlightKey(produto: Produto): string[] {
+  return [produto.produtoId, produto.codigoProduto, String(produto.id)].filter((value): value is string => Boolean(value));
+}
+
+function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaquePublico[]): Produto[] {
+  if (destaques.length === 0) return produtos;
+
+  const destaqueMap = new Map<string, ProdutoDestaquePublico>();
+  destaques
+    .slice()
+    .sort((a, b) => b.prioridade - a.prioridade)
+    .forEach((destaque) => destaqueMap.set(destaque.produto_id, destaque));
+
+  return produtos.map((produto) => {
+    const destaque = getProductHighlightKey(produto).map((key) => destaqueMap.get(key)).find(Boolean);
+    return destaque ? { ...produto, badgePublico: destaque.badge, publicBadge: destaque.badge } : produto;
+  });
+}
+
 function mapProduto(rawProduct: unknown): Produto | null {
   const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
   const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
@@ -594,6 +626,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
 
   return {
     id: stableNumericId(rawId),
+    produtoId: rawId,
     codigoProduto: readString(product, ["codigoProduto", "codigo", "sku", "referencia"], rawId),
     nome,
     descricao: readString(product, ["descricao", "description", "detalhes"], `Produto ${nome}`),
