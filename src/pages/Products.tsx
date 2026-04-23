@@ -357,7 +357,7 @@ const Products = () => {
             {/* Busca com autocomplete */}
             <div className="flex justify-center px-2 sm:px-0">
               <ProductSearch
-                produtos={produtos}
+                produtos={produtosBase}
                 onSearch={setSearchQuery}
                 searchQuery={searchQuery}
               />
@@ -393,7 +393,7 @@ const Products = () => {
               </span>
             </button>
 
-            {CATEGORIAS_DB.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
+            {categoriasApi.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => {
@@ -434,6 +434,8 @@ const Products = () => {
                   <ProductFilters
                     categoriaSelecionada={categoriaSelecionada}
                     setCategoriaSelecionada={setCategoriaSelecionada}
+                    colecaoSelecionada={colecaoSelecionada}
+                    setColecaoSelecionada={setColecaoSelecionada}
                     coresSelecionadas={coresSelecionadas}
                     setCoresSelecionadas={setCoresSelecionadas}
                     tamanhosSelecionados={tamanhosSelecionados}
@@ -444,8 +446,10 @@ const Products = () => {
                     tamanhosDisponiveis={tamanhosDisponiveis}
                     precoMin={precoMin}
                     precoMax={precoMax}
+                    categoriasDisponiveis={categoriasApi}
+                    colecoesDisponiveis={colecoesApi}
                     categoriasCount={categoriasCount}
-                    produtos={produtos}
+                    produtos={produtosBase}
                     produtosFiltradosParcial={produtosFiltradosParcial}
                     onLimparFiltros={handleLimparFiltros}
                     setPaginaAtual={setPaginaAtual}
@@ -471,7 +475,7 @@ const Products = () => {
                     <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Promoção
                     <Badge variant={mostrarPromocao ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
-                      {produtos.filter(p => p.emPromocao).length}
+                      {produtosBase.filter(p => p.emPromocao).length}
                     </Badge>
                   </Button>
                   <Button
@@ -490,7 +494,7 @@ const Products = () => {
                     <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Novidades
                     <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
-                      {produtos.filter(p => p.isNovidade).length}
+                      {produtosBase.filter(p => p.isNovidade).length}
                     </Badge>
                   </Button>
                 </div>
