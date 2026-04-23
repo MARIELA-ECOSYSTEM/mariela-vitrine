@@ -1,4 +1,5 @@
 import type { Produto, VarianteProduto } from "@/data/products";
+import { isPublicProductBadgeType } from "@/services/productInsightsService";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
@@ -13,6 +14,7 @@ const CACHE_TTL = {
   categorias: 5 * 60 * 1000,
   produtos: 60 * 1000,
   produto: 2 * 60 * 1000,
+  destaques: 5 * 60 * 1000,
 } as const;
 
 const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
@@ -87,6 +89,16 @@ export interface ProdutosPage {
   offset: number;
   total: number;
   hasMore: boolean;
+}
+
+export interface ProdutoDestaquePublico {
+  produto_id: string;
+  badge: string;
+  prioridade: number;
+}
+
+export interface RespostaDestaques {
+  items: ProdutoDestaquePublico[];
 }
 
 type CacheEntry<T> = {
