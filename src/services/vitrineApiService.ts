@@ -598,14 +598,16 @@ export const vitrineApiService = {
     return mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
   },
 
-  async getColecoes(): Promise<unknown[]> {
+  async getColecoes(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes, validateColecaoResponse);
-    return unwrapList(response);
+    return unwrapList(response).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
   },
 
-  async getCategorias(): Promise<string[]> {
+  async getCategorias(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<CategoriaResponse>("/categorias", undefined, CACHE_TTL.categorias, validateCategoriaResponse);
-    return unwrapList(response).filter((categoria): categoria is string => typeof categoria === "string");
+    return unwrapList(response)
+      .map(toFilterOption)
+      .filter((categoria): categoria is FilterOption => Boolean(categoria));
   },
 
   isValidBrandingUrl: isValidUrl,
