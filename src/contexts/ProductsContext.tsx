@@ -104,20 +104,22 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     loadProducts(false);
 
     vitrineApiService.getConfig().then((config) => {
-      document.title = config.nomeLoja;
+      if (config.nomeLoja) {
+        document.title = config.nomeLoja;
+      }
 
-      if (config.faviconUrl) {
+      if (config.faviconUrl && vitrineApiService.isValidBrandingUrl(config.faviconUrl)) {
         const favicon = document.querySelector<HTMLLinkElement>("link[rel='icon']");
         if (favicon) {
           favicon.href = config.faviconUrl;
         }
       }
 
-      if (config.corPrimaria) {
+      if (config.corPrimaria && CSS.supports("color", config.corPrimaria)) {
         document.documentElement.style.setProperty("--vitrine-primary", config.corPrimaria);
       }
 
-      if (config.corSecundaria) {
+      if (config.corSecundaria && CSS.supports("color", config.corSecundaria)) {
         document.documentElement.style.setProperty("--vitrine-secondary", config.corSecundaria);
       }
     });
