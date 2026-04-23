@@ -1,12 +1,29 @@
 import type { Produto, VarianteProduto } from "@/data/products";
 
-const VITRINE_API_BASE = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
+const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000;
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 800;
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v1";
+const MAX_CACHE_ITEMS = 40;
+
+const CACHE_TTL = {
+  config: 5 * 60 * 1000,
+  colecoes: 5 * 60 * 1000,
+  categorias: 5 * 60 * 1000,
+  produtos: 60 * 1000,
+  produto: 2 * 60 * 1000,
+} as const;
+
+const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
 
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 type ApiRecord = Record<string, unknown>;
+
+type CacheEntry<T> = {
+  value: T;
+  timestamp: number;
+};
 
 export interface VitrineConfig {
   nomeLoja: string;
@@ -16,6 +33,18 @@ export interface VitrineConfig {
   corSecundaria: string | null;
   whatsapp: string | null;
   instagram: string | null;
+}
+
+export class VitrineApiError extends Error {
+  status?: number;
+  friendlyMessage: string;
+
+  constructor(friendlyMessage: string, status?: number) {
+    super(friendlyMessage);
+    this.name = "VitrineApiError";
+    this.status = status;
+    this.friendlyMessage = friendlyMessage;
+  }
 }
 
 const DEFAULT_CONFIG: VitrineConfig = {
@@ -28,12 +57,14 @@ const DEFAULT_CONFIG: VitrineConfig = {
   instagram: null,
 };
 
+const memoryCache = new Map<string, CacheEntry<unknown>>();
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function buildUrl(path: string, params?: QueryParams): string {
-  const url = new URL(`${VITRINE_API_BASE}${path}`);
+  const url = new URL(`${VITRINE_API_BASE_URL}${path}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== "") {
@@ -44,30 +75,93 @@ function buildUrl(path: string, params?: QueryParams): string {
   return url.toString();
 }
 
-async function fetchJson<T>(path: string, params?: QueryParams): Promise<T> {
+function readLocalStorageCache(): Record<string, CacheEntry<unknown>> {
+  if (typeof localStorage === "undefined") return {};
+
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalStorageCache(cache: Record<string, CacheEntry<unknown>>): void {
+  if (typeof localStorage === "undefined") return;
+
+  try {
+    const entries = Object.entries(cache)
+      .sort(([, a], [, b]) => b.timestamp - a.timestamp)
+      .slice(0, MAX_CACHE_ITEMS);
+    localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    // Cache é opcional; falhas de armazenamento não devem afetar a vitrine.
+  }
+}
+
+function getCached<T>(key: string, maxAge: number): T | null {
+  const now = Date.now();
+  const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
+  if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry.value;
+
+  const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
+  if (storageEntry && now - storageEntry.timestamp <= maxAge) {
+    memoryCache.set(key, storageEntry);
+    return storageEntry.value;
+  }
+
+  return null;
+}
+
+function setCached<T>(key: string, value: T): void {
+  const entry: CacheEntry<T> = { value, timestamp: Date.now() };
+  memoryCache.set(key, entry);
+
+  const cache = readLocalStorageCache();
+  cache[key] = entry as CacheEntry<unknown>;
+  writeLocalStorageCache(cache);
+}
+
+function createApiError(status: number): VitrineApiError {
+  if (status === 400) return new VitrineApiError("Parâmetros inválidos na consulta da vitrine.", status);
+  if (status === 404) return new VitrineApiError("Item não encontrado na vitrine.", status);
+  if (status >= 500) return new VitrineApiError("A vitrine está temporariamente indisponível. Tente novamente em instantes.", status);
+  return new VitrineApiError("Não foi possível carregar os dados da vitrine.", status);
+}
+
+export function getVitrineApiErrorMessage(error: unknown): string {
+  if (error instanceof VitrineApiError) return error.friendlyMessage;
+  return "Não foi possível carregar os dados da vitrine.";
+}
+
+async function requestJson<T>(url: string): Promise<T> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), API_TIMEOUT);
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
     try {
-      const response = await fetch(buildUrl(path, params), {
+      const response = await fetch(url, {
         method: "GET",
         headers: { Accept: "application/json" },
         signal: controller.signal,
       });
 
-      window.clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`vitrine-api retornou status ${response.status}`);
+        throw createApiError(response.status);
       }
 
       return await response.json() as T;
     } catch (error) {
-      window.clearTimeout(timeoutId);
-      lastError = error instanceof Error ? error : new Error("Erro desconhecido na vitrine-api");
+      clearTimeout(timeoutId);
+      lastError = error instanceof Error ? error : new VitrineApiError("Erro desconhecido na vitrine.");
+
+      if (error instanceof VitrineApiError && error.status && error.status < 500) {
+        throw error;
+      }
 
       if (attempt < MAX_RETRIES) {
         await delay(RETRY_DELAY);
@@ -75,7 +169,24 @@ async function fetchJson<T>(path: string, params?: QueryParams): Promise<T> {
     }
   }
 
-  throw lastError ?? new Error("Falha ao consultar vitrine-api");
+  if (lastError instanceof VitrineApiError) throw lastError;
+  throw new VitrineApiError("A vitrine está temporariamente indisponível. Tente novamente em instantes.");
+}
+
+async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number): Promise<T> {
+  const url = buildUrl(path, params);
+  const cached = getCached<T>(url, ttl);
+  if (cached) return cached;
+
+  try {
+    const data = await requestJson<T>(url);
+    setCached(url, data);
+    return data;
+  } catch (error) {
+    const fallback = getCached<T>(url, ttl + FALLBACK_STALE_WINDOW);
+    if (fallback) return fallback;
+    throw error;
+  }
 }
 
 function asRecord(value: unknown): ApiRecord {
@@ -295,15 +406,15 @@ function mapConfig(response: unknown): VitrineConfig {
 export const vitrineApiService = {
   async getConfig(): Promise<VitrineConfig> {
     try {
-      return mapConfig(await fetchJson<unknown>("/config"));
+      return mapConfig(await fetchCachedJson<unknown>("/config", undefined, CACHE_TTL.config));
     } catch (error) {
-      console.warn("Erro ao carregar configuração da vitrine-api:", error);
+      console.warn(getVitrineApiErrorMessage(error));
       return DEFAULT_CONFIG;
     }
   },
 
   async getProdutos(params?: QueryParams): Promise<Produto[]> {
-    const response = await fetchJson<unknown>("/produtos", params);
+    const response = await fetchCachedJson<unknown>("/produtos", params, CACHE_TTL.produtos);
     const mapped = unwrapList(response)
       .map(mapProduto)
       .filter((produto): produto is Produto => Boolean(produto));
@@ -322,17 +433,16 @@ export const vitrineApiService = {
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
-    const produto = mapProduto(await fetchJson<unknown>(`/produto/${encodeURIComponent(String(id))}`));
-    return produto;
+    return mapProduto(await fetchCachedJson<unknown>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto));
   },
 
   async getColecoes(): Promise<unknown[]> {
-    const response = await fetchJson<unknown>("/colecoes");
+    const response = await fetchCachedJson<unknown>("/colecoes", undefined, CACHE_TTL.colecoes);
     return unwrapList(response);
   },
 
   async getCategorias(): Promise<string[]> {
-    const response = await fetchJson<unknown>("/categorias");
+    const response = await fetchCachedJson<unknown>("/categorias", undefined, CACHE_TTL.categorias);
     return unwrapList(response).filter((categoria): categoria is string => typeof categoria === "string");
   },
 };
