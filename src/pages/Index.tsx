@@ -18,6 +18,12 @@ const Index = () => {
 
   useEffect(() => {
     vitrineApiService.getConfig().then((config) => {
+      const instagramUrl = config.instagram
+        ? config.instagram.startsWith("http")
+          ? config.instagram
+          : `https://www.instagram.com/${config.instagram.replace(/^@/, "")}/`
+        : "https://www.instagram.com/marielaloja_/";
+
       updateSeo({
         title: `${config.nomeLoja} | Moda Feminina em Campina Grande`,
         description: "Loja de roupas femininas em Campina Grande. Confira vestidos, conjuntos, blusas e novidades da coleção.",
@@ -30,7 +36,7 @@ const Index = () => {
           logo: absoluteUrl(config.logoUrl),
           url: window.location.origin,
           telephone: config.whatsapp || "5583986567915",
-          sameAs: config.instagram ? [config.instagram] : ["https://www.instagram.com/marielaloja_/"],
+          sameAs: [instagramUrl],
           address: {
             "@type": "PostalAddress",
             addressLocality: "Campina Grande",
