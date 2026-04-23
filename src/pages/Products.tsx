@@ -67,7 +67,7 @@ function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | n
     return candidates.includes(normalized);
   });
 
-  return match ? { value: match.value, label: match.label, apiValue: option.value } : null;
+  return match ? { value: match.value, label: match.label, apiValue: match.label } : null;
 }
 
 const Products = () => {
@@ -152,6 +152,24 @@ const Products = () => {
         description: `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`,
         image: config.logoUrl || produtosBase[0]?.imagens[0],
         url: `${window.location.origin}/catalogo`,
+        jsonLd: {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Início",
+              item: window.location.origin,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Catálogo",
+              item: `${window.location.origin}/catalogo`,
+            },
+          ],
+        },
       });
     });
   }, [produtosBase]);
