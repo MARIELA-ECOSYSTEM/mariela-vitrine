@@ -131,24 +131,73 @@ const ProductDetail = () => {
         image: imagemPrincipal,
         url: `${window.location.origin}${getProductPath(produto)}`,
         type: "product",
-        jsonLd: {
-          "@context": "https://schema.org",
-          "@type": "Product",
-          name: produto.nome,
-          image: absoluteUrl(imagemPrincipal),
-          description: descricao,
-          brand: {
-            "@type": "Brand",
-            name: config.nomeLoja,
+        jsonLd: [
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Início",
+                item: window.location.origin,
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "Catálogo",
+                item: `${window.location.origin}/catalogo`,
+              },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: produto.nome,
+                item: `${window.location.origin}${getProductPath(produto)}`,
+              },
+            ],
           },
-          offers: {
-            "@type": "Offer",
-            price: preco.toFixed(2),
-            priceCurrency: "BRL",
-            availability: "https://schema.org/InStock",
-            url: `${window.location.origin}${getProductPath(produto)}`,
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: produto.nome,
+            image: absoluteUrl(imagemPrincipal),
+            description: descricao,
+            brand: {
+              "@type": "Brand",
+              name: config.nomeLoja,
+            },
+            breadcrumb: {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Início",
+                  item: window.location.origin,
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: "Catálogo",
+                  item: `${window.location.origin}/catalogo`,
+                },
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: produto.nome,
+                  item: `${window.location.origin}${getProductPath(produto)}`,
+                },
+              ],
+            },
+            offers: {
+              "@type": "Offer",
+              price: preco.toFixed(2),
+              priceCurrency: "BRL",
+              availability: "https://schema.org/InStock",
+              url: `${window.location.origin}${getProductPath(produto)}`,
+            },
           },
-        },
+        ],
       });
     });
   }, [produto]);
