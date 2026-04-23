@@ -196,7 +196,7 @@ const Products = () => {
   // Reset página quando filtros mudarem
   useEffect(() => {
     setPaginaAtual(1);
-  }, [categoriaSelecionada, mostrarPromocao, mostrarNovidades, coresSelecionadas, tamanhosSelecionados]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
 
   // Handler para pull-to-refresh
   const handlePullRefresh = useCallback(async () => {
