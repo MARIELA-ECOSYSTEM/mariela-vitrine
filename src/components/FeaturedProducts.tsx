@@ -13,6 +13,7 @@ interface FeaturedProductsProps {
   filter: "novidades" | "promocoes" | "destaque" | "em_alta" | "mais_procurado" | "queridinho_loja" | "destaque_colecao";
   limit?: number;
   minItems?: number;
+  forceLoading?: boolean;
   linkTo: string;
   linkLabel: string;
   products?: Produto[];
@@ -22,7 +23,7 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
   return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
 }
 
-export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems = 1, linkTo, linkLabel, products }: FeaturedProductsProps) => {
+export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems = 1, forceLoading = false, linkTo, linkLabel, products }: FeaturedProductsProps) => {
   const { produtos, loading } = useProducts();
 
   const filtered = useMemo(() => {
@@ -44,7 +45,7 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems 
   }, [produtos, filter, limit, products]);
 
   const displayed = filtered.slice(0, limit);
-  const isLoading = loading && !products;
+  const isLoading = forceLoading || (loading && !products);
 
   if (!isLoading && displayed.length < minItems) return null;
 

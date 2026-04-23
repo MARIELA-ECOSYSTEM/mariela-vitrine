@@ -11,7 +11,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag } from "lucide-react";
+import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
@@ -47,6 +47,10 @@ const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) =
 }));
 
 const produtosPorPagina = 12;
+
+function getBadgeValue(produto: Produto) {
+  return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
+}
 
 function dedupeOptions(options: CatalogFilterOption[]): CatalogFilterOption[] {
   const seen = new Set<string>();
@@ -89,6 +93,7 @@ const Products = () => {
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todas");
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
   const [mostrarNovidades, setMostrarNovidades] = useState<boolean>(false);
+  const [mostrarMaisProcurados, setMostrarMaisProcurados] = useState<boolean>(false);
   const [ordenarPor, setOrdenarPor] = useState<string>("padrao");
   const [colecaoSelecionada, setColecaoSelecionada] = useState<string>("todas");
   const [categoriasApi, setCategoriasApi] = useState<CatalogFilterOption[]>(defaultCategorias);
@@ -111,8 +116,16 @@ const Products = () => {
     const colecao = searchParams.get("colecao");
     if (filter === "promocoes") {
       setMostrarPromocao(true);
+      setMostrarNovidades(false);
+      setMostrarMaisProcurados(false);
     } else if (filter === "novidades") {
       setMostrarNovidades(true);
+      setMostrarPromocao(false);
+      setMostrarMaisProcurados(false);
+    } else if (filter === "mais_procurado") {
+      setMostrarMaisProcurados(true);
+      setMostrarPromocao(false);
+      setMostrarNovidades(false);
     }
     if (categoria && categoria !== "todas") {
       setCategoriaSelecionada(categoria);
@@ -126,11 +139,12 @@ const Products = () => {
     const next = new URLSearchParams(searchParams);
     categoriaSelecionada !== "todas" ? next.set("categoria", categoriaSelecionada) : next.delete("categoria");
     colecaoSelecionada !== "todas" ? next.set("colecao", colecaoSelecionada) : next.delete("colecao");
+    mostrarPromocao ? next.set("filter", "promocoes") : mostrarNovidades ? next.set("filter", "novidades") : mostrarMaisProcurados ? next.set("filter", "mais_procurado") : next.delete("filter");
 
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [categoriaSelecionada, colecaoSelecionada, searchParams, setSearchParams]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, searchParams, setSearchParams]);
 
   useEffect(() => {
     let active = true;
@@ -210,6 +224,9 @@ const Products = () => {
   const activeFiltersCount = 
     (categoriaSelecionada !== "todas" ? 1 : 0) +
     (colecaoSelecionada !== "todas" ? 1 : 0) +
+    (mostrarPromocao ? 1 : 0) +
+    (mostrarNovidades ? 1 : 0) +
+    (mostrarMaisProcurados ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
     (precoAlterado && (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) ? 1 : 0);
@@ -318,7 +335,7 @@ const Products = () => {
   // Reset página quando filtros mudarem
   useEffect(() => {
     setPaginaAtual(1);
-  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
 
   // Handler para pull-to-refresh
   const handlePullRefresh = useCallback(async () => {
@@ -361,6 +378,10 @@ const Products = () => {
       filtrados = filtrados.filter(p => p.isNovidade);
     }
 
+    if (mostrarMaisProcurados) {
+      filtrados = filtrados.filter(p => getBadgeValue(p) === "mais_procurado");
+    }
+
     // Filtro de preço - só aplicar se faixaPreco foi configurado e é diferente do padrão
     if (precoAlterado && (faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0)) {
       if (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) {
@@ -372,7 +393,7 @@ const Products = () => {
     }
 
     return filtrados;
-  }, [produtosBase, mostrarPromocao, mostrarNovidades, precoAlterado, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, precoAlterado, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
@@ -441,6 +462,7 @@ const Products = () => {
     setColecaoSelecionada("todas");
     setMostrarPromocao(false);
     setMostrarNovidades(false);
+    setMostrarMaisProcurados(false);
     setCoresSelecionadas([]);
     setTamanhosSelecionados([]);
     setFaixaPreco([precoMin, precoMax]);
@@ -579,6 +601,7 @@ const Products = () => {
                     onClick={() => {
                       setMostrarPromocao(!mostrarPromocao);
                       setMostrarNovidades(false);
+                      setMostrarMaisProcurados(false);
                       setPaginaAtual(1);
                     }}
                     size="sm"
@@ -598,6 +621,7 @@ const Products = () => {
                     onClick={() => {
                       setMostrarNovidades(!mostrarNovidades);
                       setMostrarPromocao(false);
+                      setMostrarMaisProcurados(false);
                       setPaginaAtual(1);
                     }}
                     size="sm"
@@ -610,6 +634,26 @@ const Products = () => {
                     Novidades
                     <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
                       {produtosBase.filter(p => p.isNovidade).length}
+                    </Badge>
+                  </Button>
+                  <Button
+                    variant={mostrarMaisProcurados ? "default" : "outline"}
+                    onClick={() => {
+                      setMostrarMaisProcurados(!mostrarMaisProcurados);
+                      setMostrarPromocao(false);
+                      setMostrarNovidades(false);
+                      setPaginaAtual(1);
+                    }}
+                    size="sm"
+                    className={cn(
+                      "gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm",
+                      mostrarMaisProcurados && "shadow-md"
+                    )}
+                  >
+                    <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Mais procurados
+                    <Badge variant={mostrarMaisProcurados ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
+                      {produtosBase.filter(p => getBadgeValue(p) === "mais_procurado").length}
                     </Badge>
                   </Button>
                 </div>

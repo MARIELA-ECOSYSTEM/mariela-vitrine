@@ -216,7 +216,7 @@ const ProductDetail = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
-          <Link to="/products">
+          <Link to="/catalogo">
             <Button>Voltar para Produtos</Button>
           </Link>
         </div>
@@ -303,7 +303,7 @@ const ProductDetail = () => {
           {/* Breadcrumbs - Hidden on mobile for cleaner look */}
           <div className="hidden md:block mb-4">
             <Breadcrumbs 
-              items={[{ label: "Produtos", path: "/products" }]} 
+              items={[{ label: "Catálogo", path: "/catalogo" }]} 
               currentPage={produto.nome} 
             />
           </div>

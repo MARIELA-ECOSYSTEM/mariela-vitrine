@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
 import { PageTransition } from "@/components/PageTransition";
@@ -27,9 +27,10 @@ const AppContent = () => {
       <PageTransition key={location.pathname}>
         <Routes location={location}>
           <Route path="/" element={<Index />} />
-          <Route path="/products" element={<Products />} />
+          <Route path="/products" element={<Navigate to={`/catalogo${location.search}`} replace />} />
           <Route path="/catalogo" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/produtos/:slug" element={<Navigate to={`/produto/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
           <Route path="/produto/:slug" element={<ProductDetail />} />
           <Route path="/monte-seu-look" element={<MonteSeuLook />} />
           <Route path="/cart" element={<Cart />} />
