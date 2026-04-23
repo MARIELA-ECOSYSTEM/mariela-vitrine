@@ -20,6 +20,61 @@ const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 type ApiRecord = Record<string, unknown>;
 
+export interface ConfigResponse {
+  data: {
+    nome_loja: string | null;
+    logo_url: string | null;
+    favicon_url: string | null;
+    cor_primaria: string | null;
+    cor_secundaria: string | null;
+    whatsapp: string | null;
+    instagram: string | null;
+  };
+}
+
+export interface ProdutoListItem {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  categoria: string | null;
+  colecao: string | null;
+  preco_venda: number;
+  imagem_thumb: string | null;
+  imagem_principal: string | null;
+}
+
+export interface ProdutoVariantPublic {
+  id: string;
+  cor: string | null;
+  tamanho: string | null;
+  disponivel: boolean;
+}
+
+export interface ProdutoDetail extends ProdutoListItem {
+  imagens: string[];
+  variantes_disponiveis: ProdutoVariantPublic[];
+}
+
+export interface ProdutoDetailResponse {
+  data: ProdutoDetail;
+}
+
+export interface CategoriaResponse {
+  data: string[];
+}
+
+export interface ColecaoResponse {
+  data: unknown[];
+}
+
+export interface PaginationResponse<T> {
+  items: T[];
+  limit: number;
+  offset: number;
+  total: number;
+  hasMore: boolean;
+}
+
 type CacheEntry<T> = {
   value: T;
   timestamp: number;
@@ -197,6 +252,11 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+function readOptionalString(source: ApiRecord, keys: string[]): string | null {
+  const value = readString(source, keys);
+  return value || null;
+}
+
 function readString(source: ApiRecord, keys: string[], fallback = ""): string {
   for (const key of keys) {
     const value = source[key];
@@ -234,6 +294,15 @@ function sanitizeString(str: string): string {
     .replace(/javascript:/gi, "")
     .replace(/on\w+=/gi, "")
     .trim();
+}
+
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
 }
 
 function isValidImageUrl(url: string): boolean {
@@ -342,7 +411,10 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
 
   if (variants.length === 0) {
     const disponibilidade = readNumber(product, ["disponibilidade", "totalAvailable", "estoque", "quantidade", "available"], 0);
-    if (disponibilidade > 0 || readBoolean(product, ["disponivel", "available", "ativo"], false)) {
+    const hasExplicitAvailability = disponibilidade > 0 || readBoolean(product, ["disponivel", "available", "ativo"], false);
+    const isListItemFromPublicCatalog = Boolean(product.id && product.nome && product.preco_venda !== undefined);
+
+    if (hasExplicitAvailability || isListItemFromPublicCatalog) {
       variants.push({
         tamanho: readString(product, ["tamanho", "size"], "U"),
         cor: readString(product, ["cor", "color"], "Única"),
@@ -406,7 +478,7 @@ function mapConfig(response: unknown): VitrineConfig {
 export const vitrineApiService = {
   async getConfig(): Promise<VitrineConfig> {
     try {
-      return mapConfig(await fetchCachedJson<unknown>("/config", undefined, CACHE_TTL.config));
+      return mapConfig(await fetchCachedJson<ConfigResponse>("/config", undefined, CACHE_TTL.config));
     } catch (error) {
       console.warn(getVitrineApiErrorMessage(error));
       return DEFAULT_CONFIG;
@@ -414,35 +486,25 @@ export const vitrineApiService = {
   },
 
   async getProdutos(params?: QueryParams): Promise<Produto[]> {
-    const response = await fetchCachedJson<unknown>("/produtos", params, CACHE_TTL.produtos);
-    const mapped = unwrapList(response)
+    const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", params, CACHE_TTL.produtos);
+    return unwrapList(response)
       .map(mapProduto)
       .filter((produto): produto is Produto => Boolean(produto));
-
-    if (mapped.length > 0) return mapped;
-
-    const summaries = unwrapList(response).map(asRecord);
-    const detailed = await Promise.all(
-      summaries.map((summary) => {
-        const id = readString(summary, ["id", "produto_id", "produtoId", "_id"]);
-        return id ? this.getProdutoById(id).catch(() => null) : Promise.resolve(null);
-      })
-    );
-
-    return detailed.filter((produto): produto is Produto => Boolean(produto));
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
-    return mapProduto(await fetchCachedJson<unknown>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto));
+    return mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto));
   },
 
   async getColecoes(): Promise<unknown[]> {
-    const response = await fetchCachedJson<unknown>("/colecoes", undefined, CACHE_TTL.colecoes);
+    const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes);
     return unwrapList(response);
   },
 
   async getCategorias(): Promise<string[]> {
-    const response = await fetchCachedJson<unknown>("/categorias", undefined, CACHE_TTL.categorias);
+    const response = await fetchCachedJson<CategoriaResponse>("/categorias", undefined, CACHE_TTL.categorias);
     return unwrapList(response).filter((categoria): categoria is string => typeof categoria === "string");
   },
+
+  isValidBrandingUrl: isValidUrl,
 };
