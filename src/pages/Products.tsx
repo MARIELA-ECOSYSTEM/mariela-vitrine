@@ -48,6 +48,10 @@ const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) =
 
 const produtosPorPagina = 12;
 
+function getBadgeValue(produto: Produto) {
+  return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
+}
+
 function dedupeOptions(options: CatalogFilterOption[]): CatalogFilterOption[] {
   const seen = new Set<string>();
   return options.filter((option) => {
@@ -220,6 +224,7 @@ const Products = () => {
   const activeFiltersCount = 
     (categoriaSelecionada !== "todas" ? 1 : 0) +
     (colecaoSelecionada !== "todas" ? 1 : 0) +
+    (mostrarMaisProcurados ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
     (precoAlterado && (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) ? 1 : 0);
@@ -371,6 +376,10 @@ const Products = () => {
       filtrados = filtrados.filter(p => p.isNovidade);
     }
 
+    if (mostrarMaisProcurados) {
+      filtrados = filtrados.filter(p => getBadgeValue(p) === "mais_procurado");
+    }
+
     // Filtro de preço - só aplicar se faixaPreco foi configurado e é diferente do padrão
     if (precoAlterado && (faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0)) {
       if (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) {
@@ -382,7 +391,7 @@ const Products = () => {
     }
 
     return filtrados;
-  }, [produtosBase, mostrarPromocao, mostrarNovidades, precoAlterado, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, precoAlterado, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
