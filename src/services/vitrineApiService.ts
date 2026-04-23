@@ -81,6 +81,14 @@ export interface PaginationResponse<T> {
   hasMore: boolean;
 }
 
+export interface ProdutosPage {
+  items: Produto[];
+  limit: number;
+  offset: number;
+  total: number;
+  hasMore: boolean;
+}
+
 type CacheEntry<T> = {
   value: T;
   timestamp: number;
@@ -134,6 +142,20 @@ function buildUrl(path: string, params?: QueryParams): string {
     });
   }
   return url.toString();
+}
+
+function normalizeProdutosParams(params?: QueryParams): QueryParams | undefined {
+  if (!params) return undefined;
+  const normalized: QueryParams = { ...params };
+
+  (["preco_min", "preco_max", "limit", "offset"] as const).forEach((key) => {
+    const value = normalized[key];
+    if (value === null || value === undefined || value === "") return;
+    const numeric = Number(value);
+    normalized[key] = Number.isFinite(numeric) && numeric >= 0 ? numeric : undefined;
+  });
+
+  return normalized;
 }
 
 function readLocalStorageCache(): Record<string, CacheEntry<unknown>> {
