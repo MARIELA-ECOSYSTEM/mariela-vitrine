@@ -169,6 +169,7 @@ const Products = () => {
   }, [produtosBase]);
 
   const [faixaPreco, setFaixaPreco] = useState<[number, number]>([0, 0]);
+  const [precoAlterado, setPrecoAlterado] = useState(false);
   const faixaPrecoSegura = useMemo<[number, number]>(() => {
     const min = Math.max(0, Number.isFinite(faixaPreco[0]) ? faixaPreco[0] : 0);
     const max = Math.max(0, Number.isFinite(faixaPreco[1]) ? faixaPreco[1] : min);
@@ -181,7 +182,7 @@ const Products = () => {
     (colecaoSelecionada !== "todas" ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
-    ((faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0) && (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) ? 1 : 0);
+    (precoAlterado && (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) ? 1 : 0);
 
   // Contagem de produtos por categoria - usando os valores corretos do banco
   const categoriasCount = useMemo(() => {
@@ -223,10 +224,10 @@ const Products = () => {
       categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
       colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
       ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
-      preco_min: precoMin > 0 && faixaPrecoSegura[0] > precoMin ? faixaPrecoSegura[0] : undefined,
-      preco_max: precoMax > 0 && faixaPrecoSegura[1] > 0 && faixaPrecoSegura[1] < precoMax ? faixaPrecoSegura[1] : undefined,
+      preco_min: precoAlterado && faixaPrecoSegura[0] > 0 ? faixaPrecoSegura[0] : undefined,
+      preco_max: precoAlterado && faixaPrecoSegura[1] > 0 ? faixaPrecoSegura[1] : undefined,
     };
-  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoMax, precoMin, searchQuery]);
+  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoAlterado, searchQuery]);
 
   useEffect(() => {
     let active = true;
