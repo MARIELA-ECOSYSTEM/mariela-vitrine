@@ -599,6 +599,7 @@ const Products = () => {
                     onClick={() => {
                       setMostrarPromocao(!mostrarPromocao);
                       setMostrarNovidades(false);
+                      setMostrarMaisProcurados(false);
                       setPaginaAtual(1);
                     }}
                     size="sm"
@@ -618,6 +619,7 @@ const Products = () => {
                     onClick={() => {
                       setMostrarNovidades(!mostrarNovidades);
                       setMostrarPromocao(false);
+                      setMostrarMaisProcurados(false);
                       setPaginaAtual(1);
                     }}
                     size="sm"
@@ -630,6 +632,26 @@ const Products = () => {
                     Novidades
                     <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
                       {produtosBase.filter(p => p.isNovidade).length}
+                    </Badge>
+                  </Button>
+                  <Button
+                    variant={mostrarMaisProcurados ? "default" : "outline"}
+                    onClick={() => {
+                      setMostrarMaisProcurados(!mostrarMaisProcurados);
+                      setMostrarPromocao(false);
+                      setMostrarNovidades(false);
+                      setPaginaAtual(1);
+                    }}
+                    size="sm"
+                    className={cn(
+                      "gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm",
+                      mostrarMaisProcurados && "shadow-md"
+                    )}
+                  >
+                    <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Mais procurados
+                    <Badge variant={mostrarMaisProcurados ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
+                      {produtosBase.filter(p => getBadgeValue(p) === "mais_procurado").length}
                     </Badge>
                   </Button>
                 </div>
