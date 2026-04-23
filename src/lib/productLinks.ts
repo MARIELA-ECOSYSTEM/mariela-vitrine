@@ -48,5 +48,9 @@ export function getProductShareMessage(
 export function matchesProductSlug(produto: Produto, value: string | undefined): boolean {
   if (!value) return false;
   const normalizedValue = decodeURIComponent(value).trim();
-  return String(produto.id) === normalizedValue || createProductSlug(produto.nome) === normalizedValue;
+  return (
+    String(produto.id) === normalizedValue ||
+    String(produto.codigoProduto) === normalizedValue ||
+    createProductSlug(produto.nome) === normalizedValue
+  );
 }

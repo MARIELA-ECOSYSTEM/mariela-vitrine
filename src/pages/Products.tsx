@@ -70,6 +70,18 @@ function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | n
   return match ? { value: match.value, label: match.label, apiValue: match.label } : null;
 }
 
+function normalizeSearchValue(value: string): string {
+  return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function resolveCategoriaApiValue(categorias: CatalogFilterOption[], selected: string): string {
+  const normalizedSelected = normalizeSearchValue(selected);
+  const match = categorias.find((categoria) =>
+    [categoria.value, categoria.label, categoria.apiValue || ""].some((value) => normalizeSearchValue(value) === normalizedSelected)
+  );
+  return match?.apiValue || match?.label || selected;
+}
+
 const Products = () => {
   const { produtos, loading, isFromCache, forceRefresh } = useProducts();
   const { toast } = useToast();
@@ -233,7 +245,7 @@ const Products = () => {
   }, [precoMin, precoMax]);
 
   const getProdutosQuery = useCallback((offset = 0) => {
-    const categoriaApi = categoriasApi.find((categoria) => categoria.value === categoriaSelecionada)?.apiValue ?? categoriaSelecionada;
+    const categoriaApi = resolveCategoriaApiValue(categoriasApi, categoriaSelecionada);
 
     return {
       limit: produtosPorPagina,
@@ -253,7 +265,15 @@ const Products = () => {
     setProdutosCatalogo([]);
     setPaginaAtual(1);
 
-    vitrineApiService.getProdutosPage(getProdutosQuery(0)).then((page) => {
+    const query = getProdutosQuery(0);
+    if (query.categoria) {
+      console.info("[vitrine-api] filtro categoria", {
+        selecionada: categoriaSelecionada,
+        apiValue: query.categoria,
+      });
+    }
+
+    vitrineApiService.getProdutosPage(query).then((page) => {
       if (!active) return;
       setProdutosCatalogo(page.items);
       setHasMore(page.hasMore);
@@ -269,7 +289,7 @@ const Products = () => {
     return () => {
       active = false;
     };
-  }, [getProdutosQuery]);
+  }, [categoriaSelecionada, getProdutosQuery]);
 
   const handleCarregarMais = useCallback(async () => {
     if (loadingMore || !hasMore) return;
