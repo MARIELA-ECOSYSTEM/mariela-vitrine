@@ -121,17 +121,6 @@ const Products = () => {
   }, [categoriaSelecionada, colecaoSelecionada, searchParams, setSearchParams]);
 
   useEffect(() => {
-    vitrineApiService.getConfig().then((config) => {
-      updateSeo({
-        title: `Catálogo | ${config.nomeLoja}`,
-        description: `Confira as novidades e coleções da ${config.nomeLoja}`,
-        image: config.logoUrl || produtosBase[0]?.imagens[0],
-        url: window.location.href,
-      });
-    });
-  }, [produtosBase]);
-
-  useEffect(() => {
     let active = true;
 
     Promise.allSettled([vitrineApiService.getCategorias(), vitrineApiService.getColecoes()]).then(([categoriasResult, colecoesResult]) => {
@@ -155,6 +144,17 @@ const Products = () => {
   }, []);
 
   const produtosBase = produtosCatalogo.length > 0 || !catalogLoading ? produtosCatalogo : produtos;
+
+  useEffect(() => {
+    vitrineApiService.getConfig().then((config) => {
+      updateSeo({
+        title: `Catálogo | ${config.nomeLoja}`,
+        description: `Confira as novidades e coleções da ${config.nomeLoja}`,
+        image: config.logoUrl || produtosBase[0]?.imagens[0],
+        url: window.location.href,
+      });
+    });
+  }, [produtosBase]);
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
