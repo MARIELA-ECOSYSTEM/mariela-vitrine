@@ -143,15 +143,15 @@ const Products = () => {
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
-    if (produtos.length === 0) {
+    if (produtosBase.length === 0) {
       return { precoMin: 0, precoMax: 0 };
     }
-    const precos = produtos.map(p => p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda);
+    const precos = produtosBase.map(p => p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda);
     return {
       precoMin: Math.floor(Math.min(...precos)),
       precoMax: Math.ceil(Math.max(...precos))
     };
-  }, [produtos]);
+  }, [produtosBase]);
 
   const [faixaPreco, setFaixaPreco] = useState<[number, number]>([0, 0]);
 
@@ -165,7 +165,7 @@ const Products = () => {
   // Contagem de produtos por categoria - usando os valores corretos do banco
   const categoriasCount = useMemo(() => {
     const counts: Record<string, number> = {
-      todas: produtos.length,
+      todas: produtosBase.length,
     };
     
     // Inicializar todas as categorias com 0
@@ -176,14 +176,14 @@ const Products = () => {
     });
     
     // Contar produtos por categoria
-    produtos.forEach(p => {
+    produtosBase.forEach(p => {
       if (counts[p.categoria] !== undefined) {
         counts[p.categoria]++;
       }
     });
     
     return counts;
-  }, [produtos]);
+  }, [produtosBase]);
 
   // Atualizar faixa de preço quando produtos carregarem
   useEffect(() => {
@@ -216,7 +216,7 @@ const Products = () => {
 
   // Filtrar produtos primeiro (sem cor e tamanho)
   const produtosFiltradosParcial = useMemo(() => {
-    let filtrados = produtos;
+    let filtrados = produtosBase;
 
     // Filtro de busca
     if (searchQuery.trim()) {
@@ -231,6 +231,10 @@ const Products = () => {
     // Filtro de categoria
     if (categoriaSelecionada !== "todas") {
       filtrados = filtrados.filter(p => p.categoria === categoriaSelecionada);
+    }
+
+    if (colecaoSelecionada !== "todas") {
+      filtrados = filtrados.filter(p => p.colecao === colecaoSelecionada);
     }
     
     // Filtro de promoção
@@ -254,7 +258,7 @@ const Products = () => {
     }
 
     return filtrados;
-  }, [produtos, categoriaSelecionada, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
@@ -320,6 +324,7 @@ const Products = () => {
 
   const handleLimparFiltros = () => {
     setCategoriaSelecionada("todas");
+    setColecaoSelecionada("todas");
     setMostrarPromocao(false);
     setMostrarNovidades(false);
     setCoresSelecionadas([]);
