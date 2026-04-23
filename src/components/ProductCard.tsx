@@ -364,7 +364,7 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
   return (
     <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
       <CardContent className="p-0 flex flex-col flex-1">
-        <Link to={`/products/${produto.id}`} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
+        <Link to={getProductPath(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 
             src={imagemAtual} 
             alt={produto.nome}
