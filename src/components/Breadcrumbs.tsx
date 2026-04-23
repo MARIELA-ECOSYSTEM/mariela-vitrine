@@ -12,9 +12,15 @@ interface BreadcrumbsProps {
 }
 
 const ROUTE_NAMES: Record<string, string> = {
-  products: "Produtos",
+  products: "Catálogo",
+  catalogo: "Catálogo",
+  produto: "Produto",
   cart: "Carrinho",
   "monte-seu-look": "Monte Seu Look",
+};
+
+const CANONICAL_PATHS: Record<string, string> = {
+  products: "/catalogo",
 };
 
 export const Breadcrumbs = ({ items, currentPage }: BreadcrumbsProps) => {
@@ -25,7 +31,7 @@ export const Breadcrumbs = ({ items, currentPage }: BreadcrumbsProps) => {
     const paths = location.pathname.split("/").filter(Boolean);
     return paths.slice(0, -1).map((path, index) => ({
       label: ROUTE_NAMES[path] || path,
-      path: "/" + paths.slice(0, index + 1).join("/"),
+      path: CANONICAL_PATHS[path] || "/" + paths.slice(0, index + 1).join("/"),
     }));
   })();
 

@@ -90,27 +90,43 @@ const Index = () => {
         subtitle="Recém-chegadas à coleção"
         filter="novidades"
         limit={8}
+        forceLoading={loading}
         linkTo="/products?filter=novidades"
         linkLabel="Ver todas as novidades"
       />
-      {homeBadgeSections.map((section) => (
-        <FeaturedProducts
-          key={section.filter}
-          title={section.title}
-          subtitle={section.subtitle}
-          filter={section.filter}
-          limit={4}
-          minItems={1}
-          products={section.products}
-          linkTo="/products"
-          linkLabel="Ver produtos"
-        />
-      ))}
+      {loading
+        ? HOME_BADGE_SECTIONS.map((section) => (
+            <FeaturedProducts
+              key={section.filter}
+              title={section.title}
+              subtitle={section.subtitle}
+              filter={section.filter}
+              limit={4}
+              forceLoading
+              products={[]}
+              linkTo={`/products?filter=${section.filter}`}
+              linkLabel={section.filter === "mais_procurado" ? "Ver mais procurados" : "Ver produtos"}
+            />
+          ))
+        : homeBadgeSections.map((section) => (
+            <FeaturedProducts
+              key={section.filter}
+              title={section.title}
+              subtitle={section.subtitle}
+              filter={section.filter}
+              limit={4}
+              minItems={1}
+              products={section.products}
+              linkTo={`/products?filter=${section.filter}`}
+              linkLabel={section.filter === "mais_procurado" ? "Ver mais procurados" : "Ver produtos"}
+            />
+          ))}
       <FeaturedProducts
         title="Promoções"
         subtitle="Descontos em peças selecionadas"
         filter="promocoes"
         limit={4}
+        forceLoading={loading}
         linkTo="/products?filter=promocoes"
         linkLabel="Ver todas as promoções"
       />
