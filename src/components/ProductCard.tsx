@@ -181,9 +181,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
 
   const handleWhatsApp = () => {
     const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
-    const corParaUsar = corSelecionada;
+    const corParaUsar = corSelecionada || produto.variants.find((variant) => variant.disponibilidade > 0)?.cor || "não informada";
     
-    if (!isAcessorio && !corParaUsar) {
+    if (!isAcessorio && !corSelecionada) {
       toast({
         title: "Selecione uma cor",
         description: "Por favor, escolha a cor antes de enviar pelo WhatsApp.",
@@ -203,7 +203,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     
     const productLink = getTrackedProductUrl(produto);
     const colecao = produto.colecao ? ` (${produto.colecao})` : "";
-    const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}, cor ${corParaUsar}, tamanho ${tamanhoParaUsar}. Link: ${productLink}`;
+    const tamanhoTexto = tamanhoParaUsar ? `, tamanho ${tamanhoParaUsar}` : "";
+    const corTexto = corParaUsar ? `, cor ${corParaUsar}` : "";
+    const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}${corTexto}${tamanhoTexto}. Link: ${productLink}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
