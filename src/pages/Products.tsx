@@ -313,16 +313,6 @@ const Products = () => {
       );
     }
     
-    // Filtro de categoria
-    if (categoriaSelecionada !== "todas") {
-      filtrados = filtrados.filter(p => p.categoria === categoriaSelecionada);
-    }
-
-    if (colecaoSelecionada !== "todas") {
-      const colecaoAtual = colecoesApi.find((colecao) => colecao.value === colecaoSelecionada);
-      filtrados = filtrados.filter(p => p.colecao === colecaoSelecionada || p.colecao === colecaoAtual?.label);
-    }
-    
     // Filtro de promoção
     if (mostrarPromocao) {
       filtrados = filtrados.filter(p => p.emPromocao);
@@ -334,7 +324,7 @@ const Products = () => {
     }
 
     // Filtro de preço - só aplicar se faixaPreco foi configurado e é diferente do padrão
-    if (faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0) {
+    if (precoAlterado && (faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0)) {
       if (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) {
         filtrados = filtrados.filter(p => {
           const preco = p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda;
@@ -344,7 +334,7 @@ const Products = () => {
     }
 
     return filtrados;
-  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, colecoesApi, mostrarPromocao, mostrarNovidades, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, mostrarPromocao, mostrarNovidades, precoAlterado, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
@@ -416,6 +406,7 @@ const Products = () => {
     setCoresSelecionadas([]);
     setTamanhosSelecionados([]);
     setFaixaPreco([precoMin, precoMax]);
+    setPrecoAlterado(false);
     setPaginaAtual(1);
   };
 
