@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
 import { vitrineApiService, type FilterOption } from "@/services/vitrineApiService";
 import type { Produto } from "@/data/products";
+import { updateSeo } from "@/lib/seo";
 import {
   Select,
   SelectContent,
@@ -72,7 +73,7 @@ function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | n
 const Products = () => {
   const { produtos, loading, isFromCache, forceRefresh } = useProducts();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todas");
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
   const [mostrarNovidades, setMostrarNovidades] = useState<boolean>(false);
@@ -110,6 +111,16 @@ const Products = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    categoriaSelecionada !== "todas" ? next.set("categoria", categoriaSelecionada) : next.delete("categoria");
+    colecaoSelecionada !== "todas" ? next.set("colecao", colecaoSelecionada) : next.delete("colecao");
+
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [categoriaSelecionada, colecaoSelecionada, searchParams, setSearchParams]);
+
+  useEffect(() => {
     let active = true;
 
     Promise.allSettled([vitrineApiService.getCategorias(), vitrineApiService.getColecoes()]).then(([categoriasResult, colecoesResult]) => {
@@ -134,6 +145,17 @@ const Products = () => {
 
   const produtosBase = produtosCatalogo.length > 0 || !catalogLoading ? produtosCatalogo : produtos;
 
+  useEffect(() => {
+    vitrineApiService.getConfig().then((config) => {
+      updateSeo({
+        title: `Catálogo | ${config.nomeLoja}`,
+        description: `Confira as novidades e coleções da ${config.nomeLoja}`,
+        image: config.logoUrl || produtosBase[0]?.imagens[0],
+        url: window.location.href,
+      });
+    });
+  }, [produtosBase]);
+
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
     if (produtosBase.length === 0) {
@@ -147,6 +169,12 @@ const Products = () => {
   }, [produtosBase]);
 
   const [faixaPreco, setFaixaPreco] = useState<[number, number]>([0, 0]);
+  const [precoAlterado, setPrecoAlterado] = useState(false);
+  const faixaPrecoSegura = useMemo<[number, number]>(() => {
+    const min = Math.max(0, Number.isFinite(faixaPreco[0]) ? faixaPreco[0] : 0);
+    const max = Math.max(0, Number.isFinite(faixaPreco[1]) ? faixaPreco[1] : min);
+    return min <= max ? [min, max] : [max, min];
+  }, [faixaPreco]);
 
   // Contador de filtros ativos
   const activeFiltersCount = 
@@ -154,7 +182,7 @@ const Products = () => {
     (colecaoSelecionada !== "todas" ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
-    ((faixaPreco[0] > 0 || faixaPreco[1] > 0) && (faixaPreco[0] !== precoMin || faixaPreco[1] !== precoMax) ? 1 : 0);
+    (precoAlterado && (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) ? 1 : 0);
 
   // Contagem de produtos por categoria - usando os valores corretos do banco
   const categoriasCount = useMemo(() => {
@@ -196,10 +224,10 @@ const Products = () => {
       categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
       colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
       ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
-      preco_min: precoMin > 0 && faixaPreco[0] > precoMin ? faixaPreco[0] : undefined,
-      preco_max: precoMax > 0 && faixaPreco[1] > 0 && faixaPreco[1] < precoMax ? faixaPreco[1] : undefined,
+      preco_min: precoAlterado && faixaPrecoSegura[0] > 0 ? faixaPrecoSegura[0] : undefined,
+      preco_max: precoAlterado && faixaPrecoSegura[1] > 0 ? faixaPrecoSegura[1] : undefined,
     };
-  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPreco, ordenarPor, precoMax, precoMin, searchQuery]);
+  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoAlterado, searchQuery]);
 
   useEffect(() => {
     let active = true;
@@ -285,16 +313,6 @@ const Products = () => {
       );
     }
     
-    // Filtro de categoria
-    if (categoriaSelecionada !== "todas") {
-      filtrados = filtrados.filter(p => p.categoria === categoriaSelecionada);
-    }
-
-    if (colecaoSelecionada !== "todas") {
-      const colecaoAtual = colecoesApi.find((colecao) => colecao.value === colecaoSelecionada);
-      filtrados = filtrados.filter(p => p.colecao === colecaoSelecionada || p.colecao === colecaoAtual?.label);
-    }
-    
     // Filtro de promoção
     if (mostrarPromocao) {
       filtrados = filtrados.filter(p => p.emPromocao);
@@ -306,17 +324,17 @@ const Products = () => {
     }
 
     // Filtro de preço - só aplicar se faixaPreco foi configurado e é diferente do padrão
-    if (faixaPreco[0] > 0 || faixaPreco[1] > 0) {
-      if (faixaPreco[0] !== precoMin || faixaPreco[1] !== precoMax) {
+    if (precoAlterado && (faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0)) {
+      if (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) {
         filtrados = filtrados.filter(p => {
           const preco = p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda;
-          return preco >= faixaPreco[0] && preco <= faixaPreco[1];
+          return preco >= faixaPrecoSegura[0] && preco <= faixaPrecoSegura[1];
         });
       }
     }
 
     return filtrados;
-  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, colecoesApi, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, mostrarPromocao, mostrarNovidades, precoAlterado, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
@@ -388,6 +406,7 @@ const Products = () => {
     setCoresSelecionadas([]);
     setTamanhosSelecionados([]);
     setFaixaPreco([precoMin, precoMax]);
+    setPrecoAlterado(false);
     setPaginaAtual(1);
   };
 
@@ -498,6 +517,7 @@ const Products = () => {
                     setTamanhosSelecionados={setTamanhosSelecionados}
                     faixaPreco={faixaPreco}
                     setFaixaPreco={setFaixaPreco}
+                    setPrecoAlterado={setPrecoAlterado}
                     coresDisponiveis={coresDisponiveis}
                     tamanhosDisponiveis={tamanhosDisponiveis}
                     precoMin={precoMin}
@@ -628,7 +648,7 @@ const Products = () => {
                   {/* Contador */}
                   <div className="text-center mt-8">
                     <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {produtosOrdenados.length}/{totalProdutos || produtosOrdenados.length} produtos
+                      {produtosOrdenados.length}/{totalProdutos || produtosOrdenados.length} produtos encontrados
                     </span>
                   </div>
 

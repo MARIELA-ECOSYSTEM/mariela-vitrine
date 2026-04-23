@@ -22,6 +22,7 @@ interface ProductFiltersProps {
   setTamanhosSelecionados: (value: string[]) => void;
   faixaPreco: [number, number];
   setFaixaPreco: (value: [number, number]) => void;
+  setPrecoAlterado?: (value: boolean) => void;
   
   // Dados disponíveis
   coresDisponiveis: string[];
@@ -59,6 +60,7 @@ const FiltersContent = ({
   setTamanhosSelecionados,
   faixaPreco,
   setFaixaPreco,
+  setPrecoAlterado = () => {},
   coresDisponiveis,
   tamanhosDisponiveis,
   precoMin,
@@ -314,8 +316,10 @@ const FiltersContent = ({
                     max={faixaPreco[1]}
                     value={faixaPreco[0]}
                     onChange={(e) => {
-                      const value = Math.max(precoMin, Math.min(Number(e.target.value), faixaPreco[1]));
+                      const rawValue = Number(e.target.value);
+                      const value = Math.max(0, precoMin, Math.min(Number.isFinite(rawValue) ? rawValue : precoMin, faixaPreco[1]));
                       setFaixaPreco([value, faixaPreco[1]]);
+                      setPrecoAlterado(true);
                     }}
                     className="pl-8 h-9 text-sm"
                   />
@@ -332,8 +336,10 @@ const FiltersContent = ({
                     max={precoMax}
                     value={faixaPreco[1]}
                     onChange={(e) => {
-                      const value = Math.min(precoMax, Math.max(Number(e.target.value), faixaPreco[0]));
+                      const rawValue = Number(e.target.value);
+                      const value = Math.min(precoMax, Math.max(Number.isFinite(rawValue) ? rawValue : faixaPreco[0], 0, faixaPreco[0]));
                       setFaixaPreco([faixaPreco[0], value]);
+                      setPrecoAlterado(true);
                     }}
                     className="pl-8 h-9 text-sm"
                   />
@@ -347,7 +353,11 @@ const FiltersContent = ({
               max={precoMax}
               step={1}
               value={faixaPreco}
-              onValueChange={(value) => setFaixaPreco(value as [number, number])}
+              onValueChange={(value) => {
+                const [min, max] = value as [number, number];
+                setFaixaPreco([Math.max(0, Math.min(min, max)), Math.max(0, Math.max(min, max))]);
+                setPrecoAlterado(true);
+              }}
               className="w-full"
             />
 
@@ -363,7 +373,10 @@ const FiltersContent = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setFaixaPreco([precoMin, precoMax])}
+                onClick={() => {
+                  setFaixaPreco([precoMin, precoMax]);
+                  setPrecoAlterado(false);
+                }}
                 className="flex-1 text-xs"
               >
                 Limpar
@@ -371,7 +384,10 @@ const FiltersContent = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setFaixaPreco([precoMin, Math.floor((precoMin + precoMax) / 2)])}
+                onClick={() => {
+                  setFaixaPreco([precoMin, Math.floor((precoMin + precoMax) / 2)]);
+                  setPrecoAlterado(true);
+                }}
                 className="flex-1 text-xs"
               >
                 Até 50%

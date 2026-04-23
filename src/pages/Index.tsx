@@ -7,11 +7,25 @@ import { Footer } from "@/components/Footer";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useProducts } from "@/hooks/useProducts";
+import { updateSeo } from "@/lib/seo";
+import { vitrineApiService } from "@/services/vitrineApiService";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 const Index = () => {
   const { loading, produtos } = useProducts();
+
+  useEffect(() => {
+    vitrineApiService.getConfig().then((config) => {
+      updateSeo({
+        title: `${config.nomeLoja} | Moda Feminina`,
+        description: `Confira novidades, coleções e peças selecionadas da ${config.nomeLoja}.`,
+        image: config.logoUrl || produtos[0]?.imagens[0],
+        url: window.location.origin,
+      });
+    });
+  }, [produtos]);
 
   return (
     <div className="min-h-screen bg-background pt-[60px] sm:pt-[68px]">
