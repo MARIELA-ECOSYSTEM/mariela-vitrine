@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -43,6 +43,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useCart();
   const { toast } = useToast();
   const { produtos, loading } = useProducts();
@@ -54,6 +55,11 @@ const ProductDetail = () => {
   const [imagemSelecionadaIndex, setImagemSelecionadaIndex] = useState(0);
   
   const whatsappNumber = "5583986567915";
+
+  useEffect(() => {
+    if (!produto || !id) return;
+    navigate(`${getProductPath(produto)}${location.search}`, { replace: true });
+  }, [id, location.search, navigate, produto]);
 
   // Obter cores disponíveis (não depende de tamanho)
   const coresDisponiveis = useMemo(() => {
@@ -134,7 +140,6 @@ const ProductDetail = () => {
         type: "product",
         jsonLd: [
           {
-            "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
               {
@@ -158,7 +163,6 @@ const ProductDetail = () => {
             ],
           },
           {
-            "@context": "https://schema.org",
             "@type": "Product",
             name: produto.nome,
             image: absoluteUrl(imagemPrincipal),
