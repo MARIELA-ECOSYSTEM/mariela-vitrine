@@ -118,12 +118,12 @@ const Products = () => {
       if (categoriasResult.status === "fulfilled") {
         const categoriasReais = categoriasResult.value.map(normalizeCategoriaOption).filter((categoria): categoria is CatalogFilterOption => Boolean(categoria));
         if (categoriasReais.length > 0) {
-          setCategoriasApi([defaultCategorias[0], ...categoriasReais.filter((categoria) => categoria.value !== "todas")]);
+          setCategoriasApi(dedupeOptions([defaultCategorias[0], ...categoriasReais.filter((categoria) => categoria.value !== "todas")]));
         }
       }
 
       if (colecoesResult.status === "fulfilled") {
-        setColecoesApi([{ value: "todas", label: "Todas" }, ...colecoesResult.value]);
+        setColecoesApi(dedupeOptions([{ value: "todas", label: "Todas" }, ...colecoesResult.value]));
       }
     });
 
@@ -132,29 +132,7 @@ const Products = () => {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    const categoriaApi = categoriasApi.find((categoria) => categoria.value === categoriaSelecionada)?.apiValue ?? categoriaSelecionada;
-
-    vitrineApiService.getProdutos({
-      limit: 100,
-      offset: 0,
-      busca: searchQuery.trim() || undefined,
-      categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
-      colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
-      ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
-    }).then((data) => {
-      if (active) setProdutosCatalogo(data);
-    }).catch(() => {
-      if (active) setProdutosCatalogo(null);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [categoriaSelecionada, colecaoSelecionada, ordenarPor, searchQuery, categoriasApi]);
-
-  const produtosBase = produtosCatalogo ?? produtos;
+  const produtosBase = produtosCatalogo.length > 0 || !catalogLoading ? produtosCatalogo : produtos;
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
