@@ -674,14 +674,27 @@ export const vitrineApiService = {
     return (await this.getProdutosPage(params)).items;
   },
 
+  async getDestaques(params?: QueryParams): Promise<ProdutoDestaquePublico[]> {
+    try {
+      const response = await fetchCachedJson<RespostaDestaques>("/destaques", { limit: 50, ...params }, CACHE_TTL.destaques, validateDestaquesResponse);
+      return response.items;
+    } catch (error) {
+      logVitrineWarning(getVitrineApiErrorMessage(error), error);
+      return [];
+    }
+  },
+
   async getProdutosPage(params?: QueryParams): Promise<ProdutosPage> {
-    const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse);
+    const [response, destaques] = await Promise.all([
+      fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
+      this.getDestaques(),
+    ]);
     const items = unwrapList(response)
       .map(mapProduto)
       .filter((produto): produto is Produto => Boolean(produto));
 
     return {
-      items,
+      items: applyDestaquesToProdutos(items, destaques),
       limit: response.limit,
       offset: response.offset,
       total: response.total || items.length,
