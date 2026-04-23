@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 import produtoGenerico from "@/assets/produto-generico.png";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
-import { getProductPath, getTrackedProductUrl } from "@/lib/productLinks";
+import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -202,10 +202,11 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     }
     
     const productLink = getTrackedProductUrl(produto);
-    const colecao = produto.colecao ? ` (${produto.colecao})` : "";
-    const tamanhoTexto = tamanhoParaUsar ? `, tamanho ${tamanhoParaUsar}` : "";
-    const corTexto = corParaUsar ? `, cor ${corParaUsar}` : "";
-    const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}${corTexto}${tamanhoTexto}. Link: ${productLink}`;
+    const message = getProductShareMessage(produto, {
+      cor: corSelecionada || undefined,
+      tamanho: tamanhoParaUsar || undefined,
+      url: productLink,
+    });
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -216,7 +217,7 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
       <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row">
-            <Link to={getProductPath(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
+            <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
               <ProductImageSkeleton 
                 src={imagemAtual} 
                 alt={produto.nome}
@@ -366,7 +367,7 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
   return (
     <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
       <CardContent className="p-0 flex flex-col flex-1">
-        <Link to={getProductPath(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
+        <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 
             src={imagemAtual} 
             alt={produto.nome}
