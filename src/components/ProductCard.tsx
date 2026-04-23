@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import produtoGenerico from "@/assets/produto-generico.png";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
+import { getProductPath, getTrackedProductUrl } from "@/lib/productLinks";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -200,7 +201,7 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
       return;
     }
     
-    const productLink = `${window.location.origin}/products/${produto.id}`;
+    const productLink = getTrackedProductUrl(produto);
     const colecao = produto.colecao ? ` (${produto.colecao})` : "";
     const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}, cor ${corParaUsar}, tamanho ${tamanhoParaUsar}. Link: ${productLink}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -213,7 +214,7 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
       <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row">
-            <Link to={`/products/${produto.id}`} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
+            <Link to={getProductPath(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
               <ProductImageSkeleton 
                 src={imagemAtual} 
                 alt={produto.nome}
