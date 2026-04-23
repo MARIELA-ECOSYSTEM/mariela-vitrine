@@ -13,7 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
 import { updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
-import { getProductPath, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
+import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -132,6 +133,10 @@ const ProductDetail = () => {
     });
   }, [produto]);
 
+  if (loading) {
+    return <LoadingOverlay />;
+  }
+
   if (!produto) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -207,10 +212,11 @@ const ProductDetail = () => {
     }
     
     const productLink = getTrackedProductUrl(produto);
-    const colecao = produto.colecao ? ` (${produto.colecao})` : "";
-    const tamanhoTexto = tamanhoParaUsar ? `, tamanho ${tamanhoParaUsar}` : "";
-    const corTexto = corParaUsar ? `, cor ${corParaUsar}` : "";
-    const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}${corTexto}${tamanhoTexto}. Link: ${productLink}`;
+    const message = getProductShareMessage(produto, {
+      cor: corSelecionada || undefined,
+      tamanho: tamanhoParaUsar || undefined,
+      url: productLink,
+    });
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
