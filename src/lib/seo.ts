@@ -1,6 +1,6 @@
-const DEFAULT_TITLE = "Mariela Moda Feminina | Moda Feminina";
-const DEFAULT_DESCRIPTION = "Moda feminina com peças selecionadas, novidades e coleções especiais.";
-const DEFAULT_IMAGE = `${window.location.origin}/placeholder.svg`;
+const DEFAULT_TITLE = "Mariela Moda Feminina | Moda Feminina em Campina Grande";
+const DEFAULT_DESCRIPTION = "Loja de roupas femininas em Campina Grande. Confira vestidos, conjuntos, blusas e novidades da coleção.";
+const DEFAULT_IMAGE_PATH = "/placeholder.svg";
 
 type SeoOptions = {
   title: string;
@@ -8,6 +8,7 @@ type SeoOptions = {
   image?: string | null;
   url?: string;
   type?: "website" | "product";
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[] | null;
 };
 
 function ensureMeta(selector: string, create: () => HTMLMetaElement): HTMLMetaElement {
@@ -46,16 +47,32 @@ function setCanonical(url: string): void {
   link.href = url;
 }
 
-function absoluteUrl(value?: string | null): string {
-  if (!value) return DEFAULT_IMAGE;
+export function absoluteUrl(value?: string | null): string {
+  const fallback = new URL(DEFAULT_IMAGE_PATH, window.location.origin).toString();
+  if (!value) return fallback;
   try {
     return new URL(value, window.location.origin).toString();
   } catch {
-    return DEFAULT_IMAGE;
+    return fallback;
   }
 }
 
-export function updateSeo({ title, description, image, url = window.location.href, type = "website" }: SeoOptions): void {
+function setJsonLd(data?: SeoOptions["jsonLd"]): void {
+  const id = "page-json-ld";
+  const existing = document.getElementById(id);
+  if (!data) {
+    existing?.remove();
+    return;
+  }
+
+  const script = existing || document.createElement("script");
+  script.id = id;
+  script.type = "application/ld+json";
+  script.textContent = JSON.stringify(data);
+  if (!existing) document.head.appendChild(script);
+}
+
+export function updateSeo({ title, description, image, url = window.location.href, type = "website", jsonLd }: SeoOptions): void {
   const safeTitle = title || DEFAULT_TITLE;
   const safeDescription = description || DEFAULT_DESCRIPTION;
   const safeUrl = absoluteUrl(url);
@@ -73,4 +90,5 @@ export function updateSeo({ title, description, image, url = window.location.hre
   setMeta("twitter:title", safeTitle);
   setMeta("twitter:description", safeDescription);
   setMeta("twitter:image", safeImage);
+  setJsonLd(jsonLd);
 }
