@@ -197,7 +197,7 @@ function extractImages(product: ApiRecord, variantRecords: ApiRecord[]): string[
 }
 
 function extractVariants(product: ApiRecord): VarianteProduto[] {
-  const variantRecords = asArray(product.variantes ?? product.variants).map(asRecord);
+  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
   const variants: VarianteProduto[] = [];
 
   variantRecords.forEach((variant) => {
@@ -219,11 +219,12 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
     }
 
     const quantidade = readNumber(variant, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
-    if (quantidade > 0) {
+    const disponivel = readBoolean(variant, ["disponivel", "available", "ativo"], false);
+    if (quantidade > 0 || disponivel) {
       variants.push({
         tamanho: readString(variant, ["tamanho", "size"], "U"),
         cor,
-        disponibilidade: quantidade,
+        disponibilidade: Math.max(quantidade, 1),
       });
     }
   });
@@ -249,14 +250,14 @@ function unwrapList(response: unknown): unknown[] {
 }
 
 function mapProduto(rawProduct: unknown): Produto | null {
-  const product = asRecord(rawProduct);
+  const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
   const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
   if (!rawId) return null;
 
   const variants = extractVariants(product);
   if (variants.length === 0) return null;
 
-  const variantRecords = asArray(product.variantes ?? product.variants).map(asRecord);
+  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
   const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
@@ -303,9 +304,21 @@ export const vitrineApiService = {
 
   async getProdutos(params?: QueryParams): Promise<Produto[]> {
     const response = await fetchJson<unknown>("/produtos", params);
-    return unwrapList(response)
+    const mapped = unwrapList(response)
       .map(mapProduto)
       .filter((produto): produto is Produto => Boolean(produto));
+
+    if (mapped.length > 0) return mapped;
+
+    const summaries = unwrapList(response).map(asRecord);
+    const detailed = await Promise.all(
+      summaries.map((summary) => {
+        const id = readString(summary, ["id", "produto_id", "produtoId", "_id"]);
+        return id ? this.getProdutoById(id).catch(() => null) : Promise.resolve(null);
+      })
+    );
+
+    return detailed.filter((produto): produto is Produto => Boolean(produto));
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
