@@ -464,6 +464,55 @@ function unwrapList(response: unknown): unknown[] {
   return asArray(data.items ?? data.data ?? data.produtos ?? data.results);
 }
 
+function validateConfigResponse(payload: unknown): ConfigResponse {
+  const data = asRecord(asRecord(payload).data ?? payload);
+  if (Object.keys(data).length === 0) {
+    logVitrineWarning("Payload de config vazio ou inválido", payload);
+  }
+  return { data: data as ConfigResponse["data"] };
+}
+
+function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
+  const source = asRecord(payload);
+  const items = unwrapList(payload).filter((item) => readString(asRecord(item), ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]));
+  if (!Array.isArray(payload) && !Array.isArray(source.items) && !Array.isArray(source.data) && !Array.isArray(source.produtos) && !Array.isArray(source.results)) {
+    logVitrineWarning("Payload de produtos sem lista reconhecida", payload);
+  }
+
+  return {
+    items: items as ProdutoListItem[],
+    limit: readNumber(source, ["limit"], items.length),
+    offset: readNumber(source, ["offset"], 0),
+    total: readNumber(source, ["total"], items.length),
+    hasMore: readBoolean(source, ["hasMore", "has_more"], false),
+  };
+}
+
+function validateProdutoDetailResponse(payload: unknown): ProdutoDetailResponse {
+  const data = asRecord(asRecord(payload).data ?? payload);
+  if (!readString(data, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"])) {
+    logVitrineWarning("Payload de detalhe de produto inválido", payload);
+    throw createInvalidPayloadError("produto detalhe");
+  }
+  return { data: data as ProdutoDetail };
+}
+
+function validateCategoriaResponse(payload: unknown): CategoriaResponse {
+  const data = unwrapList(payload).filter((categoria): categoria is string => typeof categoria === "string" && Boolean(categoria.trim()));
+  if (data.length === 0 && unwrapList(payload).length === 0) {
+    logVitrineWarning("Payload de categorias vazio ou inválido", payload);
+  }
+  return { data };
+}
+
+function validateColecaoResponse(payload: unknown): ColecaoResponse {
+  const data = unwrapList(payload);
+  if (data.length === 0 && !Array.isArray(payload) && Object.keys(asRecord(payload)).length === 0) {
+    logVitrineWarning("Payload de coleções vazio ou inválido", payload);
+  }
+  return { data };
+}
+
 function mapProduto(rawProduct: unknown): Produto | null {
   const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
   const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
