@@ -591,7 +591,7 @@ const Products = () => {
               </div>
 
               {/* Grid/Lista de Produtos */}
-              {loading ? (
+              {catalogLoading ? (
                 <div className={`${
                   visualizacao === "grade"
                     ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
@@ -611,9 +611,7 @@ const Products = () => {
                       ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
                       : "space-y-3 sm:space-y-4"
                   }`}>
-                    {produtosOrdenados
-                      .slice((paginaAtual - 1) * produtosPorPagina, paginaAtual * produtosPorPagina)
-                      .map((produto, index) => (
+                    {produtosOrdenados.map((produto, index) => (
                         <div 
                           key={produto.id} 
                           className="animate-fade-in"
@@ -630,50 +628,19 @@ const Products = () => {
                   {/* Contador */}
                   <div className="text-center mt-8">
                     <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {Math.min((paginaAtual - 1) * produtosPorPagina + 1, produtosOrdenados.length)}-{Math.min(paginaAtual * produtosPorPagina, produtosOrdenados.length)}/{produtosOrdenados.length} produtos
+                      {produtosOrdenados.length}/{totalProdutos || produtosOrdenados.length} produtos
                     </span>
                   </div>
 
-                  {/* Paginação */}
-                  {produtosOrdenados.length > produtosPorPagina && (
-                    <div className="flex items-center justify-center gap-2 mt-4 animate-fade-in">
+                  {hasMore && (
+                    <div className="flex items-center justify-center mt-4 animate-fade-in">
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          setPaginaAtual(p => Math.max(1, p - 1));
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        disabled={paginaAtual === 1}
+                        onClick={handleCarregarMais}
+                        disabled={loadingMore}
                         className="transition-all hover:scale-105"
                       >
-                        Anterior
-                      </Button>
-                      <div className="flex gap-1">
-                        {Array.from({ length: Math.ceil(produtosOrdenados.length / produtosPorPagina) }, (_, i) => i + 1).map((pagina) => (
-                          <Button
-                            key={pagina}
-                            variant={paginaAtual === pagina ? "default" : "outline"}
-                            onClick={() => {
-                              setPaginaAtual(pagina);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            size="sm"
-                            className="transition-all hover:scale-105"
-                          >
-                            {pagina}
-                          </Button>
-                        ))}
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setPaginaAtual(p => Math.min(Math.ceil(produtosOrdenados.length / produtosPorPagina), p + 1));
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        disabled={paginaAtual === Math.ceil(produtosOrdenados.length / produtosPorPagina)}
-                        className="transition-all hover:scale-105"
-                      >
-                        Próxima
+                        {loadingMore ? "Carregando..." : "Carregar mais"}
                       </Button>
                     </div>
                   )}
