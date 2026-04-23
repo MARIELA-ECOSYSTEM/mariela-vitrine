@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { Produto, fetchProdutos } from "@/data/products";
 import { saveToCache, loadFromCache, isCacheValid, getCacheAge } from "@/lib/productCache";
+import { vitrineApiService } from "@/services/vitrineApiService";
 
 interface ProductsContextType {
   produtos: Produto[];
@@ -101,6 +102,25 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadProducts(false);
+
+    vitrineApiService.getConfig().then((config) => {
+      document.title = config.nomeLoja;
+
+      if (config.faviconUrl) {
+        const favicon = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+        if (favicon) {
+          favicon.href = config.faviconUrl;
+        }
+      }
+
+      if (config.corPrimaria) {
+        document.documentElement.style.setProperty("--vitrine-primary", config.corPrimaria);
+      }
+
+      if (config.corSecundaria) {
+        document.documentElement.style.setProperty("--vitrine-secondary", config.corSecundaria);
+      }
+    });
   }, []);
 
   return (

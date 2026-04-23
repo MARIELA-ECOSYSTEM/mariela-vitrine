@@ -1,6 +1,6 @@
-const CACHE_NAME = 'mariela-app-v3';
-const IMAGE_CACHE_NAME = 'mariela-images-cache-v3';
-const DATA_CACHE_NAME = 'mariela-data-cache-v3';
+const CACHE_NAME = 'mariela-app-v4';
+const IMAGE_CACHE_NAME = 'mariela-images-cache-v4';
+const DATA_CACHE_NAME = 'mariela-data-cache-v4';
 
 // Max cache sizes to limit storage usage
 const MAX_IMAGE_CACHE = 50;
@@ -16,7 +16,11 @@ const STATIC_ASSETS = [
 
 // API endpoints to cache
 const API_ENDPOINTS = [
-  'https://mariela-pdv-backend.onrender.com/api/vitrine'
+  'https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api/config',
+  'https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api/produtos',
+  'https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api/produto/',
+  'https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api/colecoes',
+  'https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api/categorias'
 ];
 
 self.addEventListener('install', (event) => {
