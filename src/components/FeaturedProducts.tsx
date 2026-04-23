@@ -9,10 +9,14 @@ import { ArrowRight } from "lucide-react";
 interface FeaturedProductsProps {
   title: string;
   subtitle?: string;
-  filter: "novidades" | "promocoes" | "destaque";
+  filter: "novidades" | "promocoes" | "destaque" | "em_alta" | "mais_procurado" | "queridinho_loja" | "destaque_colecao";
   limit?: number;
   linkTo: string;
   linkLabel: string;
+}
+
+function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: string | null; destaque_publico?: string | null; recomendacao_publica?: string | null }) {
+  return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
 }
 
 export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, linkLabel }: FeaturedProductsProps) => {
@@ -26,6 +30,11 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, linkTo, l
         return produtos.filter(p => p.emPromocao);
       case "destaque":
         return produtos.slice(0, limit);
+      case "em_alta":
+      case "mais_procurado":
+      case "queridinho_loja":
+      case "destaque_colecao":
+        return produtos.filter((p) => getBadgeValue(p) === filter);
     }
   }, [produtos, filter, limit]);
 
