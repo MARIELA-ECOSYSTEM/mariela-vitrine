@@ -11,6 +11,8 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
+import { updateSeo } from "@/lib/seo";
+import { vitrineApiService } from "@/services/vitrineApiService";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -109,6 +111,24 @@ const ProductDetail = () => {
     }
   };
 
+  useEffect(() => {
+    if (!produto) return;
+
+    vitrineApiService.getConfig().then((config) => {
+      const preco = produto.emPromocao && produto.precoPromocional ? produto.precoPromocional : produto.precoVenda;
+      const precoFormatadoSeo = `R$ ${preco.toFixed(2).replace('.', ',')}`;
+      const colecao = produto.colecao || "Coleção Mariela";
+
+      updateSeo({
+        title: `${produto.nome} | ${config.nomeLoja}`,
+        description: `${produto.nome} - ${colecao} - ${precoFormatadoSeo}`,
+        image: produto.imagens[0],
+        url: `${window.location.origin}/products/${produto.id}`,
+        type: "product",
+      });
+    });
+  }, [produto]);
+
   if (!produto) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -184,7 +204,8 @@ const ProductDetail = () => {
     }
     
     const productLink = `${window.location.origin}/products/${produto.id}`;
-    const message = `✨ Olá! 👋\nVi a peça ${produto.nome} | ${corParaUsar} | ${tamanhoParaUsar} - ${precoFormatado} no Site Mariela 🤩\n\n🔗 Link do produto: ${productLink}\n\nAinda tá disponível?`;
+    const colecao = produto.colecao ? ` (${produto.colecao})` : "";
+    const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}, cor ${corParaUsar}, tamanho ${tamanhoParaUsar}. Link: ${productLink}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
