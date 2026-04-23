@@ -11,6 +11,7 @@ import produtoGenerico from "@/assets/produto-generico.png";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
+import { getPublicProductBadge } from "@/services/productInsightsService";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -40,6 +41,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps) => {
+  const publicBadge = getPublicProductBadge(produto);
   // Obter a primeira cor disponível para pré-seleção
   const primeiraCorDisponivel = useMemo(() => {
     const variantDisponivel = produto.variants.find(v => v.disponibilidade > 0);
@@ -241,14 +243,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                 </>
               )}
               <div className="absolute top-3 right-3 flex flex-col gap-2">
-                {produto.emPromocao && (
-                  <Badge className="bg-destructive text-destructive-foreground">
-                    PROMOÇÃO
-                  </Badge>
-                )}
-                {produto.isNovidade && (
-                  <Badge className="bg-primary text-primary-foreground">
-                    Novidade
+                {publicBadge && (
+                  <Badge title={publicBadge.description} className="bg-background/90 text-foreground border border-primary/30 shadow-sm backdrop-blur-sm">
+                    {publicBadge.label}
                   </Badge>
                 )}
               </div>
@@ -395,14 +392,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
           </div>
           <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2">
-            {produto.emPromocao && (
-              <Badge className="bg-destructive text-destructive-foreground text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5">
-                PROMO
-              </Badge>
-            )}
-            {produto.isNovidade && (
-              <Badge className="bg-primary text-primary-foreground text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5">
-                Novo
+            {publicBadge && (
+              <Badge title={publicBadge.description} className="bg-background/90 text-foreground border border-primary/30 shadow-sm backdrop-blur-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5">
+                {publicBadge.label}
               </Badge>
             )}
           </div>
