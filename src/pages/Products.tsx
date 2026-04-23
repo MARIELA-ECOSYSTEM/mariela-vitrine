@@ -185,6 +185,69 @@ const Products = () => {
       setFaixaPreco([precoMin, precoMax]);
     }
   }, [precoMin, precoMax]);
+
+  const getProdutosQuery = useCallback((offset = 0) => {
+    const categoriaApi = categoriasApi.find((categoria) => categoria.value === categoriaSelecionada)?.apiValue ?? categoriaSelecionada;
+
+    return {
+      limit: produtosPorPagina,
+      offset,
+      busca: searchQuery.trim() || undefined,
+      categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
+      colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
+      ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
+      preco_min: precoMin > 0 && faixaPreco[0] > precoMin ? faixaPreco[0] : undefined,
+      preco_max: precoMax > 0 && faixaPreco[1] > 0 && faixaPreco[1] < precoMax ? faixaPreco[1] : undefined,
+    };
+  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPreco, ordenarPor, precoMax, precoMin, searchQuery]);
+
+  useEffect(() => {
+    let active = true;
+    setCatalogLoading(true);
+    setProdutosCatalogo([]);
+    setPaginaAtual(1);
+
+    vitrineApiService.getProdutosPage(getProdutosQuery(0)).then((page) => {
+      if (!active) return;
+      setProdutosCatalogo(page.items);
+      setHasMore(page.hasMore);
+      setTotalProdutos(page.total);
+      setCatalogLoading(false);
+    }).catch(() => {
+      if (!active) return;
+      setHasMore(false);
+      setTotalProdutos(0);
+      setCatalogLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [getProdutosQuery]);
+
+  const handleCarregarMais = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const page = await vitrineApiService.getProdutosPage(getProdutosQuery(produtosCatalogo.length));
+      setProdutosCatalogo((current) => {
+        const ids = new Set(current.map((produto) => produto.id));
+        const novos = page.items.filter((produto) => !ids.has(produto.id));
+        return [...current, ...novos];
+      });
+      setHasMore(page.hasMore);
+      setTotalProdutos(page.total);
+    } catch {
+      toast({
+        title: "Erro ao carregar mais",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [getProdutosQuery, hasMore, loadingMore, produtosCatalogo.length, toast]);
   
   // Reset página quando filtros mudarem
   useEffect(() => {
