@@ -201,7 +201,8 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     }
     
     const productLink = `${window.location.origin}/products/${produto.id}`;
-    const message = `✨ Olá! 👋\nVi a peça ${produto.nome} | ${corParaUsar} | ${tamanhoParaUsar} - ${precoFormatado} no Site Mariela 🤩\n\n🔗 Link do produto: ${productLink}\n\nAinda tá disponível?`;
+    const colecao = produto.colecao ? ` (${produto.colecao})` : "";
+    const message = `Olá! Tenho interesse no produto ${produto.nome}${colecao}, cor ${corParaUsar}, tamanho ${tamanhoParaUsar}. Link: ${productLink}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
