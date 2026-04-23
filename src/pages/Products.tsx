@@ -223,10 +223,10 @@ const Products = () => {
       categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
       colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
       ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
-      preco_min: precoMin > 0 && faixaPreco[0] > precoMin ? faixaPreco[0] : undefined,
-      preco_max: precoMax > 0 && faixaPreco[1] > 0 && faixaPreco[1] < precoMax ? faixaPreco[1] : undefined,
+      preco_min: precoMin > 0 && faixaPrecoSegura[0] > precoMin ? faixaPrecoSegura[0] : undefined,
+      preco_max: precoMax > 0 && faixaPrecoSegura[1] > 0 && faixaPrecoSegura[1] < precoMax ? faixaPrecoSegura[1] : undefined,
     };
-  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPreco, ordenarPor, precoMax, precoMin, searchQuery]);
+  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoMax, precoMin, searchQuery]);
 
   useEffect(() => {
     let active = true;
@@ -333,17 +333,17 @@ const Products = () => {
     }
 
     // Filtro de preço - só aplicar se faixaPreco foi configurado e é diferente do padrão
-    if (faixaPreco[0] > 0 || faixaPreco[1] > 0) {
-      if (faixaPreco[0] !== precoMin || faixaPreco[1] !== precoMax) {
+    if (faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0) {
+      if (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) {
         filtrados = filtrados.filter(p => {
           const preco = p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda;
-          return preco >= faixaPreco[0] && preco <= faixaPreco[1];
+          return preco >= faixaPrecoSegura[0] && preco <= faixaPrecoSegura[1];
         });
       }
     }
 
     return filtrados;
-  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, colecoesApi, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, colecoesApi, mostrarPromocao, mostrarNovidades, faixaPrecoSegura, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
