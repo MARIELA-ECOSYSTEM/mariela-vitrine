@@ -559,31 +559,31 @@ function mapConfig(response: unknown): VitrineConfig {
 export const vitrineApiService = {
   async getConfig(): Promise<VitrineConfig> {
     try {
-      return mapConfig(await fetchCachedJson<ConfigResponse>("/config", undefined, CACHE_TTL.config));
+      return mapConfig(await fetchCachedJson<ConfigResponse>("/config", undefined, CACHE_TTL.config, validateConfigResponse));
     } catch (error) {
-      console.warn(getVitrineApiErrorMessage(error));
+      logVitrineWarning(getVitrineApiErrorMessage(error), error);
       return DEFAULT_CONFIG;
     }
   },
 
   async getProdutos(params?: QueryParams): Promise<Produto[]> {
-    const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", params, CACHE_TTL.produtos);
+    const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", params, CACHE_TTL.produtos, validatePaginationResponse);
     return unwrapList(response)
       .map(mapProduto)
       .filter((produto): produto is Produto => Boolean(produto));
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
-    return mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto));
+    return mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
   },
 
   async getColecoes(): Promise<unknown[]> {
-    const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes);
+    const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes, validateColecaoResponse);
     return unwrapList(response);
   },
 
   async getCategorias(): Promise<string[]> {
-    const response = await fetchCachedJson<CategoriaResponse>("/categorias", undefined, CACHE_TTL.categorias);
+    const response = await fetchCachedJson<CategoriaResponse>("/categorias", undefined, CACHE_TTL.categorias, validateCategoriaResponse);
     return unwrapList(response).filter((categoria): categoria is string => typeof categoria === "string");
   },
 
