@@ -158,6 +158,7 @@ const Products = () => {
   // Contador de filtros ativos
   const activeFiltersCount = 
     (categoriaSelecionada !== "todas" ? 1 : 0) +
+    (colecaoSelecionada !== "todas" ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
     ((faixaPreco[0] > 0 || faixaPreco[1] > 0) && (faixaPreco[0] !== precoMin || faixaPreco[1] !== precoMax) ? 1 : 0);
@@ -234,7 +235,8 @@ const Products = () => {
     }
 
     if (colecaoSelecionada !== "todas") {
-      filtrados = filtrados.filter(p => p.colecao === colecaoSelecionada);
+      const colecaoAtual = colecoesApi.find((colecao) => colecao.value === colecaoSelecionada);
+      filtrados = filtrados.filter(p => p.colecao === colecaoSelecionada || p.colecao === colecaoAtual?.label);
     }
     
     // Filtro de promoção
@@ -258,7 +260,7 @@ const Products = () => {
     }
 
     return filtrados;
-  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, colecoesApi, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
