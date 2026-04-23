@@ -65,7 +65,7 @@ function setJsonLd(data?: SeoOptions["jsonLd"]): void {
     return;
   }
 
-  const script = existing || document.createElement("script");
+  const script = (existing || document.createElement("script")) as HTMLScriptElement;
   script.id = id;
   script.type = "application/ld+json";
   script.textContent = JSON.stringify(data);
