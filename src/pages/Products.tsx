@@ -224,6 +224,8 @@ const Products = () => {
   const activeFiltersCount = 
     (categoriaSelecionada !== "todas" ? 1 : 0) +
     (colecaoSelecionada !== "todas" ? 1 : 0) +
+    (mostrarPromocao ? 1 : 0) +
+    (mostrarNovidades ? 1 : 0) +
     (mostrarMaisProcurados ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
