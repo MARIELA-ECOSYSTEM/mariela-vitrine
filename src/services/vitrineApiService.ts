@@ -68,6 +68,11 @@ export interface ColecaoResponse {
   data: unknown[];
 }
 
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
 export interface PaginationResponse<T> {
   items: T[];
   limit: number;
@@ -298,6 +303,18 @@ function readString(source: ApiRecord, keys: string[], fallback = ""): string {
   return fallback;
 }
 
+function toFilterOption(value: unknown): FilterOption | null {
+  if (typeof value === "string") {
+    const label = sanitizeString(value);
+    return label ? { value: label, label } : null;
+  }
+
+  const record = asRecord(value);
+  const label = readString(record, ["label", "nome", "name", "titulo", "title", "descricao"]);
+  const optionValue = readString(record, ["value", "slug", "id", "codigo", "nome", "name"], label);
+  return label && optionValue ? { value: optionValue, label } : null;
+}
+
 function readNumber(source: ApiRecord, keys: string[], fallback = 0): number {
   for (const key of keys) {
     const value = source[key];
@@ -498,7 +515,10 @@ function validateProdutoDetailResponse(payload: unknown): ProdutoDetailResponse 
 }
 
 function validateCategoriaResponse(payload: unknown): CategoriaResponse {
-  const data = unwrapList(payload).filter((categoria): categoria is string => typeof categoria === "string" && Boolean(categoria.trim()));
+  const data = unwrapList(payload)
+    .map(toFilterOption)
+    .filter((categoria): categoria is FilterOption => Boolean(categoria))
+    .map((categoria) => categoria.label);
   if (data.length === 0 && unwrapList(payload).length === 0) {
     logVitrineWarning("Payload de categorias vazio ou inválido", payload);
   }
@@ -506,7 +526,7 @@ function validateCategoriaResponse(payload: unknown): CategoriaResponse {
 }
 
 function validateColecaoResponse(payload: unknown): ColecaoResponse {
-  const data = unwrapList(payload);
+  const data = unwrapList(payload).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
   if (data.length === 0 && !Array.isArray(payload) && Object.keys(asRecord(payload)).length === 0) {
     logVitrineWarning("Payload de coleções vazio ou inválido", payload);
   }
@@ -532,6 +552,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
     nome,
     descricao: readString(product, ["descricao", "description", "detalhes"], `Produto ${nome}`),
     categoria: mapearCategoria(readString(product, ["categoria", "category", "categoria_nome", "categoriaNome"], "Outro")),
+    colecao: readOptionalString(product, ["colecao", "colecao_nome", "colecaoNome", "collection", "collection_name"]),
     imagens: extractImages(product, variantRecords),
     variants,
     precoCusto: precoVenda * 0.6,
@@ -577,14 +598,16 @@ export const vitrineApiService = {
     return mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
   },
 
-  async getColecoes(): Promise<unknown[]> {
+  async getColecoes(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes, validateColecaoResponse);
-    return unwrapList(response);
+    return unwrapList(response).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
   },
 
-  async getCategorias(): Promise<string[]> {
+  async getCategorias(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<CategoriaResponse>("/categorias", undefined, CACHE_TTL.categorias, validateCategoriaResponse);
-    return unwrapList(response).filter((categoria): categoria is string => typeof categoria === "string");
+    return unwrapList(response)
+      .map(toFilterOption)
+      .filter((categoria): categoria is FilterOption => Boolean(categoria));
   },
 
   isValidBrandingUrl: isValidUrl,

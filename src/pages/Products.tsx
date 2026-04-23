@@ -15,6 +15,8 @@ import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag } from "l
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
+import { vitrineApiService, type FilterOption } from "@/services/vitrineApiService";
+import type { Produto } from "@/data/products";
 import {
   Select,
   SelectContent,
@@ -35,6 +37,26 @@ const categoryEmojis: Record<string, string> = {
   "acessorios": "💍",
 };
 
+type CatalogFilterOption = FilterOption & { apiValue?: string };
+
+const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) => ({
+  value: categoria.value,
+  label: categoria.label,
+  apiValue: categoria.dbValue ?? undefined,
+}));
+
+function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | null {
+  const normalized = option.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const match = CATEGORIAS_DB.find((categoria) => {
+    const candidates = [categoria.value, categoria.label, categoria.dbValue ?? ""].map((value) =>
+      value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    );
+    return candidates.includes(normalized);
+  });
+
+  return match ? { value: match.value, label: match.label, apiValue: option.value } : null;
+}
+
 const Products = () => {
   const { produtos, loading, isFromCache, forceRefresh } = useProducts();
   const { toast } = useToast();
@@ -43,6 +65,10 @@ const Products = () => {
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
   const [mostrarNovidades, setMostrarNovidades] = useState<boolean>(false);
   const [ordenarPor, setOrdenarPor] = useState<string>("padrao");
+  const [colecaoSelecionada, setColecaoSelecionada] = useState<string>("todas");
+  const [categoriasApi, setCategoriasApi] = useState<CatalogFilterOption[]>(defaultCategorias);
+  const [colecoesApi, setColecoesApi] = useState<CatalogFilterOption[]>([]);
+  const [produtosCatalogo, setProdutosCatalogo] = useState<Produto[] | null>(null);
   const [coresSelecionadas, setCoresSelecionadas] = useState<string[]>([]);
   const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
@@ -54,6 +80,7 @@ const Products = () => {
   useEffect(() => {
     const filter = searchParams.get("filter");
     const categoria = searchParams.get("categoria");
+    const colecao = searchParams.get("colecao");
     if (filter === "promocoes") {
       setMostrarPromocao(true);
     } else if (filter === "novidades") {
@@ -62,25 +89,76 @@ const Products = () => {
     if (categoria && categoria !== "todas") {
       setCategoriaSelecionada(categoria);
     }
+    if (colecao && colecao !== "todas") {
+      setColecaoSelecionada(colecao);
+    }
   }, [searchParams]);
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.allSettled([vitrineApiService.getCategorias(), vitrineApiService.getColecoes()]).then(([categoriasResult, colecoesResult]) => {
+      if (!active) return;
+
+      if (categoriasResult.status === "fulfilled") {
+        const categoriasReais = categoriasResult.value.map(normalizeCategoriaOption).filter((categoria): categoria is CatalogFilterOption => Boolean(categoria));
+        if (categoriasReais.length > 0) {
+          setCategoriasApi([defaultCategorias[0], ...categoriasReais.filter((categoria) => categoria.value !== "todas")]);
+        }
+      }
+
+      if (colecoesResult.status === "fulfilled") {
+        setColecoesApi([{ value: "todas", label: "Todas" }, ...colecoesResult.value]);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const categoriaApi = categoriasApi.find((categoria) => categoria.value === categoriaSelecionada)?.apiValue ?? categoriaSelecionada;
+
+    vitrineApiService.getProdutos({
+      limit: 100,
+      offset: 0,
+      busca: searchQuery.trim() || undefined,
+      categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
+      colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
+      ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
+    }).then((data) => {
+      if (active) setProdutosCatalogo(data);
+    }).catch(() => {
+      if (active) setProdutosCatalogo(null);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [categoriaSelecionada, colecaoSelecionada, ordenarPor, searchQuery, categoriasApi]);
+
+  const produtosBase = produtosCatalogo ?? produtos;
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
-    if (produtos.length === 0) {
+    if (produtosBase.length === 0) {
       return { precoMin: 0, precoMax: 0 };
     }
-    const precos = produtos.map(p => p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda);
+    const precos = produtosBase.map(p => p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda);
     return {
       precoMin: Math.floor(Math.min(...precos)),
       precoMax: Math.ceil(Math.max(...precos))
     };
-  }, [produtos]);
+  }, [produtosBase]);
 
   const [faixaPreco, setFaixaPreco] = useState<[number, number]>([0, 0]);
 
   // Contador de filtros ativos
   const activeFiltersCount = 
     (categoriaSelecionada !== "todas" ? 1 : 0) +
+    (colecaoSelecionada !== "todas" ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
     ((faixaPreco[0] > 0 || faixaPreco[1] > 0) && (faixaPreco[0] !== precoMin || faixaPreco[1] !== precoMax) ? 1 : 0);
@@ -88,7 +166,7 @@ const Products = () => {
   // Contagem de produtos por categoria - usando os valores corretos do banco
   const categoriasCount = useMemo(() => {
     const counts: Record<string, number> = {
-      todas: produtos.length,
+      todas: produtosBase.length,
     };
     
     // Inicializar todas as categorias com 0
@@ -99,14 +177,14 @@ const Products = () => {
     });
     
     // Contar produtos por categoria
-    produtos.forEach(p => {
+    produtosBase.forEach(p => {
       if (counts[p.categoria] !== undefined) {
         counts[p.categoria]++;
       }
     });
     
     return counts;
-  }, [produtos]);
+  }, [produtosBase]);
 
   // Atualizar faixa de preço quando produtos carregarem
   useEffect(() => {
@@ -118,7 +196,7 @@ const Products = () => {
   // Reset página quando filtros mudarem
   useEffect(() => {
     setPaginaAtual(1);
-  }, [categoriaSelecionada, mostrarPromocao, mostrarNovidades, coresSelecionadas, tamanhosSelecionados]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
 
   // Handler para pull-to-refresh
   const handlePullRefresh = useCallback(async () => {
@@ -139,7 +217,7 @@ const Products = () => {
 
   // Filtrar produtos primeiro (sem cor e tamanho)
   const produtosFiltradosParcial = useMemo(() => {
-    let filtrados = produtos;
+    let filtrados = produtosBase;
 
     // Filtro de busca
     if (searchQuery.trim()) {
@@ -154,6 +232,11 @@ const Products = () => {
     // Filtro de categoria
     if (categoriaSelecionada !== "todas") {
       filtrados = filtrados.filter(p => p.categoria === categoriaSelecionada);
+    }
+
+    if (colecaoSelecionada !== "todas") {
+      const colecaoAtual = colecoesApi.find((colecao) => colecao.value === colecaoSelecionada);
+      filtrados = filtrados.filter(p => p.colecao === colecaoSelecionada || p.colecao === colecaoAtual?.label);
     }
     
     // Filtro de promoção
@@ -177,7 +260,7 @@ const Products = () => {
     }
 
     return filtrados;
-  }, [produtos, categoriaSelecionada, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
+  }, [produtosBase, categoriaSelecionada, colecaoSelecionada, colecoesApi, mostrarPromocao, mostrarNovidades, faixaPreco, precoMin, precoMax, searchQuery]);
 
   // Extrair cores disponíveis baseado nos filtros atuais (inteligente)
   const coresDisponiveis = useMemo(() => {
@@ -243,6 +326,7 @@ const Products = () => {
 
   const handleLimparFiltros = () => {
     setCategoriaSelecionada("todas");
+    setColecaoSelecionada("todas");
     setMostrarPromocao(false);
     setMostrarNovidades(false);
     setCoresSelecionadas([]);
@@ -273,7 +357,7 @@ const Products = () => {
             {/* Busca com autocomplete */}
             <div className="flex justify-center px-2 sm:px-0">
               <ProductSearch
-                produtos={produtos}
+                produtos={produtosBase}
                 onSearch={setSearchQuery}
                 searchQuery={searchQuery}
               />
@@ -309,7 +393,7 @@ const Products = () => {
               </span>
             </button>
 
-            {CATEGORIAS_DB.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
+            {categoriasApi.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => {
@@ -350,6 +434,8 @@ const Products = () => {
                   <ProductFilters
                     categoriaSelecionada={categoriaSelecionada}
                     setCategoriaSelecionada={setCategoriaSelecionada}
+                    colecaoSelecionada={colecaoSelecionada}
+                    setColecaoSelecionada={setColecaoSelecionada}
                     coresSelecionadas={coresSelecionadas}
                     setCoresSelecionadas={setCoresSelecionadas}
                     tamanhosSelecionados={tamanhosSelecionados}
@@ -360,8 +446,10 @@ const Products = () => {
                     tamanhosDisponiveis={tamanhosDisponiveis}
                     precoMin={precoMin}
                     precoMax={precoMax}
+                    categoriasDisponiveis={categoriasApi}
+                    colecoesDisponiveis={colecoesApi}
                     categoriasCount={categoriasCount}
-                    produtos={produtos}
+                    produtos={produtosBase}
                     produtosFiltradosParcial={produtosFiltradosParcial}
                     onLimparFiltros={handleLimparFiltros}
                     setPaginaAtual={setPaginaAtual}
@@ -387,7 +475,7 @@ const Products = () => {
                     <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Promoção
                     <Badge variant={mostrarPromocao ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
-                      {produtos.filter(p => p.emPromocao).length}
+                      {produtosBase.filter(p => p.emPromocao).length}
                     </Badge>
                   </Button>
                   <Button
@@ -406,7 +494,7 @@ const Products = () => {
                     <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Novidades
                     <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
-                      {produtos.filter(p => p.isNovidade).length}
+                      {produtosBase.filter(p => p.isNovidade).length}
                     </Badge>
                   </Button>
                 </div>

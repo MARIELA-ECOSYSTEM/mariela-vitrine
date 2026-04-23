@@ -12,6 +12,7 @@ export interface Produto {
   nome: string;
   descricao: string;
   categoria: string;
+  colecao?: string | null;
   imagens: string[];
   variants: VarianteProduto[];
   precoCusto: number;
@@ -21,9 +22,9 @@ export interface Produto {
   isNovidade: boolean;
 }
 
-export async function fetchProdutos(): Promise<Produto[]> {
+export async function fetchProdutos(params?: Record<string, string | number | boolean | null | undefined>): Promise<Produto[]> {
   try {
-    const produtos = await vitrineApiService.getProdutos({ limit: 100, offset: 0 });
+    const produtos = await vitrineApiService.getProdutos({ limit: 100, offset: 0, ...params });
     console.log(`Produtos carregados da vitrine-api: ${produtos.length}`);
     return produtos;
   } catch (error) {
