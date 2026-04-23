@@ -45,6 +45,18 @@ const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) =
   apiValue: categoria.dbValue ?? undefined,
 }));
 
+const produtosPorPagina = 12;
+
+function dedupeOptions(options: CatalogFilterOption[]): CatalogFilterOption[] {
+  const seen = new Set<string>();
+  return options.filter((option) => {
+    const key = option.value.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | null {
   const normalized = option.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const match = CATEGORIAS_DB.find((categoria) => {
@@ -68,13 +80,16 @@ const Products = () => {
   const [colecaoSelecionada, setColecaoSelecionada] = useState<string>("todas");
   const [categoriasApi, setCategoriasApi] = useState<CatalogFilterOption[]>(defaultCategorias);
   const [colecoesApi, setColecoesApi] = useState<CatalogFilterOption[]>([]);
-  const [produtosCatalogo, setProdutosCatalogo] = useState<Produto[] | null>(null);
+  const [produtosCatalogo, setProdutosCatalogo] = useState<Produto[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalProdutos, setTotalProdutos] = useState(0);
   const [coresSelecionadas, setCoresSelecionadas] = useState<string[]>([]);
   const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const produtosPorPagina = 12;
 
   // Aplicar filtros da URL
   useEffect(() => {
@@ -103,12 +118,12 @@ const Products = () => {
       if (categoriasResult.status === "fulfilled") {
         const categoriasReais = categoriasResult.value.map(normalizeCategoriaOption).filter((categoria): categoria is CatalogFilterOption => Boolean(categoria));
         if (categoriasReais.length > 0) {
-          setCategoriasApi([defaultCategorias[0], ...categoriasReais.filter((categoria) => categoria.value !== "todas")]);
+          setCategoriasApi(dedupeOptions([defaultCategorias[0], ...categoriasReais.filter((categoria) => categoria.value !== "todas")]));
         }
       }
 
       if (colecoesResult.status === "fulfilled") {
-        setColecoesApi([{ value: "todas", label: "Todas" }, ...colecoesResult.value]);
+        setColecoesApi(dedupeOptions([{ value: "todas", label: "Todas" }, ...colecoesResult.value]));
       }
     });
 
@@ -117,29 +132,7 @@ const Products = () => {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    const categoriaApi = categoriasApi.find((categoria) => categoria.value === categoriaSelecionada)?.apiValue ?? categoriaSelecionada;
-
-    vitrineApiService.getProdutos({
-      limit: 100,
-      offset: 0,
-      busca: searchQuery.trim() || undefined,
-      categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
-      colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
-      ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
-    }).then((data) => {
-      if (active) setProdutosCatalogo(data);
-    }).catch(() => {
-      if (active) setProdutosCatalogo(null);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [categoriaSelecionada, colecaoSelecionada, ordenarPor, searchQuery, categoriasApi]);
-
-  const produtosBase = produtosCatalogo ?? produtos;
+  const produtosBase = produtosCatalogo.length > 0 || !catalogLoading ? produtosCatalogo : produtos;
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
@@ -192,6 +185,69 @@ const Products = () => {
       setFaixaPreco([precoMin, precoMax]);
     }
   }, [precoMin, precoMax]);
+
+  const getProdutosQuery = useCallback((offset = 0) => {
+    const categoriaApi = categoriasApi.find((categoria) => categoria.value === categoriaSelecionada)?.apiValue ?? categoriaSelecionada;
+
+    return {
+      limit: produtosPorPagina,
+      offset,
+      busca: searchQuery.trim() || undefined,
+      categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
+      colecao: colecaoSelecionada !== "todas" ? colecaoSelecionada : undefined,
+      ordem: ordenarPor !== "padrao" ? ordenarPor : undefined,
+      preco_min: precoMin > 0 && faixaPreco[0] > precoMin ? faixaPreco[0] : undefined,
+      preco_max: precoMax > 0 && faixaPreco[1] > 0 && faixaPreco[1] < precoMax ? faixaPreco[1] : undefined,
+    };
+  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPreco, ordenarPor, precoMax, precoMin, searchQuery]);
+
+  useEffect(() => {
+    let active = true;
+    setCatalogLoading(true);
+    setProdutosCatalogo([]);
+    setPaginaAtual(1);
+
+    vitrineApiService.getProdutosPage(getProdutosQuery(0)).then((page) => {
+      if (!active) return;
+      setProdutosCatalogo(page.items);
+      setHasMore(page.hasMore);
+      setTotalProdutos(page.total);
+      setCatalogLoading(false);
+    }).catch(() => {
+      if (!active) return;
+      setHasMore(false);
+      setTotalProdutos(0);
+      setCatalogLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [getProdutosQuery]);
+
+  const handleCarregarMais = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const page = await vitrineApiService.getProdutosPage(getProdutosQuery(produtosCatalogo.length));
+      setProdutosCatalogo((current) => {
+        const ids = new Set(current.map((produto) => produto.id));
+        const novos = page.items.filter((produto) => !ids.has(produto.id));
+        return [...current, ...novos];
+      });
+      setHasMore(page.hasMore);
+      setTotalProdutos(page.total);
+    } catch {
+      toast({
+        title: "Erro ao carregar mais",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [getProdutosQuery, hasMore, loadingMore, produtosCatalogo.length, toast]);
   
   // Reset página quando filtros mudarem
   useEffect(() => {
@@ -535,7 +591,7 @@ const Products = () => {
               </div>
 
               {/* Grid/Lista de Produtos */}
-              {loading ? (
+              {catalogLoading ? (
                 <div className={`${
                   visualizacao === "grade"
                     ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
@@ -555,9 +611,7 @@ const Products = () => {
                       ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
                       : "space-y-3 sm:space-y-4"
                   }`}>
-                    {produtosOrdenados
-                      .slice((paginaAtual - 1) * produtosPorPagina, paginaAtual * produtosPorPagina)
-                      .map((produto, index) => (
+                    {produtosOrdenados.map((produto, index) => (
                         <div 
                           key={produto.id} 
                           className="animate-fade-in"
@@ -574,50 +628,19 @@ const Products = () => {
                   {/* Contador */}
                   <div className="text-center mt-8">
                     <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {Math.min((paginaAtual - 1) * produtosPorPagina + 1, produtosOrdenados.length)}-{Math.min(paginaAtual * produtosPorPagina, produtosOrdenados.length)}/{produtosOrdenados.length} produtos
+                      {produtosOrdenados.length}/{totalProdutos || produtosOrdenados.length} produtos
                     </span>
                   </div>
 
-                  {/* Paginação */}
-                  {produtosOrdenados.length > produtosPorPagina && (
-                    <div className="flex items-center justify-center gap-2 mt-4 animate-fade-in">
+                  {hasMore && (
+                    <div className="flex items-center justify-center mt-4 animate-fade-in">
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          setPaginaAtual(p => Math.max(1, p - 1));
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        disabled={paginaAtual === 1}
+                        onClick={handleCarregarMais}
+                        disabled={loadingMore}
                         className="transition-all hover:scale-105"
                       >
-                        Anterior
-                      </Button>
-                      <div className="flex gap-1">
-                        {Array.from({ length: Math.ceil(produtosOrdenados.length / produtosPorPagina) }, (_, i) => i + 1).map((pagina) => (
-                          <Button
-                            key={pagina}
-                            variant={paginaAtual === pagina ? "default" : "outline"}
-                            onClick={() => {
-                              setPaginaAtual(pagina);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            size="sm"
-                            className="transition-all hover:scale-105"
-                          >
-                            {pagina}
-                          </Button>
-                        ))}
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setPaginaAtual(p => Math.min(Math.ceil(produtosOrdenados.length / produtosPorPagina), p + 1));
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        disabled={paginaAtual === Math.ceil(produtosOrdenados.length / produtosPorPagina)}
-                        className="transition-all hover:scale-105"
-                      >
-                        Próxima
+                        {loadingMore ? "Carregando..." : "Carregar mais"}
                       </Button>
                     </div>
                   )}
