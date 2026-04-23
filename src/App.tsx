@@ -27,7 +27,7 @@ const AppContent = () => {
       <PageTransition key={location.pathname}>
         <Routes location={location}>
           <Route path="/" element={<Index />} />
-          <Route path="/products" element={<Products />} />
+          <Route path="/products" element={<Navigate to={`/catalogo${location.search}`} replace />} />
           <Route path="/catalogo" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/produtos/:slug" element={<Navigate to={`/produto/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
