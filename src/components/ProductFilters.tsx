@@ -39,6 +39,7 @@ interface ProductFiltersProps {
   onLimparFiltros: () => void;
   setPaginaAtual: (value: number) => void;
   activeFiltersCount: number;
+  precoAlterado?: boolean;
 }
 
 import { CATEGORIAS_DB } from "@/data/categories";
@@ -71,7 +72,8 @@ const FiltersContent = ({
   produtos = [],
   produtosFiltradosParcial = [],
   onLimparFiltros,
-  setPaginaAtual
+  setPaginaAtual,
+  precoAlterado = false,
 }: ProductFiltersProps) => {
   
   // Calcular quantidade por cor (baseado nos produtos filtrados parcialmente)
@@ -101,8 +103,7 @@ const FiltersContent = ({
     colecaoSelecionada !== "todas" ||
     coresSelecionadas.length > 0 || 
     tamanhosSelecionados.length > 0 || 
-    faixaPreco[0] !== precoMin || 
-    faixaPreco[1] !== precoMax;
+    (precoAlterado && (faixaPreco[0] !== precoMin || faixaPreco[1] !== precoMax));
 
   // Estados para controlar abertura das seções
   const [categoriaAberta, setCategoriaAberta] = useState(false);
