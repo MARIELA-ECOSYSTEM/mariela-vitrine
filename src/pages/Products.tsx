@@ -111,6 +111,27 @@ const Products = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    categoriaSelecionada !== "todas" ? next.set("categoria", categoriaSelecionada) : next.delete("categoria");
+    colecaoSelecionada !== "todas" ? next.set("colecao", colecaoSelecionada) : next.delete("colecao");
+
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [categoriaSelecionada, colecaoSelecionada, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    vitrineApiService.getConfig().then((config) => {
+      updateSeo({
+        title: `Catálogo | ${config.nomeLoja}`,
+        description: `Confira as novidades e coleções da ${config.nomeLoja}`,
+        image: config.logoUrl || produtosBase[0]?.imagens[0],
+        url: window.location.href,
+      });
+    });
+  }, [produtosBase]);
+
+  useEffect(() => {
     let active = true;
 
     Promise.allSettled([vitrineApiService.getCategorias(), vitrineApiService.getColecoes()]).then(([categoriasResult, colecoesResult]) => {
