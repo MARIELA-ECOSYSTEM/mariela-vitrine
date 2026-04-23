@@ -1,7 +1,7 @@
 import { Produto } from "@/data/products";
 
-const CACHE_KEY = "mariela_products_cache_v3";
-const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v3";
+const CACHE_KEY = "mariela_products_cache_v4";
+const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v4";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 interface CacheData {
