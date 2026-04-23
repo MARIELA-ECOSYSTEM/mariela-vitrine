@@ -1,4 +1,5 @@
 import type { Produto, VarianteProduto } from "@/data/products";
+import { isPublicProductBadgeType } from "@/services/productInsightsService";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
@@ -13,6 +14,7 @@ const CACHE_TTL = {
   categorias: 5 * 60 * 1000,
   produtos: 60 * 1000,
   produto: 2 * 60 * 1000,
+  destaques: 5 * 60 * 1000,
 } as const;
 
 const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
@@ -87,6 +89,16 @@ export interface ProdutosPage {
   offset: number;
   total: number;
   hasMore: boolean;
+}
+
+export interface ProdutoDestaquePublico {
+  produto_id: string;
+  badge: string;
+  prioridade: number;
+}
+
+export interface RespostaDestaques {
+  items: ProdutoDestaquePublico[];
 }
 
 type CacheEntry<T> = {
@@ -567,6 +579,38 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
   return { data };
 }
 
+function validateDestaquesResponse(payload: unknown): RespostaDestaques {
+  const items = unwrapList(payload)
+    .map(asRecord)
+    .map((item) => ({
+      produto_id: readString(item, ["produto_id", "produtoId", "id", "codigoProduto", "codigo", "sku"]),
+      badge: readString(item, ["badge", "tipo", "type"]),
+      prioridade: readNumber(item, ["prioridade", "priority"], 0),
+    }))
+    .filter((item) => item.produto_id && isPublicProductBadgeType(item.badge));
+
+  return { items };
+}
+
+function getProductHighlightKey(produto: Produto): string[] {
+  return [produto.produtoId, produto.codigoProduto, String(produto.id)].filter((value): value is string => Boolean(value));
+}
+
+function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaquePublico[]): Produto[] {
+  if (destaques.length === 0) return produtos;
+
+  const destaqueMap = new Map<string, ProdutoDestaquePublico>();
+  destaques
+    .slice()
+    .sort((a, b) => b.prioridade - a.prioridade)
+    .forEach((destaque) => destaqueMap.set(destaque.produto_id, destaque));
+
+  return produtos.map((produto) => {
+    const destaque = getProductHighlightKey(produto).map((key) => destaqueMap.get(key)).find(Boolean);
+    return destaque ? { ...produto, badgePublico: destaque.badge, publicBadge: destaque.badge } : produto;
+  });
+}
+
 function mapProduto(rawProduct: unknown): Produto | null {
   const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
   const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
@@ -582,6 +626,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
 
   return {
     id: stableNumericId(rawId),
+    produtoId: rawId,
     codigoProduto: readString(product, ["codigoProduto", "codigo", "sku", "referencia"], rawId),
     nome,
     descricao: readString(product, ["descricao", "description", "detalhes"], `Produto ${nome}`),
@@ -629,14 +674,27 @@ export const vitrineApiService = {
     return (await this.getProdutosPage(params)).items;
   },
 
+  async getDestaques(params?: QueryParams): Promise<ProdutoDestaquePublico[]> {
+    try {
+      const response = await fetchCachedJson<RespostaDestaques>("/destaques", { limit: 50, ...params }, CACHE_TTL.destaques, validateDestaquesResponse);
+      return response.items;
+    } catch (error) {
+      logVitrineWarning(getVitrineApiErrorMessage(error), error);
+      return [];
+    }
+  },
+
   async getProdutosPage(params?: QueryParams): Promise<ProdutosPage> {
-    const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse);
+    const [response, destaques] = await Promise.all([
+      fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
+      this.getDestaques(),
+    ]);
     const items = unwrapList(response)
       .map(mapProduto)
       .filter((produto): produto is Produto => Boolean(produto));
 
     return {
-      items,
+      items: applyDestaquesToProdutos(items, destaques),
       limit: response.limit,
       offset: response.offset,
       total: response.total || items.length,

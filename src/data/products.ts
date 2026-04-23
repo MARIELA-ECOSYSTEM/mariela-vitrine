@@ -8,6 +8,7 @@ export interface VarianteProduto {
 
 export interface Produto {
   id: number;
+  produtoId?: string;
   codigoProduto: string;
   nome: string;
   descricao: string;
