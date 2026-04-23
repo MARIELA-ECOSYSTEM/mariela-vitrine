@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
 import { vitrineApiService, type FilterOption } from "@/services/vitrineApiService";
 import type { Produto } from "@/data/products";
+import { updateSeo } from "@/lib/seo";
 import {
   Select,
   SelectContent,
@@ -72,7 +73,7 @@ function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | n
 const Products = () => {
   const { produtos, loading, isFromCache, forceRefresh } = useProducts();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todas");
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
   const [mostrarNovidades, setMostrarNovidades] = useState<boolean>(false);
@@ -147,6 +148,11 @@ const Products = () => {
   }, [produtosBase]);
 
   const [faixaPreco, setFaixaPreco] = useState<[number, number]>([0, 0]);
+  const faixaPrecoSegura = useMemo<[number, number]>(() => {
+    const min = Math.max(0, Number.isFinite(faixaPreco[0]) ? faixaPreco[0] : 0);
+    const max = Math.max(0, Number.isFinite(faixaPreco[1]) ? faixaPreco[1] : min);
+    return min <= max ? [min, max] : [max, min];
+  }, [faixaPreco]);
 
   // Contador de filtros ativos
   const activeFiltersCount = 
@@ -154,7 +160,7 @@ const Products = () => {
     (colecaoSelecionada !== "todas" ? 1 : 0) +
     coresSelecionadas.length +
     tamanhosSelecionados.length +
-    ((faixaPreco[0] > 0 || faixaPreco[1] > 0) && (faixaPreco[0] !== precoMin || faixaPreco[1] !== precoMax) ? 1 : 0);
+    ((faixaPrecoSegura[0] > 0 || faixaPrecoSegura[1] > 0) && (faixaPrecoSegura[0] !== precoMin || faixaPrecoSegura[1] !== precoMax) ? 1 : 0);
 
   // Contagem de produtos por categoria - usando os valores corretos do banco
   const categoriasCount = useMemo(() => {
