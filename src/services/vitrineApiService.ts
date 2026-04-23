@@ -594,6 +594,10 @@ function mapProduto(rawProduct: unknown): Produto | null {
     precoPromocional: precoPromocional > 0 ? precoPromocional : undefined,
     emPromocao: readBoolean(product, ["emPromocao", "em_promocao", "isOnSale", "is_on_sale", "promocao"], false) || (precoPromocional > 0 && precoPromocional < precoVenda),
     isNovidade: readBoolean(product, ["isNovidade", "is_novidade", "isNew", "is_new", "novidade", "lancamento"], false),
+    badgePublico: readOptionalString(product, ["badgePublico", "badge_publico", "publicBadge", "public_badge"]),
+    publicBadge: readOptionalString(product, ["publicBadge", "public_badge"]),
+    destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),
+    recomendacao_publica: readOptionalString(product, ["recomendacao_publica", "recomendacaoPublica"]),
   };
 }
 

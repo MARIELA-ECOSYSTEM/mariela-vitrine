@@ -20,6 +20,10 @@ export interface Produto {
   precoPromocional?: number;
   emPromocao: boolean;
   isNovidade: boolean;
+  badgePublico?: string | null;
+  publicBadge?: string | null;
+  destaque_publico?: string | null;
+  recomendacao_publica?: string | null;
 }
 
 export async function fetchProdutos(params?: Record<string, string | number | boolean | null | undefined>): Promise<Produto[]> {
