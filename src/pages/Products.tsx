@@ -11,7 +11,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag } from "lucide-react";
+import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
@@ -89,6 +89,7 @@ const Products = () => {
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todas");
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
   const [mostrarNovidades, setMostrarNovidades] = useState<boolean>(false);
+  const [mostrarMaisProcurados, setMostrarMaisProcurados] = useState<boolean>(false);
   const [ordenarPor, setOrdenarPor] = useState<string>("padrao");
   const [colecaoSelecionada, setColecaoSelecionada] = useState<string>("todas");
   const [categoriasApi, setCategoriasApi] = useState<CatalogFilterOption[]>(defaultCategorias);
@@ -111,8 +112,16 @@ const Products = () => {
     const colecao = searchParams.get("colecao");
     if (filter === "promocoes") {
       setMostrarPromocao(true);
+      setMostrarNovidades(false);
+      setMostrarMaisProcurados(false);
     } else if (filter === "novidades") {
       setMostrarNovidades(true);
+      setMostrarPromocao(false);
+      setMostrarMaisProcurados(false);
+    } else if (filter === "mais_procurado") {
+      setMostrarMaisProcurados(true);
+      setMostrarPromocao(false);
+      setMostrarNovidades(false);
     }
     if (categoria && categoria !== "todas") {
       setCategoriaSelecionada(categoria);
@@ -126,11 +135,12 @@ const Products = () => {
     const next = new URLSearchParams(searchParams);
     categoriaSelecionada !== "todas" ? next.set("categoria", categoriaSelecionada) : next.delete("categoria");
     colecaoSelecionada !== "todas" ? next.set("colecao", colecaoSelecionada) : next.delete("colecao");
+    mostrarPromocao ? next.set("filter", "promocoes") : mostrarNovidades ? next.set("filter", "novidades") : mostrarMaisProcurados ? next.set("filter", "mais_procurado") : next.delete("filter");
 
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [categoriaSelecionada, colecaoSelecionada, searchParams, setSearchParams]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, searchParams, setSearchParams]);
 
   useEffect(() => {
     let active = true;
