@@ -10,6 +10,8 @@ interface ProductFiltersProps {
   // Filtros atuais
   categoriaSelecionada: string;
   setCategoriaSelecionada: (value: string) => void;
+  colecaoSelecionada?: string;
+  setColecaoSelecionada?: (value: string) => void;
   mostrarPromocao?: boolean;
   setMostrarPromocao?: (value: boolean) => void;
   mostrarNovidades?: boolean;
@@ -26,6 +28,8 @@ interface ProductFiltersProps {
   tamanhosDisponiveis: string[];
   precoMin: number;
   precoMax: number;
+  categoriasDisponiveis?: Array<{ value: string; label: string }>;
+  colecoesDisponiveis?: Array<{ value: string; label: string }>;
   categoriasCount?: Record<string, number>;
   produtos?: any[];
   produtosFiltradosParcial?: any[];
@@ -43,6 +47,8 @@ const categorias = CATEGORIAS_DB;
 const FiltersContent = ({ 
   categoriaSelecionada,
   setCategoriaSelecionada,
+  colecaoSelecionada = "todas",
+  setColecaoSelecionada = () => {},
   mostrarPromocao = false,
   setMostrarPromocao = () => {},
   mostrarNovidades = false,
@@ -57,6 +63,8 @@ const FiltersContent = ({
   tamanhosDisponiveis,
   precoMin,
   precoMax,
+  categoriasDisponiveis = categorias,
+  colecoesDisponiveis = [],
   categoriasCount = {},
   produtos = [],
   produtosFiltradosParcial = [],
@@ -88,6 +96,7 @@ const FiltersContent = ({
     return preco >= faixaPreco[0] && preco <= faixaPreco[1];
   }).length;
   const hasActiveFilters = categoriaSelecionada !== "todas" || 
+    colecaoSelecionada !== "todas" ||
     coresSelecionadas.length > 0 || 
     tamanhosSelecionados.length > 0 || 
     faixaPreco[0] !== precoMin || 
@@ -95,6 +104,7 @@ const FiltersContent = ({
 
   // Estados para controlar abertura das seções
   const [categoriaAberta, setCategoriaAberta] = useState(false);
+  const [colecaoAberta, setColecaoAberta] = useState(false);
   const [coresAberta, setCoresAberta] = useState(false);
   const [tamanhosAberta, setTamanhosAberta] = useState(false);
   const [precoAberto, setPrecoAberto] = useState(false);
@@ -125,7 +135,7 @@ const FiltersContent = ({
         </button>
         {categoriaAberta && (
           <div className="flex flex-col gap-2 animate-fade-in transition-all duration-300">
-            {categorias.map((cat) => (
+            {categoriasDisponiveis.map((cat) => (
               <Button
                 key={cat.value}
                 variant={categoriaSelecionada === cat.value ? "default" : "ghost"}
@@ -152,6 +162,38 @@ const FiltersContent = ({
           </div>
         )}
       </div>
+
+      {colecoesDisponiveis.length > 0 && (
+        <div className="space-y-3 border-b border-border pb-4">
+          <button
+            onClick={() => setColecaoAberta(!colecaoAberta)}
+            className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
+          >
+            <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Coleção</h3>
+            {colecaoAberta ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          {colecaoAberta && (
+            <div className="flex flex-col gap-2 animate-fade-in transition-all duration-300">
+              {colecoesDisponiveis.map((colecao) => (
+                <Button
+                  key={colecao.value}
+                  variant={colecaoSelecionada === colecao.value ? "default" : "ghost"}
+                  onClick={() => {
+                    setColecaoSelecionada(colecao.value);
+                    setPaginaAtual(1);
+                  }}
+                  className="justify-between group transition-all duration-300"
+                  size="sm"
+                >
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">
+                    {colecao.label}
+                  </span>
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Cores */}
       <div className="space-y-3 border-b border-border pb-4">
