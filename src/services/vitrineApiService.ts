@@ -610,10 +610,22 @@ export const vitrineApiService = {
   },
 
   async getProdutos(params?: QueryParams): Promise<Produto[]> {
-    const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", params, CACHE_TTL.produtos, validatePaginationResponse);
-    return unwrapList(response)
+    return (await this.getProdutosPage(params)).items;
+  },
+
+  async getProdutosPage(params?: QueryParams): Promise<ProdutosPage> {
+    const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse);
+    const items = unwrapList(response)
       .map(mapProduto)
       .filter((produto): produto is Produto => Boolean(produto));
+
+    return {
+      items,
+      limit: response.limit,
+      offset: response.offset,
+      total: response.total || items.length,
+      hasMore: response.hasMore,
+    };
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
@@ -622,7 +634,9 @@ export const vitrineApiService = {
 
   async getColecoes(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes, validateColecaoResponse);
-    return unwrapList(response).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
+    return unwrapList(response)
+      .map(toFilterOption)
+      .filter((colecao): colecao is FilterOption => Boolean(colecao));
   },
 
   async getCategorias(): Promise<FilterOption[]> {
