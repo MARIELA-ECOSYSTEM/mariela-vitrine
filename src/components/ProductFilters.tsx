@@ -28,8 +28,8 @@ interface ProductFiltersProps {
   tamanhosDisponiveis: string[];
   precoMin: number;
   precoMax: number;
-  categoriasDisponiveis?: Array<{ value: string; label: string }>;
-  colecoesDisponiveis?: Array<{ value: string; label: string }>;
+  categoriasDisponiveis?: ReadonlyArray<{ value: string; label: string }>;
+  colecoesDisponiveis?: ReadonlyArray<{ value: string; label: string }>;
   categoriasCount?: Record<string, number>;
   produtos?: any[];
   produtosFiltradosParcial?: any[];
