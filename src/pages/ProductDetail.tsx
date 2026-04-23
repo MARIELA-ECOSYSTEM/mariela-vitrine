@@ -11,7 +11,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
-import { updateSeo } from "@/lib/seo";
+import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
@@ -135,7 +135,7 @@ const ProductDetail = () => {
           "@context": "https://schema.org",
           "@type": "Product",
           name: produto.nome,
-          image: imagemPrincipal || `${window.location.origin}/placeholder.svg`,
+          image: absoluteUrl(imagemPrincipal),
           description: descricao,
           brand: {
             "@type": "Brand",
