@@ -15,6 +15,7 @@ import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag } from "l
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
+import { vitrineApiService, type FilterOption } from "@/services/vitrineApiService";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,26 @@ const categoryEmojis: Record<string, string> = {
   "bolsas": "👜",
   "acessorios": "💍",
 };
+
+type CatalogFilterOption = FilterOption & { apiValue?: string };
+
+const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) => ({
+  value: categoria.value,
+  label: categoria.label,
+  apiValue: categoria.dbValue ?? undefined,
+}));
+
+function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | null {
+  const normalized = option.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const match = CATEGORIAS_DB.find((categoria) => {
+    const candidates = [categoria.value, categoria.label, categoria.dbValue ?? ""].map((value) =>
+      value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    );
+    return candidates.includes(normalized);
+  });
+
+  return match ? { value: match.value, label: match.label, apiValue: option.value } : null;
+}
 
 const Products = () => {
   const { produtos, loading, isFromCache, forceRefresh } = useProducts();
