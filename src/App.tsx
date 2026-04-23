@@ -29,6 +29,7 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/produto/:slug" element={<ProductDetail />} />
           <Route path="/monte-seu-look" element={<MonteSeuLook />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/instalar" element={<Instalar />} />
