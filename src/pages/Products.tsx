@@ -45,6 +45,18 @@ const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) =
   apiValue: categoria.dbValue ?? undefined,
 }));
 
+const produtosPorPagina = 12;
+
+function dedupeOptions(options: CatalogFilterOption[]): CatalogFilterOption[] {
+  const seen = new Set<string>();
+  return options.filter((option) => {
+    const key = option.value.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | null {
   const normalized = option.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const match = CATEGORIAS_DB.find((categoria) => {
@@ -68,13 +80,16 @@ const Products = () => {
   const [colecaoSelecionada, setColecaoSelecionada] = useState<string>("todas");
   const [categoriasApi, setCategoriasApi] = useState<CatalogFilterOption[]>(defaultCategorias);
   const [colecoesApi, setColecoesApi] = useState<CatalogFilterOption[]>([]);
-  const [produtosCatalogo, setProdutosCatalogo] = useState<Produto[] | null>(null);
+  const [produtosCatalogo, setProdutosCatalogo] = useState<Produto[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalProdutos, setTotalProdutos] = useState(0);
   const [coresSelecionadas, setCoresSelecionadas] = useState<string[]>([]);
   const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const produtosPorPagina = 12;
 
   // Aplicar filtros da URL
   useEffect(() => {
