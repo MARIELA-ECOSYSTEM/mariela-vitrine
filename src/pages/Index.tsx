@@ -19,10 +19,25 @@ const Index = () => {
   useEffect(() => {
     vitrineApiService.getConfig().then((config) => {
       updateSeo({
-        title: `${config.nomeLoja} | Moda Feminina`,
-        description: `Confira novidades, coleções e peças selecionadas da ${config.nomeLoja}.`,
+        title: `${config.nomeLoja} | Moda Feminina em Campina Grande`,
+        description: "Loja de roupas femininas em Campina Grande. Confira vestidos, conjuntos, blusas e novidades da coleção.",
         image: config.logoUrl || produtos[0]?.imagens[0],
         url: window.location.origin,
+        jsonLd: {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: config.nomeLoja,
+          logo: config.logoUrl || `${window.location.origin}/placeholder.svg`,
+          url: window.location.origin,
+          telephone: config.whatsapp || "5583986567915",
+          sameAs: config.instagram ? [config.instagram] : ["https://www.instagram.com/marielaloja_/"],
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Campina Grande",
+            addressRegion: "PB",
+            addressCountry: "BR",
+          },
+        },
       });
     });
   }, [produtos]);
