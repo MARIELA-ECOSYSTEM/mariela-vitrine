@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
-import { useApiWakeup } from "@/hooks/useApiWakeup";
 import { PageTransition } from "@/components/PageTransition";
 import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator";
 import { InstallPWAPrompt } from "@/components/InstallPWAPrompt";
@@ -21,7 +20,6 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  useApiWakeup();
   const location = useLocation();
   
   return (
