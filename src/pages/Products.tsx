@@ -151,7 +151,7 @@ const Products = () => {
         title: `Catálogo de Moda Feminina | ${config.nomeLoja}`,
         description: `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`,
         image: config.logoUrl || produtosBase[0]?.imagens[0],
-        url: `${window.location.origin}/products${window.location.search}`,
+        url: `${window.location.origin}/catalogo`,
       });
     });
   }, [produtosBase]);

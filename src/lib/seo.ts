@@ -82,6 +82,8 @@ export function updateSeo({ title, description, image, url = window.location.hre
   setMeta("description", safeDescription);
   setCanonical(safeUrl);
   setProperty("og:type", type);
+  setProperty("og:locale", "pt_BR");
+  setProperty("og:site_name", "Mariela Moda Feminina");
   setProperty("og:title", safeTitle);
   setProperty("og:description", safeDescription);
   setProperty("og:image", safeImage);
