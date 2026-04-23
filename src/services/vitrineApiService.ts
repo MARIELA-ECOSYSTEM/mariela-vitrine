@@ -19,6 +19,7 @@ const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
 
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 type ApiRecord = Record<string, unknown>;
+type ResponseValidator<T> = (payload: unknown) => T;
 
 export interface ConfigResponse {
   data: {
@@ -121,7 +122,7 @@ function delay(ms: number): Promise<void> {
 function buildUrl(path: string, params?: QueryParams): string {
   const url = new URL(`${VITRINE_API_BASE_URL}${path}`);
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
+    Object.entries(params).sort(([a], [b]) => a.localeCompare(b)).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== "") {
         url.searchParams.set(key, String(value));
       }
@@ -184,6 +185,19 @@ function createApiError(status: number): VitrineApiError {
   return new VitrineApiError("Não foi possível carregar os dados da vitrine.", status);
 }
 
+function createInvalidPayloadError(context: string): VitrineApiError {
+  return new VitrineApiError(`Resposta inválida da vitrine em ${context}.`);
+}
+
+function logVitrineWarning(message: string, details?: unknown): void {
+  if (import.meta.env.DEV) {
+    console.warn(`[vitrine-api] ${message}`, details ?? "");
+    return;
+  }
+
+  console.warn(`[vitrine-api] ${message}`);
+}
+
 export function getVitrineApiErrorMessage(error: unknown): string {
   if (error instanceof VitrineApiError) return error.friendlyMessage;
   return "Não foi possível carregar os dados da vitrine.";
@@ -206,6 +220,7 @@ async function requestJson<T>(url: string): Promise<T> {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        logVitrineWarning(`HTTP ${response.status} em ${url}`);
         throw createApiError(response.status);
       }
 
@@ -218,6 +233,10 @@ async function requestJson<T>(url: string): Promise<T> {
         throw error;
       }
 
+      if (!(error instanceof VitrineApiError)) {
+        logVitrineWarning(`Falha de rede em ${url}`, error);
+      }
+
       if (attempt < MAX_RETRIES) {
         await delay(RETRY_DELAY);
       }
@@ -228,18 +247,31 @@ async function requestJson<T>(url: string): Promise<T> {
   throw new VitrineApiError("A vitrine está temporariamente indisponível. Tente novamente em instantes.");
 }
 
-async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number): Promise<T> {
+async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number, validate?: ResponseValidator<T>): Promise<T> {
   const url = buildUrl(path, params);
-  const cached = getCached<T>(url, ttl);
-  if (cached) return cached;
+  const cached = getCached<unknown>(url, ttl);
+  if (cached) {
+    try {
+      return validate ? validate(cached) : cached as T;
+    } catch (error) {
+      logVitrineWarning(`Cache inválido em ${url}`, error);
+    }
+  }
 
   try {
-    const data = await requestJson<T>(url);
-    setCached(url, data);
-    return data;
+    const data = await requestJson<unknown>(url);
+    const validated = validate ? validate(data) : data as T;
+    setCached(url, validated);
+    return validated;
   } catch (error) {
-    const fallback = getCached<T>(url, ttl + FALLBACK_STALE_WINDOW);
-    if (fallback) return fallback;
+    const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
+    if (fallback) {
+      try {
+        return validate ? validate(fallback) : fallback as T;
+      } catch (fallbackError) {
+        logVitrineWarning(`Fallback de cache inválido em ${url}`, fallbackError);
+      }
+    }
     throw error;
   }
 }
