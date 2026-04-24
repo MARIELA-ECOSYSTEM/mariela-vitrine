@@ -14,7 +14,7 @@ import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
 import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
-import { formatBRL, getDisplayPrice } from "@/lib/formatters";
+import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 
@@ -230,10 +230,9 @@ const ProductDetail = () => {
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
   const publicBadge = getPublicProductBadge(produto);
 
+  const promo = getPromoInfo(produto);
   const precoFormatado = formatBRL(getDisplayPrice(produto));
-  const precoOriginalFormatado = produto.emPromocao && produto.precoPromocional
-    ? formatBRL(produto.precoVenda)
-    : undefined;
+  const precoOriginalFormatado = promo.isPromo ? formatBRL(promo.precoVenda) : undefined;
 
   const handleAdicionarCarrinho = () => {
     const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
@@ -344,24 +343,22 @@ const ProductDetail = () => {
 
               {/* Preço */}
               <div className="flex items-baseline gap-3 flex-wrap">
-                {produto.emPromocao && precoOriginalFormatado && (
+                {promo.isPromo && precoOriginalFormatado && (
                   <p className="text-lg md:text-2xl text-muted-foreground line-through">
                     {precoOriginalFormatado}
                   </p>
                 )}
-                <p className={`text-3xl md:text-4xl font-bold ${produto.emPromocao ? 'text-destructive' : 'text-primary'}`}>
+                <p className={`text-3xl md:text-4xl font-bold ${promo.isPromo ? 'text-destructive' : 'text-primary'}`}>
                   {precoFormatado}
                 </p>
-                {produto.emPromocao && (
+                {promo.isPromo && (
                   <div className="flex items-center gap-2 flex-wrap">
-                    {produto.economiaPercentual ? (
-                      <Badge variant="destructive" className="text-xs">
-                        {produto.economiaPercentual}% OFF
-                      </Badge>
-                    ) : null}
-                    {(produto.economiaValor ?? (produto.precoPromocional ? produto.precoVenda - produto.precoPromocional : 0)) > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      {promo.badgeLabel}
+                    </Badge>
+                    {promo.economiaValor > 0 && (
                       <Badge variant="outline" className="text-xs border-destructive/40 text-destructive">
-                        Economize {formatBRL(produto.economiaValor ?? (produto.precoVenda - (produto.precoPromocional || 0)))}
+                        Economize {formatBRL(promo.economiaValor)}
                       </Badge>
                     )}
                   </div>

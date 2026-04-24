@@ -1,5 +1,5 @@
 import type { Produto } from "@/data/products";
-import { formatBRL, getDisplayPrice } from "@/lib/formatters";
+import { formatBRL, getPromoInfo } from "@/lib/formatters";
 
 export function createProductSlug(nome: string): string {
   return nome
@@ -43,25 +43,17 @@ export function getProductShareMessage(
   if (options.cor) details.push(`cor ${options.cor}`);
   if (options.tamanho) details.push(`tamanho ${options.tamanho}`);
 
-  // Mesmas regras da vitrine: usa campos da API (sem recalcular).
-  const precoVenda = Number(produto.precoVenda) || 0;
-  const precoAtual = getDisplayPrice(produto);
-  const economiaValor = Number(produto.economiaValor) || 0;
-  const economiaPercentual = Number(produto.economiaPercentual) || 0;
-  const isPromo = !!produto.emPromocao && precoAtual > 0 && precoAtual < precoVenda;
-
+  // Fonte única da verdade: mesmo helper usado na vitrine.
+  const promo = getPromoInfo(produto);
   const linhasPreco: string[] = [];
-  if (isPromo) {
-    // Mesma indicação visual/semântica da vitrine: badge "Promoção" + "Economize"
-    linhasPreco.push(`🏷️ Promoção: ${formatBRL(precoAtual)}`);
-    if (precoVenda > 0) linhasPreco.push(`De ${formatBRL(precoVenda)}`);
-    if (economiaValor > 0) {
-      linhasPreco.push(`Economize ${formatBRL(economiaValor)}${economiaPercentual > 0 ? ` (${economiaPercentual}% OFF)` : ""}`);
-    } else if (economiaPercentual > 0) {
-      linhasPreco.push(`${economiaPercentual}% OFF`);
-    }
-  } else if (precoAtual > 0) {
-    linhasPreco.push(`Valor: ${formatBRL(precoAtual)}`);
+
+  if (promo.isPromo) {
+    // Badge "Promoção" (ou "-X%") + preço atual, igual ao ProductCard
+    linhasPreco.push(`🏷️ ${promo.badgeLabel || "Promoção"}: ${formatBRL(promo.precoAtual)}`);
+    if (promo.precoVenda > 0) linhasPreco.push(`De ${formatBRL(promo.precoVenda)}`);
+    if (promo.economiaTexto) linhasPreco.push(promo.economiaTexto);
+  } else if (promo.precoAtual > 0) {
+    linhasPreco.push(`Valor: ${formatBRL(promo.precoAtual)}`);
   }
 
   const link = options.url || getTrackedProductUrl(produto);
