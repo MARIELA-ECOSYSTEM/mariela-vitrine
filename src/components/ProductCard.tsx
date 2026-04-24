@@ -520,12 +520,12 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
           
           <div className="flex flex-col gap-1.5 sm:gap-2">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              {produto.emPromocao && precoOriginalFormatado && (
+              {promo.isPromo && precoOriginalFormatado && (
                 <p className="text-[10px] sm:text-sm text-muted-foreground line-through">
                   {precoOriginalFormatado}
                 </p>
               )}
-              <p className={`text-base sm:text-lg md:text-xl font-semibold ${produto.emPromocao ? 'text-destructive' : 'text-primary'}`}>
+              <p className={`text-base sm:text-lg md:text-xl font-semibold ${promo.isPromo ? 'text-destructive' : 'text-primary'}`}>
                 {precoFormatado}
               </p>
             </div>
