@@ -143,10 +143,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     setTamanhoSelecionado("");
   };
 
+  const promo = getPromoInfo(produto);
   const precoFormatado = formatBRL(getDisplayPrice(produto));
-  const precoOriginalFormatado = produto.emPromocao && produto.precoPromocional
-    ? formatBRL(produto.precoVenda)
-    : undefined;
+  const precoOriginalFormatado = promo.isPromo ? formatBRL(promo.precoVenda) : undefined;
 
   const handleAdicionarCarrinho = () => {
     const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
