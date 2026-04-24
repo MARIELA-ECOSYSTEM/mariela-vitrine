@@ -11,7 +11,7 @@ import produtoGenerico from "@/assets/produto-generico.png";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
-import { formatBRL, getDisplayPrice } from "@/lib/formatters";
+import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 
 // Mapa de cores para as amostras visuais
