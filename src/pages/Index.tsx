@@ -32,36 +32,46 @@ function isAvailable(produto: Produto) {
 const Index = () => {
   const { loading, produtos } = useProducts();
 
+  const disponiveis = useMemo(() => produtos.filter(isAvailable), [produtos]);
+
   const novidadesRecentes = useMemo(() => {
-    const disponiveis = produtos.filter(isAvailable);
-    const comData = disponiveis.filter((p) => p.createdAt);
-    const semData = disponiveis.filter((p) => !p.createdAt);
+    const parseTimestamp = (value?: string | null): number | null => {
+      if (!value) return null;
+      const ts = new Date(value).getTime();
+      return Number.isFinite(ts) && ts > 0 ? ts : null;
+    };
 
-    comData.sort((a, b) => {
-      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return db - da;
-    });
+    const idDesc = (a: Produto, b: Produto) => Number(b.id) - Number(a.id);
 
-    // Se a API ainda não expõe created_at, usa o flag isNovidade como fallback
-    const fallback = semData.filter((p) => p.isNovidade);
-    const ordenados = comData.length > 0 ? comData : fallback;
-    return ordenados.slice(0, 6);
-  }, [produtos]);
+    const comData = disponiveis
+      .map((p) => ({ p, ts: parseTimestamp(p.createdAt) }))
+      .filter((entry): entry is { p: Produto; ts: number } => entry.ts !== null);
+
+    if (comData.length > 0) {
+      // Ordenação estável: data desc, desempate por id desc
+      comData.sort((a, b) => (b.ts - a.ts) || idDesc(a.p, b.p));
+      return comData.slice(0, 6).map((entry) => entry.p);
+    }
+
+    // Fallback determinístico: flag isNovidade quando disponível, senão id desc
+    const flagged = disponiveis.filter((p) => p.isNovidade);
+    const fallback = flagged.length > 0 ? flagged : disponiveis;
+    return [...fallback].sort(idDesc).slice(0, 6);
+  }, [disponiveis]);
 
   const homeBadgeSections = useMemo(() => {
     const used = new Set<number>();
     novidadesRecentes.forEach((p) => used.add(p.id));
 
     return HOME_BADGE_SECTIONS.map((section) => {
-      const products = produtos
-        .filter((produto) => isAvailable(produto) && getBadgeValue(produto) === section.filter && !used.has(produto.id))
+      const products = disponiveis
+        .filter((produto) => getBadgeValue(produto) === section.filter && !used.has(produto.id))
         .slice(0, 4);
 
       products.forEach((produto) => used.add(produto.id));
       return { ...section, products };
     }).filter((section) => section.products.length >= 1);
-  }, [produtos, novidadesRecentes]);
+  }, [disponiveis, novidadesRecentes]);
 
   useEffect(() => {
     vitrineApiService.getConfig().then((config) => {
