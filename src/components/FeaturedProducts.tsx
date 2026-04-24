@@ -74,20 +74,16 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems 
           </Link>
         </div>
 
-        {/* Products Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <ProductSkeleton key={i} />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
-            {displayed.map((produto) => (
-              <ProductCard key={produto.id} produto={produto} />
-            ))}
-          </div>
-        )}
+        {/* Products Grid — mesmo container e nº de slots para evitar layout shift */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
+          {isLoading
+            ? Array.from({ length: limit }).map((_, i) => (
+                <ProductSkeleton key={`skeleton-${i}`} />
+              ))
+            : displayed.map((produto) => (
+                <ProductCard key={produto.id} produto={produto} />
+              ))}
+        </div>
 
         {/* Mobile CTA */}
         <div className="mt-4 text-center sm:hidden">
