@@ -17,6 +17,7 @@ import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesPr
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
+import { trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
