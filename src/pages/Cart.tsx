@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import produtoGenerico from "@/assets/produto-generico.png";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 
 const Cart = () => {
   const { items, removeFromCart, clearCart, getTotalValue } = useCart();
@@ -14,11 +15,11 @@ const Cart = () => {
   const handleWhatsApp = () => {
     const whatsappNumber = "5583987373396";
     
-    const itemsText = items.map((item) => 
-      `${item.product.nome} | ${item.size} - R$ ${(item.product.precoPromocional || item.product.precoVenda).toFixed(2).replace('.', ',')}`
+    const itemsText = items.map((item) =>
+      `${item.product.nome} | ${item.size} - ${formatBRL(getDisplayPrice(item.product))}`
     ).join("\n\n");
-    
-    const message = `✨ Olá!\n\nEstou finalizando meu pedido do Site Mariela e gostaria de confirmar as peças abaixo:\n\n${itemsText}\n\n💜 Total do pedido: R$ ${getTotalValue().toFixed(2).replace('.', ',')}\n\nPode me ajudar a concluir a compra, por favor? 🤩`;
+
+    const message = `✨ Olá!\n\nEstou finalizando meu pedido do Site Mariela e gostaria de confirmar as peças abaixo:\n\n${itemsText}\n\n💜 Total do pedido: ${formatBRL(getTotalValue())}\n\nPode me ajudar a concluir a compra, por favor? 🤩`;
     
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -92,7 +93,7 @@ const Cart = () => {
                           Tamanho: {item.size}
                         </p>
                         <p className="text-lg font-semibold text-primary mt-2">
-                          R$ {(item.product.precoPromocional || item.product.precoVenda).toFixed(2).replace('.', ',')}
+                          {formatBRL(getDisplayPrice(item.product))}
                         </p>
                       </div>
                       <Button
@@ -110,7 +111,7 @@ const Cart = () => {
                   <div className="flex justify-between items-center text-xl font-semibold">
                     <span className="text-foreground">Total:</span>
                     <span className="text-primary">
-                      R$ {getTotalValue().toFixed(2).replace('.', ',')}
+                      {formatBRL(getTotalValue())}
                     </span>
                   </div>
                 </div>
