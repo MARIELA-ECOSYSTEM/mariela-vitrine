@@ -63,6 +63,13 @@ const ProductDetail = () => {
     navigate(`${getProductPath(produto)}${location.search}`, { replace: true });
   }, [id, location.search, navigate, produto]);
 
+  // Tracking: produto_visualizado (1x por sessão por produto)
+  useEffect(() => {
+    if (!produto) return;
+    const trackingId = produto.produtoId || produto.id;
+    trackProdutoVisualizadoOnce(trackingId, "detalhe");
+  }, [produto]);
+
   // Obter cores disponíveis (não depende de tamanho)
   const coresDisponiveis = useMemo(() => {
     if (!produto) return [];
@@ -292,6 +299,11 @@ const ProductDetail = () => {
       url: productLink,
     });
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    try {
+      trackWhatsappClick(produto.produtoId || produto.id, "detalhe");
+    } catch {
+      /* nunca bloquear o clique */
+    }
     window.open(whatsappUrl, '_blank');
   };
 
