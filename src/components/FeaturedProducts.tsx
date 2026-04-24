@@ -74,16 +74,26 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems 
           </Link>
         </div>
 
-        {/* Products Grid — mesmo container e nº de slots para evitar layout shift */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
-          {isLoading
-            ? Array.from({ length: limit }).map((_, i) => (
-                <ProductSkeleton key={`skeleton-${i}`} />
-              ))
-            : displayed.map((produto) => (
-                <ProductCard key={produto.id} produto={produto} />
-              ))}
-        </div>
+        {/*
+          Products Grid — container, classes e linhas idênticos entre loading/loaded.
+          - auto-rows-fr garante que todas as linhas (skeleton ou card) tenham a mesma altura.
+          - skeletonCount casa com o nº de cards reais quando já conhecidos, evitando reserva
+            excessiva de slots e divergência de slots entre estados.
+        */}
+        {(() => {
+          const skeletonCount = displayed.length > 0 ? displayed.length : limit;
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-fr gap-2.5 sm:gap-4 md:gap-5">
+              {isLoading
+                ? Array.from({ length: skeletonCount }).map((_, i) => (
+                    <ProductSkeleton key={`skeleton-${i}`} />
+                  ))
+                : displayed.map((produto) => (
+                    <ProductCard key={produto.id} produto={produto} />
+                  ))}
+            </div>
+          );
+        })()}
 
         {/* Mobile CTA */}
         <div className="mt-4 text-center sm:hidden">
