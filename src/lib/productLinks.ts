@@ -1,4 +1,5 @@
 import type { Produto } from "@/data/products";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 
 export function createProductSlug(nome: string): string {
   return nome
@@ -32,15 +33,6 @@ export function getTrackedProductUrl(produto: Produto, search = window.location.
   return url.toString();
 }
 
-function formatBRL(value: number): string {
-  return value.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 export function getProductShareMessage(
   produto: Produto,
   options: { cor?: string; tamanho?: string; url?: string } = {}
@@ -51,16 +43,17 @@ export function getProductShareMessage(
   if (options.cor) details.push(`cor ${options.cor}`);
   if (options.tamanho) details.push(`tamanho ${options.tamanho}`);
 
-  // Bloco de preço — usa exatamente os campos vindos da API (sem recalcular).
-  // Fallback seguro: se a API não enviar preco_atual/economia_*, usa precoVenda.
+  // Mesmas regras da vitrine: usa campos da API (sem recalcular).
   const precoVenda = Number(produto.precoVenda) || 0;
-  const precoAtual = Number(produto.precoAtual) > 0 ? Number(produto.precoAtual) : precoVenda;
+  const precoAtual = getDisplayPrice(produto);
   const economiaValor = Number(produto.economiaValor) || 0;
   const economiaPercentual = Number(produto.economiaPercentual) || 0;
+  const isPromo = !!produto.emPromocao && precoAtual > 0 && precoAtual < precoVenda;
 
   const linhasPreco: string[] = [];
-  if (produto.emPromocao && precoAtual > 0 && precoAtual < precoVenda) {
-    linhasPreco.push(`💖 Promoção: ${formatBRL(precoAtual)}`);
+  if (isPromo) {
+    // Mesma indicação visual/semântica da vitrine: badge "Promoção" + "Economize"
+    linhasPreco.push(`🏷️ Promoção: ${formatBRL(precoAtual)}`);
     if (precoVenda > 0) linhasPreco.push(`De ${formatBRL(precoVenda)}`);
     if (economiaValor > 0) {
       linhasPreco.push(`Economize ${formatBRL(economiaValor)}${economiaPercentual > 0 ? ` (${economiaPercentual}% OFF)` : ""}`);
