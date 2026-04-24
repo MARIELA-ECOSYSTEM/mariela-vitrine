@@ -63,13 +63,13 @@ async function main() {
       const nome = produto?.nome || produto?.name || produto?.titulo || produto?.title || "";
       const id = produto?.id || produto?.produto_id || produto?.codigoProduto || produto?.codigo || "";
       const slug = createProductSlug(nome) || id;
-      return slug ? `${SITE_URL}/produto/${slug}` : null;
+      return slug ? `${SITE_URL}/products/${slug}` : null;
     })
     .filter(Boolean);
 
   const urls = [
     urlEntry(`${SITE_URL}/`, "1.0", "daily"),
-    urlEntry(`${SITE_URL}/catalogo`, "0.9", "daily"),
+    urlEntry(`${SITE_URL}/products`, "0.9", "daily"),
     ...Array.from(new Set(productUrls)).map((url) => urlEntry(url, "0.8")),
   ];
 

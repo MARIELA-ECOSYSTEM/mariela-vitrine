@@ -177,7 +177,7 @@ const Products = () => {
         title: `Catálogo de Moda Feminina | ${config.nomeLoja}`,
         description: `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`,
         image: config.logoUrl || produtosBase[0]?.imagens[0],
-        url: `${window.location.origin}/catalogo`,
+        url: `${window.location.origin}/products`,
         jsonLd: {
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
@@ -191,8 +191,8 @@ const Products = () => {
             {
               "@type": "ListItem",
               position: 2,
-              name: "Catálogo",
-              item: `${window.location.origin}/catalogo`,
+              name: "Produtos",
+              item: `${window.location.origin}/products`,
             },
           ],
         },

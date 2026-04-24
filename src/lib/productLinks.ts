@@ -12,7 +12,7 @@ export function createProductSlug(nome: string): string {
 }
 
 export function getProductPath(produto: Produto): string {
-  return `/produto/${createProductSlug(produto.nome) || produto.id}`;
+  return `/products/${createProductSlug(produto.nome) || produto.id}`;
 }
 
 export function getProductPathWithSearch(produto: Produto, search = window.location.search): string {
