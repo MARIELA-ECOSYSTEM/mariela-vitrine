@@ -20,6 +20,9 @@ export interface Produto {
   precoVenda: number;
   precoPromocional?: number;
   emPromocao: boolean;
+  precoAtual?: number;
+  economiaValor?: number;
+  economiaPercentual?: number;
   isNovidade: boolean;
   badgePublico?: string | null;
   publicBadge?: string | null;
