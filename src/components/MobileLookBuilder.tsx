@@ -13,6 +13,7 @@ import {
   Loader2,
   PartyPopper
 } from "lucide-react";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 import { useProducts } from "@/hooks/useProducts";
 import { Produto } from "@/data/products";
 import confetti from "canvas-confetti";
@@ -252,10 +253,7 @@ export const MobileLookBuilder = () => {
       return;
     }
     
-    const formatPreco = (produto: Produto) => {
-      const preco = produto.precoPromocional || produto.precoVenda;
-      return `R$ ${preco.toFixed(2).replace('.', ',')}`;
-    };
+    const formatPreco = (produto: Produto) => formatBRL(getDisplayPrice(produto));
 
     const formatItem = (produto: Produto, size: string, color: string) => {
       const productLink = `${window.location.origin}/products/${produto.id}`;
@@ -269,7 +267,7 @@ export const MobileLookBuilder = () => {
     if (selectedProducts.vestido) items.push(formatItem(selectedProducts.vestido, selectedSizes.vestido, selectedColors.vestido));
     if (selectedProducts.conjunto) items.push(formatItem(selectedProducts.conjunto, selectedSizes.conjunto, selectedColors.conjunto));
     
-    const message = `✨ Olá!\nMontei meu look dos sonhos no Site Mariela:\n\n${items.join("\n\n")}\n\n💜 Total: R$ ${totalValue.toFixed(2).replace('.', ',')}\n\nPode me auxiliar na compra? 🤩`;
+    const message = `✨ Olá!\nMontei meu look dos sonhos no Site Mariela:\n\n${items.join("\n\n")}\n\n💜 Total: ${formatBRL(totalValue)}\n\nPode me auxiliar na compra? 🤩`;
     
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -429,7 +427,7 @@ export const MobileLookBuilder = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Total do Look</p>
                 <p className="text-lg sm:text-xl font-bold text-primary truncate">
-                  R$ {totalValue.toFixed(2).replace('.', ',')}
+                  {formatBRL(totalValue)}
                 </p>
               </div>
               
@@ -869,7 +867,7 @@ const PreviewPanel = ({
                     </div>
                   </div>
                   <span className="font-medium text-primary shrink-0 text-xs sm:text-sm">
-                    R$ {price.toFixed(2).replace('.', ',')}
+                    {formatBRL(price)}
                   </span>
                 </div>
               );
@@ -880,7 +878,7 @@ const PreviewPanel = ({
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sm sm:text-base">Total:</span>
               <span className="text-xl sm:text-2xl font-bold text-primary">
-                R$ {totalValue.toFixed(2).replace('.', ',')}
+                {formatBRL(totalValue)}
               </span>
             </div>
           </div>
