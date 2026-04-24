@@ -14,6 +14,7 @@ import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
 import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 
