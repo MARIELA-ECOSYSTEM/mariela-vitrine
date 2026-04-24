@@ -240,9 +240,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                 </>
               )}
               <div className="absolute top-3 right-3 flex flex-col gap-2">
-                {produto.emPromocao && (
+                {promo.isPromo && (
                   <Badge variant="destructive" className="shadow-sm">
-                    {produto.economiaPercentual ? `-${produto.economiaPercentual}%` : "Promoção"}
+                    {promo.badgeLabel}
                   </Badge>
                 )}
                 {publicBadge && (
@@ -270,12 +270,12 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  {produto.emPromocao && precoOriginalFormatado && (
+                  {promo.isPromo && precoOriginalFormatado && (
                     <p className="text-sm text-muted-foreground line-through">
                       {precoOriginalFormatado}
                     </p>
                   )}
-                  <p className={`text-2xl font-semibold ${produto.emPromocao ? 'text-destructive' : 'text-primary'}`}>
+                  <p className={`text-2xl font-semibold ${promo.isPromo ? 'text-destructive' : 'text-primary'}`}>
                     {precoFormatado}
                   </p>
                 </div>
@@ -394,12 +394,12 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
           </div>
           <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2">
-            {produto.emPromocao && (
+            {promo.isPromo && (
               <Badge
                 variant="destructive"
                 className="shadow-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5"
               >
-                {produto.economiaPercentual ? `-${produto.economiaPercentual}%` : "Promoção"}
+                {promo.badgeLabel}
               </Badge>
             )}
             {publicBadge && (
