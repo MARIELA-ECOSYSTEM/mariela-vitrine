@@ -12,15 +12,17 @@ interface BreadcrumbsProps {
 }
 
 const ROUTE_NAMES: Record<string, string> = {
-  products: "Catálogo",
+  products: "Produtos",
   catalogo: "Catálogo",
   produto: "Produto",
+  produtos: "Produtos",
   cart: "Carrinho",
   "monte-seu-look": "Monte Seu Look",
 };
 
 const CANONICAL_PATHS: Record<string, string> = {
-  products: "/catalogo",
+  catalogo: "/products",
+  produtos: "/products",
 };
 
 export const Breadcrumbs = ({ items, currentPage }: BreadcrumbsProps) => {

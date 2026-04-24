@@ -151,8 +151,8 @@ const ProductDetail = () => {
               {
                 "@type": "ListItem",
                 position: 2,
-                name: "Catálogo",
-                item: `${window.location.origin}/catalogo`,
+                name: "Produtos",
+                item: `${window.location.origin}/products`,
               },
               {
                 "@type": "ListItem",
@@ -183,8 +183,8 @@ const ProductDetail = () => {
                 {
                   "@type": "ListItem",
                   position: 2,
-                  name: "Catálogo",
-                  item: `${window.location.origin}/catalogo`,
+                  name: "Produtos",
+                  item: `${window.location.origin}/products`,
                 },
                 {
                   "@type": "ListItem",
@@ -216,7 +216,7 @@ const ProductDetail = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
-          <Link to="/catalogo">
+          <Link to="/products">
             <Button>Voltar para Produtos</Button>
           </Link>
         </div>
@@ -303,7 +303,7 @@ const ProductDetail = () => {
           {/* Breadcrumbs - Hidden on mobile for cleaner look */}
           <div className="hidden md:block mb-4">
             <Breadcrumbs 
-              items={[{ label: "Catálogo", path: "/catalogo" }]} 
+              items={[{ label: "Produtos", path: "/products" }]} 
               currentPage={produto.nome} 
             />
           </div>
