@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { CATEGORIAS_DB } from "@/data/categories";
+import { isProductNovidade } from "@/lib/novidades";
 
 // Color name mapping for display
 const COLOR_NAMES: Record<string, string> = {
@@ -40,33 +41,34 @@ export const NewArrivalsSection = () => {
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
+  const novidadesAll = useMemo(
+    () => produtos.filter(isProductNovidade),
+    [produtos],
+  );
+
   // Filtrar novidades por categoria
   const produtosNovidade = useMemo(() => {
-    const novidades = produtos.filter(p => p.isNovidade);
-    if (categoriaFiltro === "todas") {
-      return novidades;
-    }
-    return novidades.filter(p => p.categoria === categoriaFiltro);
-  }, [produtos, categoriaFiltro]);
+    if (categoriaFiltro === "todas") return novidadesAll;
+    return novidadesAll.filter((p) => p.categoria === categoriaFiltro);
+  }, [novidadesAll, categoriaFiltro]);
 
   // Contador de produtos por categoria (apenas novidades)
   const categoriasCount = useMemo(() => {
-    const novidades = produtos.filter(p => p.isNovidade);
     const counts: Record<string, number> = {};
     
     CATEGORIAS_DB.forEach(cat => {
       counts[cat.value] = 0;
     });
-    counts.todas = novidades.length;
-    
-    novidades.forEach(p => {
+    counts.todas = novidadesAll.length;
+
+    novidadesAll.forEach((p) => {
       if (counts[p.categoria] !== undefined) {
         counts[p.categoria]++;
       }
     });
     
     return counts;
-  }, [produtos]);
+  }, [novidadesAll]);
 
   // Filtrar categorias que têm produtos
   const categoriasComProdutos = useMemo(() => {
@@ -135,7 +137,7 @@ export const NewArrivalsSection = () => {
   };
 
   // Não renderiza a seção se não houver novidades no total
-  if (!loading && produtos.filter(p => p.isNovidade).length === 0) {
+  if (!loading && novidadesAll.length === 0) {
     return null;
   }
 
@@ -158,7 +160,7 @@ export const NewArrivalsSection = () => {
         </div>
 
         {/* Filtros de Categoria - Badge style com scroll horizontal em mobile */}
-        {!loading && produtos.filter(p => p.isNovidade).length > 0 && (
+        {!loading && novidadesAll.length > 0 && (
           <div className="mb-6 sm:mb-10 animate-fade-in">
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide justify-start sm:justify-center px-1">
               {categoriasComProdutos.map((cat) => (
