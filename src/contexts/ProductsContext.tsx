@@ -143,7 +143,20 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 export function useProductsContext() {
   const context = useContext(ProductsContext);
   if (context === undefined) {
-    throw new Error('useProductsContext must be used within a ProductsProvider');
+    // Fallback seguro (evita crash em HMR ou montagem precoce).
+    // Em produção, o Provider sempre estará presente via App.tsx.
+    if (import.meta.env.DEV) {
+      console.warn('useProductsContext used outside ProductsProvider — returning fallback.');
+    }
+    return {
+      produtos: [],
+      loading: true,
+      error: null,
+      isFromCache: false,
+      cacheAge: null,
+      refreshProducts: async () => false,
+      forceRefresh: async () => false,
+    };
   }
   return context;
 }
