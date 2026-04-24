@@ -640,6 +640,14 @@ function mapProduto(rawProduct: unknown): Produto | null {
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
 
+  const createdAt = readOptionalString(product, ["created_at", "createdAt", "criado_em", "criadoEm", "data_cadastro", "dataCadastro"]);
+  const isNovidadeFlag = readBoolean(product, ["isNovidade", "is_novidade", "isNew", "is_new", "novidade", "lancamento"], false);
+  // Deriva isNovidade/isNew automaticamente: produtos cadastrados nos últimos 14 dias
+  const NOVIDADE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+  const createdTs = createdAt ? new Date(createdAt).getTime() : NaN;
+  const isNovidadeDerivado = Number.isFinite(createdTs) && (Date.now() - createdTs) <= NOVIDADE_WINDOW_MS;
+  const isNovidade = isNovidadeFlag || isNovidadeDerivado;
+
   return {
     id: stableNumericId(rawId),
     produtoId: rawId,
@@ -654,12 +662,12 @@ function mapProduto(rawProduct: unknown): Produto | null {
     precoVenda,
     precoPromocional: precoPromocional > 0 ? precoPromocional : undefined,
     emPromocao: readBoolean(product, ["emPromocao", "em_promocao", "isOnSale", "is_on_sale", "promocao"], false) || (precoPromocional > 0 && precoPromocional < precoVenda),
-    isNovidade: readBoolean(product, ["isNovidade", "is_novidade", "isNew", "is_new", "novidade", "lancamento"], false),
+    isNovidade,
     badgePublico: readOptionalString(product, ["badgePublico", "badge_publico", "publicBadge", "public_badge"]),
     publicBadge: readOptionalString(product, ["publicBadge", "public_badge"]),
     destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),
     recomendacao_publica: readOptionalString(product, ["recomendacao_publica", "recomendacaoPublica"]),
-    createdAt: readOptionalString(product, ["created_at", "createdAt", "criado_em", "criadoEm", "data_cadastro", "dataCadastro"]),
+    createdAt,
   };
 }
 
