@@ -654,12 +654,8 @@ function mapProduto(rawProduct: unknown): Produto | null {
   const economiaPercentual = economiaPercentualApi > 0 ? economiaPercentualApi : (emPromocao && precoVenda > 0 && economiaValor > 0 ? Math.round((economiaValor / precoVenda) * 100) : 0);
 
   const createdAt = readOptionalString(product, ["created_at", "createdAt", "criado_em", "criadoEm", "data_cadastro", "dataCadastro"]);
-  const isNovidadeFlag = readBoolean(product, ["isNovidade", "is_novidade", "isNew", "is_new", "novidade", "lancamento"], false);
-  // Deriva isNovidade/isNew automaticamente: produtos cadastrados nos últimos 14 dias
-  const NOVIDADE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
-  const createdTs = createdAt ? new Date(createdAt).getTime() : NaN;
-  const isNovidadeDerivado = Number.isFinite(createdTs) && (Date.now() - createdTs) <= NOVIDADE_WINDOW_MS;
-  const isNovidade = isNovidadeFlag || isNovidadeDerivado;
+  // Novidade vem exclusivamente da flag da API — sem derivação por data.
+  const isNovidade = readBoolean(product, ["isNovidade", "is_novidade", "isNew", "is_new", "novidade", "lancamento"], false);
 
   return {
     id: stableNumericId(rawId),
