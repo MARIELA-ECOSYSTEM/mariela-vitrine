@@ -17,6 +17,7 @@ import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesPr
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
+import { trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -61,6 +62,13 @@ const ProductDetail = () => {
     if (!produto || !id) return;
     navigate(`${getProductPath(produto)}${location.search}`, { replace: true });
   }, [id, location.search, navigate, produto]);
+
+  // Tracking: produto_visualizado (1x por sessão por produto)
+  useEffect(() => {
+    if (!produto) return;
+    const trackingId = produto.produtoId || produto.id;
+    trackProdutoVisualizadoOnce(trackingId, "detalhe");
+  }, [produto]);
 
   // Obter cores disponíveis (não depende de tamanho)
   const coresDisponiveis = useMemo(() => {
@@ -291,6 +299,11 @@ const ProductDetail = () => {
       url: productLink,
     });
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    try {
+      trackWhatsappClick(produto.produtoId || produto.id, "detalhe");
+    } catch {
+      /* nunca bloquear o clique */
+    }
     window.open(whatsappUrl, '_blank');
   };
 
