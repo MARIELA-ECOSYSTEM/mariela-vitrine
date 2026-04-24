@@ -724,6 +724,13 @@ function mapProduto(rawProduct: unknown): Produto | null {
   if (variants.length === 0) return null;
 
   const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
+  const corRecords = getCorRecords(product);
+  // Ordem das cores conforme aparecem em `variants` (mantém alinhamento índice imagem ↔ cor).
+  const corOrder: string[] = [];
+  variants.forEach((v) => {
+    if (v.cor && !corOrder.includes(v.cor)) corOrder.push(v.cor);
+  });
+  const imagens = extractImages(product, variantRecords, corRecords, corOrder);
   const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
@@ -753,7 +760,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
     descricao: readString(product, ["descricao", "description", "detalhes"], `Produto ${nome}`),
     categoria: mapearCategoria(readString(product, ["categoria", "category", "categoria_nome", "categoriaNome"], "Outro")),
     colecao: readOptionalString(product, ["colecao", "colecao_nome", "colecaoNome", "collection", "collection_name"]),
-    imagens: extractImages(product, variantRecords),
+    imagens,
     variants,
     precoCusto: precoVenda * 0.6,
     precoVenda,
