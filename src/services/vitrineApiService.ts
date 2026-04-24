@@ -470,26 +470,114 @@ function mapearCategoria(categoria: string): Produto["categoria"] {
   return mapa[normalized] || "outros";
 }
 
-function extractImages(product: ApiRecord, variantRecords: ApiRecord[]): string[] {
-  const directImages = [
-    readString(product, ["imagem_thumb", "imagemThumb", "thumb", "thumbnail"]),
-    readString(product, ["imagem_principal", "imagemPrincipal", "imagem", "image", "foto", "foto_url"]),
-    ...asArray(product.imagens).filter((item): item is string => typeof item === "string"),
-    ...asArray(product.images).filter((item): item is string => typeof item === "string"),
-  ];
+/**
+ * Lê o array de cores no novo modelo produto → cor → tamanho.
+ * Compatível com payloads que ainda não expõem `cores`.
+ */
+function getCorRecords(product: ApiRecord): ApiRecord[] {
+  return asArray(
+    product.cores ?? product.produto_cores ?? product.produtoCores ?? product.colors,
+  ).map(asRecord);
+}
 
-  const variantImages = variantRecords.flatMap((variant) => [
+function readCorImagem(cor: ApiRecord, prefer: "full" | "thumb"): string {
+  const fullKeys = ["imagem_full", "imagemFull", "imagem_principal", "imagemPrincipal", "imagem", "image", "foto", "foto_url"];
+  const thumbKeys = ["imagem_thumb", "imagemThumb", "thumb", "thumbnail"];
+  const ordered = prefer === "full" ? [...fullKeys, ...thumbKeys] : [...thumbKeys, ...fullKeys];
+  return readString(cor, ordered);
+}
+
+function extractImages(
+  product: ApiRecord,
+  variantRecords: ApiRecord[],
+  corRecords: ApiRecord[] = getCorRecords(product),
+  corOrder: string[] = [],
+): string[] {
+  // Imagem principal do produto (catálogo/detalhe)
+  const principal = readString(product, ["imagem_principal", "imagemPrincipal", "imagem", "image", "foto", "foto_url"]);
+  const thumb = readString(product, ["imagem_thumb", "imagemThumb", "thumb", "thumbnail"]);
+
+  // Mapa cor → imagem (preferindo imagem_full p/ detalhe; thumb como fallback)
+  const corImageByName = new Map<string, string>();
+  corRecords.forEach((cor) => {
+    const nome = readString(cor, ["cor", "nome", "color", "name"], "");
+    if (!nome) return;
+    const img = readCorImagem(cor, "full");
+    if (img && !corImageByName.has(nome)) corImageByName.set(nome, img);
+  });
+
+  // Sequência alinhada à ordem das cores em `variants` (índice N = cor N)
+  const orderedCorImages = corOrder.map((cor) => corImageByName.get(cor)).filter((url): url is string => Boolean(url));
+
+  // Fallback: primeira cor com imagem (para o card quando não há imagem principal)
+  const primeiraCorImagem = corRecords
+    .map((cor) => readCorImagem(cor, "thumb"))
+    .find((url) => Boolean(url)) || "";
+
+  // Imagens legadas em variantes nível tamanho (compatibilidade)
+  const legacyVariantImages = variantRecords.flatMap((variant) => [
     readString(variant, ["imagem", "image", "imagem_principal", "imagemPrincipal"]),
     ...asArray(variant.imagens).filter((item): item is string => typeof item === "string"),
     ...asArray(variant.images).filter((item): item is string => typeof item === "string"),
   ]);
 
-  return uniqueImages([...directImages, ...variantImages]);
+  // Imagens diretas/legadas no produto
+  const legacyProductImages = [
+    ...asArray(product.imagens).filter((item): item is string => typeof item === "string"),
+    ...asArray(product.images).filter((item): item is string => typeof item === "string"),
+  ];
+
+  // Ordem final: principal → imagens por cor (alinhadas) → demais cores → legacy → thumb
+  const all = [
+    principal,
+    ...orderedCorImages,
+    primeiraCorImagem,
+    ...legacyProductImages,
+    ...legacyVariantImages,
+    thumb,
+  ];
+
+  return uniqueImages(all);
 }
 
 function extractVariants(product: ApiRecord): VarianteProduto[] {
-  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
   const variants: VarianteProduto[] = [];
+
+  // Novo modelo: produto → cores[] → tamanhos[]
+  const corRecords = getCorRecords(product);
+  if (corRecords.length > 0) {
+    corRecords.forEach((corRec) => {
+      const cor = readString(corRec, ["cor", "nome", "color", "name"], "Única");
+      const tamanhos = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade).map(asRecord);
+      if (tamanhos.length > 0) {
+        tamanhos.forEach((tam) => {
+          const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
+          const disponivel = readBoolean(tam, ["disponivel", "available", "ativo"], quantidade > 0);
+          if (quantidade > 0 || disponivel) {
+            variants.push({
+              tamanho: readString(tam, ["tamanho", "size", "nome"], "U"),
+              cor,
+              disponibilidade: Math.max(quantidade, 1),
+            });
+          }
+        });
+      } else {
+        // Cor sem grade — assumir tamanho único disponível
+        const quantidade = readNumber(corRec, ["quantidade", "disponibilidade", "estoque"], 0);
+        const disponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], quantidade > 0);
+        if (quantidade > 0 || disponivel) {
+          variants.push({
+            tamanho: readString(corRec, ["tamanho", "size"], "U"),
+            cor,
+            disponibilidade: Math.max(quantidade, 1),
+          });
+        }
+      }
+    });
+    if (variants.length > 0) return variants;
+  }
+
+  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
 
   variantRecords.forEach((variant) => {
     const cor = readString(variant, ["cor", "color", "nome_cor", "nomeCor"], "Única");
@@ -636,6 +724,13 @@ function mapProduto(rawProduct: unknown): Produto | null {
   if (variants.length === 0) return null;
 
   const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
+  const corRecords = getCorRecords(product);
+  // Ordem das cores conforme aparecem em `variants` (mantém alinhamento índice imagem ↔ cor).
+  const corOrder: string[] = [];
+  variants.forEach((v) => {
+    if (v.cor && !corOrder.includes(v.cor)) corOrder.push(v.cor);
+  });
+  const imagens = extractImages(product, variantRecords, corRecords, corOrder);
   const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
@@ -665,7 +760,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
     descricao: readString(product, ["descricao", "description", "detalhes"], `Produto ${nome}`),
     categoria: mapearCategoria(readString(product, ["categoria", "category", "categoria_nome", "categoriaNome"], "Outro")),
     colecao: readOptionalString(product, ["colecao", "colecao_nome", "colecaoNome", "collection", "collection_name"]),
-    imagens: extractImages(product, variantRecords),
+    imagens,
     variants,
     precoCusto: precoVenda * 0.6,
     precoVenda,
