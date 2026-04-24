@@ -14,6 +14,7 @@ import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
 import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 
@@ -126,8 +127,8 @@ const ProductDetail = () => {
     if (!produto) return;
 
     vitrineApiService.getConfig().then((config) => {
-      const preco = produto.precoAtual ?? (produto.emPromocao && produto.precoPromocional ? produto.precoPromocional : produto.precoVenda);
-      const precoFormatadoSeo = `R$ ${preco.toFixed(2).replace('.', ',')}`;
+      const preco = getDisplayPrice(produto);
+      const precoFormatadoSeo = formatBRL(preco);
       const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
       const descricao = produto.descricao || `${produto.nome}${colecaoTexto}. Loja de moda feminina em Campina Grande - PB.`;
       const imagemPrincipal = produto.imagens[0];
@@ -229,12 +230,9 @@ const ProductDetail = () => {
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
   const publicBadge = getPublicProductBadge(produto);
 
-  const precoFormatado = produto.emPromocao && produto.precoPromocional
-    ? `R$ ${produto.precoPromocional.toFixed(2).replace('.', ',')}`
-    : `R$ ${produto.precoVenda.toFixed(2).replace('.', ',')}`;
-
+  const precoFormatado = formatBRL(getDisplayPrice(produto));
   const precoOriginalFormatado = produto.emPromocao && produto.precoPromocional
-    ? `R$ ${produto.precoVenda.toFixed(2).replace('.', ',')}`
+    ? formatBRL(produto.precoVenda)
     : undefined;
 
   const handleAdicionarCarrinho = () => {
@@ -363,7 +361,7 @@ const ProductDetail = () => {
                     ) : null}
                     {(produto.economiaValor ?? (produto.precoPromocional ? produto.precoVenda - produto.precoPromocional : 0)) > 0 && (
                       <Badge variant="outline" className="text-xs border-destructive/40 text-destructive">
-                        Economize R$ {(produto.economiaValor ?? (produto.precoVenda - (produto.precoPromocional || 0))).toFixed(2).replace('.', ',')}
+                        Economize {formatBRL(produto.economiaValor ?? (produto.precoVenda - (produto.precoPromocional || 0)))}
                       </Badge>
                     )}
                   </div>

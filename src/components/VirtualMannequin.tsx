@@ -7,6 +7,7 @@ import { Mannequin3D } from "@/components/Mannequin3D";
 import { ProductSelectWithThumbnail } from "@/components/ProductSelectWithThumbnail";
 import { SizeFilterBadges } from "@/components/SizeFilterBadges";
 import confetti from "canvas-confetti";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 
 interface SelectedItems {
   blusa: number | null;
@@ -236,10 +237,7 @@ export const VirtualMannequin = () => {
       return;
     }
     
-    const formatPreco = (produto: typeof produtos[0]) => {
-      const preco = produto.precoPromocional || produto.precoVenda;
-      return `R$ ${preco.toFixed(2).replace('.', ',')}`;
-    };
+    const formatPreco = (produto: typeof produtos[0]) => formatBRL(getDisplayPrice(produto));
 
     const blusaText = selectedBlusa ? `${selectedBlusa.nome} | ${selectedSizes.blusa}${selectedColors.blusa ? ` - ${selectedColors.blusa}` : ""} - ${formatPreco(selectedBlusa)}` : "";
     const bottomText = selectedBottom ? `${selectedBottom.nome} | ${selectedSizes.bottom}${selectedColors.bottom ? ` - ${selectedColors.bottom}` : ""} - ${formatPreco(selectedBottom)}` : "";
@@ -249,7 +247,7 @@ export const VirtualMannequin = () => {
     
     const items = [blusaText, bottomText, bolsaText, vestidoText, conjuntoText].filter(Boolean).join("\n\n");
     
-    const message = `✨ Olá!\nMontei meu look dos sonhos no Site Mariela e quero garantir essas peças:\n\n${items}\n\n💜 Total: R$ ${totalValue.toFixed(2).replace('.', ',')}\n\nPode me auxiliar na finalização da compra, por favor? 🤩`;
+    const message = `✨ Olá!\nMontei meu look dos sonhos no Site Mariela e quero garantir essas peças:\n\n${items}\n\n💜 Total: ${formatBRL(totalValue)}\n\nPode me auxiliar na finalização da compra, por favor? 🤩`;
     
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -391,7 +389,7 @@ export const VirtualMannequin = () => {
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-foreground">Total:</span>
                       <span className="text-2xl font-bold text-primary animate-scale-in">
-                        R$ {totalValue.toFixed(2).replace('.', ',')}
+                        {formatBRL(totalValue)}
                       </span>
                     </div>
                   </div>

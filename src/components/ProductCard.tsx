@@ -11,6 +11,7 @@ import produtoGenerico from "@/assets/produto-generico.png";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 
 // Mapa de cores para as amostras visuais
@@ -142,12 +143,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     setTamanhoSelecionado("");
   };
 
-  const precoFormatado = produto.emPromocao && produto.precoPromocional
-    ? `R$ ${produto.precoPromocional.toFixed(2).replace('.', ',')}`
-    : `R$ ${produto.precoVenda.toFixed(2).replace('.', ',')}`;
-
+  const precoFormatado = formatBRL(getDisplayPrice(produto));
   const precoOriginalFormatado = produto.emPromocao && produto.precoPromocional
-    ? `R$ ${produto.precoVenda.toFixed(2).replace('.', ',')}`
+    ? formatBRL(produto.precoVenda)
     : undefined;
 
   const handleAdicionarCarrinho = () => {

@@ -1,6 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Produto } from "@/data/products";
 import produtoGenerico from "@/assets/produto-generico.png";
+import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 
 interface ProductSelectWithThumbnailProps {
   produtos: Produto[];
@@ -46,9 +47,7 @@ export const ProductSelectWithThumbnail = ({
               <div className="flex flex-col">
                 <span className="font-medium text-foreground">{produto.nome}</span>
                 <span className="text-xs text-muted-foreground">
-                  R$ {produto.emPromocao && produto.precoPromocional 
-                    ? produto.precoPromocional.toFixed(2) 
-                    : produto.precoVenda.toFixed(2)}
+                  {formatBRL(getDisplayPrice(produto))}
                 </span>
               </div>
             </div>
