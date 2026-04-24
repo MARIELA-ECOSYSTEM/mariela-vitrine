@@ -640,6 +640,19 @@ function mapProduto(rawProduct: unknown): Produto | null {
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
 
+  // Campos públicos opcionais vindos diretamente do PDV (preferidos quando presentes)
+  const precoAtualApi = readNumber(product, ["preco_atual", "precoAtual", "current_price"], 0);
+  const economiaValorApi = readNumber(product, ["economia_valor", "economiaValor", "savings", "saving_amount"], 0);
+  const economiaPercentualApi = readNumber(product, ["economia_percentual", "economiaPercentual", "discount_percent", "percent_off"], 0);
+  const emPromocaoApi = readBoolean(product, ["emPromocao", "em_promocao", "isOnSale", "is_on_sale", "promocao"], false);
+  const emPromocao = emPromocaoApi || (precoPromocional > 0 && precoPromocional < precoVenda) || (precoAtualApi > 0 && precoAtualApi < precoVenda);
+
+  // Derivados (sem recalcular regras): apenas reaproveitar dados quando faltarem
+  const precoPromocionalEfetivo = precoPromocional > 0 ? precoPromocional : (emPromocao && precoAtualApi > 0 && precoAtualApi < precoVenda ? precoAtualApi : 0);
+  const precoAtual = precoAtualApi > 0 ? precoAtualApi : (precoPromocionalEfetivo > 0 ? precoPromocionalEfetivo : precoVenda);
+  const economiaValor = economiaValorApi > 0 ? economiaValorApi : (emPromocao && precoVenda > precoAtual ? +(precoVenda - precoAtual).toFixed(2) : 0);
+  const economiaPercentual = economiaPercentualApi > 0 ? economiaPercentualApi : (emPromocao && precoVenda > 0 && economiaValor > 0 ? Math.round((economiaValor / precoVenda) * 100) : 0);
+
   const createdAt = readOptionalString(product, ["created_at", "createdAt", "criado_em", "criadoEm", "data_cadastro", "dataCadastro"]);
   const isNovidadeFlag = readBoolean(product, ["isNovidade", "is_novidade", "isNew", "is_new", "novidade", "lancamento"], false);
   // Deriva isNovidade/isNew automaticamente: produtos cadastrados nos últimos 14 dias
@@ -660,8 +673,11 @@ function mapProduto(rawProduct: unknown): Produto | null {
     variants,
     precoCusto: precoVenda * 0.6,
     precoVenda,
-    precoPromocional: precoPromocional > 0 ? precoPromocional : undefined,
-    emPromocao: readBoolean(product, ["emPromocao", "em_promocao", "isOnSale", "is_on_sale", "promocao"], false) || (precoPromocional > 0 && precoPromocional < precoVenda),
+    precoPromocional: precoPromocionalEfetivo > 0 ? precoPromocionalEfetivo : undefined,
+    emPromocao,
+    precoAtual,
+    economiaValor: economiaValor > 0 ? economiaValor : undefined,
+    economiaPercentual: economiaPercentual > 0 ? economiaPercentual : undefined,
     isNovidade,
     badgePublico: readOptionalString(product, ["badgePublico", "badge_publico", "publicBadge", "public_badge"]),
     publicBadge: readOptionalString(product, ["publicBadge", "public_badge"]),

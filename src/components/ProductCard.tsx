@@ -243,6 +243,11 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
                 </>
               )}
               <div className="absolute top-3 right-3 flex flex-col gap-2">
+                {produto.emPromocao && (
+                  <Badge variant="destructive" className="shadow-sm">
+                    {produto.economiaPercentual ? `-${produto.economiaPercentual}%` : "Promoção"}
+                  </Badge>
+                )}
                 {publicBadge && (
                   <Badge title={publicBadge.description} className="bg-background/90 text-foreground border border-primary/30 shadow-sm backdrop-blur-sm">
                     {publicBadge.label}
@@ -392,6 +397,14 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
           </div>
           <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2">
+            {produto.emPromocao && (
+              <Badge
+                variant="destructive"
+                className="shadow-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5"
+              >
+                {produto.economiaPercentual ? `-${produto.economiaPercentual}%` : "Promoção"}
+              </Badge>
+            )}
             {publicBadge && (
               <Badge title={publicBadge.description} className="bg-background/90 text-foreground border border-primary/30 shadow-sm backdrop-blur-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5">
                 {publicBadge.label}
