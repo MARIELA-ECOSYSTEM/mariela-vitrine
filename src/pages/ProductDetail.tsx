@@ -126,7 +126,7 @@ const ProductDetail = () => {
     if (!produto) return;
 
     vitrineApiService.getConfig().then((config) => {
-      const preco = produto.emPromocao && produto.precoPromocional ? produto.precoPromocional : produto.precoVenda;
+      const preco = produto.precoAtual ?? (produto.emPromocao && produto.precoPromocional ? produto.precoPromocional : produto.precoVenda);
       const precoFormatadoSeo = `R$ ${preco.toFixed(2).replace('.', ',')}`;
       const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
       const descricao = produto.descricao || `${produto.nome}${colecaoTexto}. Loja de moda feminina em Campina Grande - PB.`;
@@ -134,7 +134,9 @@ const ProductDetail = () => {
 
       updateSeo({
         title: `${produto.nome} | ${config.nomeLoja}`,
-        description: `${produto.nome}${colecaoTexto}. Disponível na ${config.nomeLoja} por ${precoFormatadoSeo}.`,
+        description: produto.emPromocao
+          ? `${produto.nome} em promoção por ${precoFormatadoSeo} na ${config.nomeLoja}${colecaoTexto ? `, ${colecaoTexto.trim()}` : ""}.`
+          : `${produto.nome}${colecaoTexto}. Disponível na ${config.nomeLoja} por ${precoFormatadoSeo}.`,
         image: imagemPrincipal,
         url: `${window.location.origin}${getProductPath(produto)}`,
         type: "product",
@@ -353,9 +355,18 @@ const ProductDetail = () => {
                   {precoFormatado}
                 </p>
                 {produto.emPromocao && (
-                  <Badge variant="destructive" className="text-xs">
-                    Economia de R$ {(produto.precoVenda - (produto.precoPromocional || 0)).toFixed(2).replace('.', ',')}
-                  </Badge>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {produto.economiaPercentual ? (
+                      <Badge variant="destructive" className="text-xs">
+                        {produto.economiaPercentual}% OFF
+                      </Badge>
+                    ) : null}
+                    {(produto.economiaValor ?? (produto.precoPromocional ? produto.precoVenda - produto.precoPromocional : 0)) > 0 && (
+                      <Badge variant="outline" className="text-xs border-destructive/40 text-destructive">
+                        Economize R$ {(produto.economiaValor ?? (produto.precoVenda - (produto.precoPromocional || 0))).toFixed(2).replace('.', ',')}
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
 
