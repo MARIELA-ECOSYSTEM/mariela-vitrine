@@ -19,6 +19,9 @@ const CACHE_TTL = {
 
 const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
 
+// Mapa de requisições em andamento para deduplicar fetches concorrentes
+const inflightRequests = new Map<string, Promise<unknown>>();
+
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 type ApiRecord = Record<string, unknown>;
 type ResponseValidator<T> = (payload: unknown) => T;
@@ -315,8 +318,13 @@ async function fetchCachedJson<T>(path: string, params: QueryParams | undefined,
     }
   }
 
+  // Dedupe de chamadas concorrentes para a mesma URL
+  const existing = inflightRequests.get(url);
+  const promise = existing ?? requestJson<unknown>(url);
+  if (!existing) inflightRequests.set(url, promise);
+
   try {
-    const data = await requestJson<unknown>(url);
+    const data = await promise;
     const validated = validate ? validate(data) : data as T;
     setCached(url, validated);
     return validated;
@@ -330,6 +338,8 @@ async function fetchCachedJson<T>(path: string, params: QueryParams | undefined,
       }
     }
     throw error;
+  } finally {
+    if (inflightRequests.get(url) === promise) inflightRequests.delete(url);
   }
 }
 
