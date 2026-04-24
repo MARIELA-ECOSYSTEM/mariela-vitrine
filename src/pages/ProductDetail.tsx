@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ImageGallery } from "@/components/ImageGallery";
 import { SizeGuide } from "@/components/SizeGuide";
+import { RelatedProducts } from "@/components/RelatedProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useProducts } from "@/hooks/useProducts";
@@ -522,6 +523,15 @@ const ProductDetail = () => {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Look completo / Produtos relacionados por coleção */}
+          <div className="max-w-6xl mx-auto">
+            <RelatedProducts
+              currentProduct={produto}
+              allProducts={produtos}
+              title="Complete o look"
+            />
           </div>
         </div>
       </main>
