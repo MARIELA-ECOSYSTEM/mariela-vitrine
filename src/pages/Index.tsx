@@ -32,8 +32,26 @@ function isAvailable(produto: Produto) {
 const Index = () => {
   const { loading, produtos } = useProducts();
 
+  const novidadesRecentes = useMemo(() => {
+    const disponiveis = produtos.filter(isAvailable);
+    const comData = disponiveis.filter((p) => p.createdAt);
+    const semData = disponiveis.filter((p) => !p.createdAt);
+
+    comData.sort((a, b) => {
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return db - da;
+    });
+
+    // Se a API ainda não expõe created_at, usa o flag isNovidade como fallback
+    const fallback = semData.filter((p) => p.isNovidade);
+    const ordenados = comData.length > 0 ? comData : fallback;
+    return ordenados.slice(0, 6);
+  }, [produtos]);
+
   const homeBadgeSections = useMemo(() => {
     const used = new Set<number>();
+    novidadesRecentes.forEach((p) => used.add(p.id));
 
     return HOME_BADGE_SECTIONS.map((section) => {
       const products = produtos
@@ -43,7 +61,7 @@ const Index = () => {
       products.forEach((produto) => used.add(produto.id));
       return { ...section, products };
     }).filter((section) => section.products.length >= 1);
-  }, [produtos]);
+  }, [produtos, novidadesRecentes]);
 
   useEffect(() => {
     vitrineApiService.getConfig().then((config) => {
@@ -89,8 +107,10 @@ const Index = () => {
         title="Novidades"
         subtitle="Recém-chegadas à coleção"
         filter="novidades"
-        limit={8}
+        limit={6}
         forceLoading={loading}
+        products={loading ? undefined : novidadesRecentes}
+        minItems={1}
         linkTo="/products?filter=novidades"
         linkLabel="Ver todas as novidades"
       />

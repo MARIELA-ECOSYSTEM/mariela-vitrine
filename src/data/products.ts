@@ -25,6 +25,7 @@ export interface Produto {
   publicBadge?: string | null;
   destaque_publico?: string | null;
   recomendacao_publica?: string | null;
+  createdAt?: string | null;
 }
 
 export async function fetchProdutos(params?: Record<string, string | number | boolean | null | undefined>): Promise<Produto[]> {

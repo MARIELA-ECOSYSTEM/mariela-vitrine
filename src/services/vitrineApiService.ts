@@ -649,6 +649,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
     publicBadge: readOptionalString(product, ["publicBadge", "public_badge"]),
     destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),
     recomendacao_publica: readOptionalString(product, ["recomendacao_publica", "recomendacaoPublica"]),
+    createdAt: readOptionalString(product, ["created_at", "createdAt", "criado_em", "criadoEm", "data_cadastro", "dataCadastro"]),
   };
 }
 
