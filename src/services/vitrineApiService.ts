@@ -541,8 +541,43 @@ function extractImages(
 }
 
 function extractVariants(product: ApiRecord): VarianteProduto[] {
-  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
   const variants: VarianteProduto[] = [];
+
+  // Novo modelo: produto → cores[] → tamanhos[]
+  const corRecords = getCorRecords(product);
+  if (corRecords.length > 0) {
+    corRecords.forEach((corRec) => {
+      const cor = readString(corRec, ["cor", "nome", "color", "name"], "Única");
+      const tamanhos = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade).map(asRecord);
+      if (tamanhos.length > 0) {
+        tamanhos.forEach((tam) => {
+          const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
+          const disponivel = readBoolean(tam, ["disponivel", "available", "ativo"], quantidade > 0);
+          if (quantidade > 0 || disponivel) {
+            variants.push({
+              tamanho: readString(tam, ["tamanho", "size", "nome"], "U"),
+              cor,
+              disponibilidade: Math.max(quantidade, 1),
+            });
+          }
+        });
+      } else {
+        // Cor sem grade — assumir tamanho único disponível
+        const quantidade = readNumber(corRec, ["quantidade", "disponibilidade", "estoque"], 0);
+        const disponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], quantidade > 0);
+        if (quantidade > 0 || disponivel) {
+          variants.push({
+            tamanho: readString(corRec, ["tamanho", "size"], "U"),
+            cor,
+            disponibilidade: Math.max(quantidade, 1),
+          });
+        }
+      }
+    });
+    if (variants.length > 0) return variants;
+  }
+
+  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
 
   variantRecords.forEach((variant) => {
     const cor = readString(variant, ["cor", "color", "nome_cor", "nomeCor"], "Única");
