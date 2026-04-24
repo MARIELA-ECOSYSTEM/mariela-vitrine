@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import type { Produto } from "@/data/products";
+import { isProductNovidade } from "@/lib/novidades";
 
 interface FeaturedProductsProps {
   title: string;
@@ -31,7 +32,7 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems 
 
     switch (filter) {
       case "novidades":
-        return produtos.filter(p => p.isNovidade);
+        return produtos.filter(isProductNovidade);
       case "promocoes":
         return produtos.filter(p => p.emPromocao);
       case "destaque":
