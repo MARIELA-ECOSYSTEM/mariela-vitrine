@@ -661,7 +661,7 @@ const Products = () => {
                     <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Novidades
                     <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
-                      {produtosBase.filter(p => p.isNovidade).length}
+                      {selectNovidades(produtosBase).size}
                     </Badge>
                   </Button>
                   <Button
