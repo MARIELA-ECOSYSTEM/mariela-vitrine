@@ -18,6 +18,7 @@ import { CATEGORIAS_DB } from "@/data/categories";
 import { vitrineApiService, type FilterOption } from "@/services/vitrineApiService";
 import type { Produto } from "@/data/products";
 import { updateSeo } from "@/lib/seo";
+import { selectNovidadesIds } from "@/lib/novidades";
 import {
   Select,
   SelectContent,
@@ -50,33 +51,6 @@ const produtosPorPagina = 12;
 
 function getBadgeValue(produto: Produto) {
   return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
-}
-
-function parseTimestamp(value?: string | null): number | null {
-  if (!value) return null;
-  const ts = new Date(value).getTime();
-  return Number.isFinite(ts) && ts > 0 ? ts : null;
-}
-
-const NOVIDADES_LIMIT = 12;
-
-function selectNovidades(produtos: Produto[]): Set<number> {
-  const idDesc = (a: Produto, b: Produto) => Number(b.id) - Number(a.id);
-  const comData = produtos
-    .map((p) => ({ p, ts: parseTimestamp(p.createdAt) }))
-    .filter((entry): entry is { p: Produto; ts: number } => entry.ts !== null);
-
-  let lista: Produto[];
-  if (comData.length > 0) {
-    comData.sort((a, b) => (b.ts - a.ts) || idDesc(a.p, b.p));
-    lista = comData.slice(0, NOVIDADES_LIMIT).map((e) => e.p);
-  } else {
-    const flagged = produtos.filter((p) => p.isNovidade);
-    const fallback = flagged.length > 0 ? flagged : produtos;
-    lista = [...fallback].sort(idDesc).slice(0, NOVIDADES_LIMIT);
-  }
-
-  return new Set(lista.map((p) => p.id));
 }
 
 function dedupeOptions(options: CatalogFilterOption[]): CatalogFilterOption[] {
@@ -402,7 +376,7 @@ const Products = () => {
     
     // Filtro de novidades: usa createdAt desc com fallback determinístico por id desc
     if (mostrarNovidades) {
-      const ids = selectNovidades(filtrados);
+      const ids = selectNovidadesIds(filtrados);
       filtrados = filtrados.filter((p) => ids.has(p.id));
     }
 
@@ -661,7 +635,7 @@ const Products = () => {
                     <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     Novidades
                     <Badge variant={mostrarNovidades ? "secondary" : "outline"} className="ml-0.5 h-4 px-1 text-[9px] sm:text-[10px]">
-                      {selectNovidades(produtosBase).size}
+                      {selectNovidadesIds(produtosBase).size}
                     </Badge>
                   </Button>
                   <Button

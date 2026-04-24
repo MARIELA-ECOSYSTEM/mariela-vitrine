@@ -11,6 +11,7 @@ import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { useEffect, useMemo } from "react";
 import type { Produto } from "@/data/products";
+import { selectNovidades, HOME_NOVIDADES_LIMIT } from "@/lib/novidades";
 
 type HomeBadgeFilter = "em_alta" | "mais_procurado" | "queridinho_loja" | "destaque_colecao";
 
@@ -34,30 +35,10 @@ const Index = () => {
 
   const disponiveis = useMemo(() => produtos.filter(isAvailable), [produtos]);
 
-  const novidadesRecentes = useMemo(() => {
-    const parseTimestamp = (value?: string | null): number | null => {
-      if (!value) return null;
-      const ts = new Date(value).getTime();
-      return Number.isFinite(ts) && ts > 0 ? ts : null;
-    };
-
-    const idDesc = (a: Produto, b: Produto) => Number(b.id) - Number(a.id);
-
-    const comData = disponiveis
-      .map((p) => ({ p, ts: parseTimestamp(p.createdAt) }))
-      .filter((entry): entry is { p: Produto; ts: number } => entry.ts !== null);
-
-    if (comData.length > 0) {
-      // Ordenação estável: data desc, desempate por id desc
-      comData.sort((a, b) => (b.ts - a.ts) || idDesc(a.p, b.p));
-      return comData.slice(0, 6).map((entry) => entry.p);
-    }
-
-    // Fallback determinístico: flag isNovidade quando disponível, senão id desc
-    const flagged = disponiveis.filter((p) => p.isNovidade);
-    const fallback = flagged.length > 0 ? flagged : disponiveis;
-    return [...fallback].sort(idDesc).slice(0, 6);
-  }, [disponiveis]);
+  const novidadesRecentes = useMemo(
+    () => selectNovidades(disponiveis, HOME_NOVIDADES_LIMIT),
+    [disponiveis],
+  );
 
   const homeBadgeSections = useMemo(() => {
     const used = new Set<number>();
