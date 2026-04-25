@@ -1,4 +1,4 @@
-import type { Produto, VarianteProduto } from "@/data/products";
+import type { Produto, ProdutoCor, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
@@ -547,7 +547,9 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
   const corRecords = getCorRecords(product);
   if (corRecords.length > 0) {
     corRecords.forEach((corRec) => {
-      const cor = readString(corRec, ["cor", "nome", "color", "name"], "Única");
+      // Sem fallback "Única" quando há cores reais — usamos string vazia para descartar entradas inválidas.
+      const cor = readString(corRec, ["cor", "nome", "color", "name"], "");
+      if (!cor) return;
       const tamanhos = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade).map(asRecord);
       if (tamanhos.length > 0) {
         tamanhos.forEach((tam) => {
@@ -623,6 +625,47 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
   }
 
   return variants;
+}
+
+/**
+ * Mapeia o array `cores` do contrato novo para o tipo `ProdutoCor`.
+ * Retorna `undefined` quando não há cores reais (mantém retrocompatibilidade).
+ */
+function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
+  const corRecords = getCorRecords(product);
+  if (corRecords.length === 0) return undefined;
+
+  const cores: ProdutoCor[] = [];
+  corRecords.forEach((corRec, index) => {
+    const nome = readString(corRec, ["cor", "nome", "color", "name"], "");
+    if (!nome) return;
+    const produtoCorId = readString(
+      corRec,
+      ["produto_cor_id", "produtoCorId", "id", "cor_id", "corId"],
+      `${nome}-${index}`,
+    );
+    const tamanhos = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade)
+      .map(asRecord)
+      .map((tam) => {
+        const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
+        const disponivel = readBoolean(tam, ["disponivel", "available", "ativo"], quantidade > 0);
+        return {
+          tamanho: readString(tam, ["tamanho", "size", "nome"], "U"),
+          disponibilidade: quantidade > 0 ? quantidade : disponivel ? 1 : 0,
+        };
+      })
+      .filter((t) => t.disponibilidade > 0);
+
+    cores.push({
+      produto_cor_id: produtoCorId,
+      cor: nome,
+      imagem_thumb: readCorImagem(corRec, "thumb") || null,
+      imagem_full: readCorImagem(corRec, "full") || null,
+      tamanhos,
+    });
+  });
+
+  return cores.length > 0 ? cores : undefined;
 }
 
 function unwrapList(response: unknown): unknown[] {
@@ -725,6 +768,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
 
   const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
   const corRecords = getCorRecords(product);
+  const cores = extractCores(product);
   // Ordem das cores conforme aparecem em `variants` (mantém alinhamento índice imagem ↔ cor).
   const corOrder: string[] = [];
   variants.forEach((v) => {
@@ -762,6 +806,7 @@ function mapProduto(rawProduct: unknown): Produto | null {
     colecao: readOptionalString(product, ["colecao", "colecao_nome", "colecaoNome", "collection", "collection_name"]),
     imagens,
     variants,
+    cores,
     precoCusto: precoVenda * 0.6,
     precoVenda,
     precoPromocional: precoPromocionalEfetivo > 0 ? precoPromocionalEfetivo : undefined,
