@@ -56,24 +56,19 @@ const ProductDetail = () => {
   const produtoFromList = produtos.find(p => matchesProductSlug(p, productParam));
   const [produtoDetalhe, setProdutoDetalhe] = useState<Produto | null>(null);
   const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+  const [corSelecionadaId, setCorSelecionadaId] = useState<string>("");
 
-  // Detecta se o produto da lista veio sem cores reais (apenas "Única" ou sem variants).
-  const precisaBuscarDetalhe = useMemo(() => {
-    if (!produtoFromList) return false;
-    const cores = new Set((produtoFromList.variants || []).map((v) => v.cor));
-    if (cores.size === 0) return true;
-    if (cores.size === 1 && cores.has("Única")) return true;
-    return false;
-  }, [produtoFromList]);
-
-  // Busca o detalhe completo (com cores reais) sempre que o produto da lista for insuficiente.
+  // Sempre busca o detalhe completo (com cores reais) ao abrir /products/{slug},
+  // invalidando o cache antes para evitar reutilizar resposta antiga sem `cores`.
   useEffect(() => {
-    if (!produtoFromList || !precisaBuscarDetalhe) {
+    if (!produtoFromList) {
       setProdutoDetalhe(null);
       return;
     }
     let cancelled = false;
     const idDetalhe = produtoFromList.produtoId || produtoFromList.codigoProduto || String(produtoFromList.id);
+    // Invalida explicitamente o cache desse detalhe antes de buscar.
+    vitrineApiService.invalidateProdutoCache(idDetalhe);
     setLoadingDetalhe(true);
     vitrineApiService
       .getProdutoById(idDetalhe)
@@ -85,7 +80,7 @@ const ProductDetail = () => {
         if (!cancelled) setLoadingDetalhe(false);
       });
     return () => { cancelled = true; };
-  }, [produtoFromList, precisaBuscarDetalhe]);
+  }, [produtoFromList?.produtoId, produtoFromList?.id]);
 
   // Produto efetivo: prioriza o detalhe completo (com cores reais) quando disponível.
   const produto = produtoDetalhe ?? produtoFromList;
@@ -107,65 +102,72 @@ const ProductDetail = () => {
     trackProdutoVisualizadoOnce(trackingId, "detalhe");
   }, [produto]);
 
-  // Obter cores disponíveis (não depende de tamanho)
-  const coresDisponiveis = useMemo(() => {
-    if (!produto) return [];
-    const cores = new Set<string>();
-    produto.variants
-      .filter(v => v.disponibilidade > 0)
-      .forEach(v => cores.add(v.cor));
-    return Array.from(cores);
-  }, [produto]);
-
-  // Obter tamanhos disponíveis (depende da cor selecionada)
-  const tamanhosDisponiveis = useMemo(() => {
-    if (!produto || !corSelecionada) return [];
-    const tamanhos = new Set<string>();
-    produto.variants
-      .filter(v => v.disponibilidade > 0 && v.cor === corSelecionada)
-      .forEach(v => tamanhos.add(v.tamanho));
-    return Array.from(tamanhos);
-  }, [produto, corSelecionada]);
-
-  // Mapa de cores para tamanhos disponíveis
-  const coresTamanhosMap = useMemo(() => {
-    if (!produto) return {};
+  // Cores reais do contrato novo (produto.cores). Se ausente, deriva de variants (legado),
+  // descartando a entrada "Única" quando houver outras cores reais presentes.
+  const coresList = useMemo(() => {
+    if (!produto) return [] as Array<{ produto_cor_id: string; cor: string; tamanhos: string[]; imagem_full: string | null; imagem_thumb: string | null }>;
+    if (produto.cores && produto.cores.length > 0) {
+      return produto.cores
+        .filter((c) => c.tamanhos.some((t) => t.disponibilidade > 0))
+        .map((c) => ({
+          produto_cor_id: c.produto_cor_id,
+          cor: c.cor,
+          tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
+          imagem_full: c.imagem_full,
+          imagem_thumb: c.imagem_thumb,
+        }));
+    }
+    // Fallback (legado): derivar de variants
     const map: Record<string, string[]> = {};
     produto.variants
-      .filter(v => v.disponibilidade > 0)
-      .forEach(v => {
+      .filter((v) => v.disponibilidade > 0)
+      .forEach((v) => {
         if (!map[v.cor]) map[v.cor] = [];
         if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
       });
-    return map;
+    return Object.entries(map).map(([cor, tamanhos]) => ({
+      produto_cor_id: cor,
+      cor,
+      tamanhos,
+      imagem_full: null,
+      imagem_thumb: null,
+    }));
   }, [produto]);
 
-  // Sempre mostrar todas as imagens no carrossel
+  const corSelecionadaObj = useMemo(
+    () => coresList.find((c) => c.produto_cor_id === corSelecionadaId) || coresList.find((c) => c.cor === corSelecionada),
+    [coresList, corSelecionadaId, corSelecionada],
+  );
+
+  const coresDisponiveis = useMemo(() => coresList.map((c) => c.cor), [coresList]);
+  const tamanhosDisponiveis = corSelecionadaObj?.tamanhos ?? [];
+  const coresTamanhosMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    coresList.forEach((c) => { map[c.cor] = c.tamanhos; });
+    return map;
+  }, [coresList]);
+
+  // Carrossel: usa imagens da cor selecionada quando o contrato novo está presente; caso contrário, todas.
   const imagensParaMostrar = useMemo(() => {
     if (!produto) return [];
-    return produto.imagens;
-  }, [produto]);
-
-  // Sincronizar imagem selecionada com cor selecionada
-  useEffect(() => {
-    if (!produto || !corSelecionada) return;
-    
-    const varianteIndex = produto.variants.findIndex(v => v.cor === corSelecionada);
-    if (varianteIndex >= 0 && varianteIndex < produto.imagens.length) {
-      setImagemSelecionadaIndex(varianteIndex);
+    if (corSelecionadaObj && (corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb)) {
+      const principal = corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb!;
+      // Mantém o restante da galeria depois da imagem da cor (sem duplicar).
+      const restantes = produto.imagens.filter((img) => img !== principal);
+      return [principal, ...restantes];
     }
-  }, [corSelecionada, produto]);
+    return produto.imagens;
+  }, [produto, corSelecionadaObj]);
+
+  // Ao trocar cor, volta para a primeira imagem (que agora corresponde à cor selecionada).
+  useEffect(() => {
+    if (!corSelecionadaObj) return;
+    setImagemSelecionadaIndex(0);
+  }, [corSelecionadaObj?.produto_cor_id]);
 
   // Função para lidar com seleção de imagem do carrossel
   const handleImageSelect = (index: number) => {
     setImagemSelecionadaIndex(index);
-    
-    // Se houver uma cor correspondente, selecionar automaticamente
-    if (produto && produto.variants[index]) {
-      const corDaImagem = produto.variants[index].cor;
-      setCorSelecionada(corDaImagem);
-      setTamanhoSelecionado(""); // Reset tamanho ao trocar de cor
-    }
   };
 
   useEffect(() => {
