@@ -904,6 +904,25 @@ export const vitrineApiService = {
     return (await this.attachDestaquesToProdutos([produto]))[0] ?? produto;
   },
 
+  /**
+   * Invalida o cache (memória + localStorage) do detalhe de um produto.
+   * Usado ao abrir /products/{slug} para garantir contrato novo (cores reais).
+   */
+  invalidateProdutoCache(id: string | number): void {
+    const url = buildUrl(`/produto/${encodeURIComponent(String(id))}`);
+    memoryCache.delete(url);
+    inflightRequests.delete(url);
+    try {
+      const cache = readLocalStorageCache();
+      if (cache[url]) {
+        delete cache[url];
+        writeLocalStorageCache(cache);
+      }
+    } catch {
+      /* cache opcional */
+    }
+  },
+
   async getColecoes(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes, validateColecaoResponse);
     return unwrapList(response)
