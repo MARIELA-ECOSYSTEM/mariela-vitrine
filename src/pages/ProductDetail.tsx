@@ -19,6 +19,7 @@ import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
+import type { Produto } from "@/data/products";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -52,7 +53,42 @@ const ProductDetail = () => {
   const { produtos, loading } = useProducts();
   
   const productParam = id ?? slug;
-  const produto = produtos.find(p => matchesProductSlug(p, productParam));
+  const produtoFromList = produtos.find(p => matchesProductSlug(p, productParam));
+  const [produtoDetalhe, setProdutoDetalhe] = useState<Produto | null>(null);
+  const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+
+  // Detecta se o produto da lista veio sem cores reais (apenas "Única" ou sem variants).
+  const precisaBuscarDetalhe = useMemo(() => {
+    if (!produtoFromList) return false;
+    const cores = new Set((produtoFromList.variants || []).map((v) => v.cor));
+    if (cores.size === 0) return true;
+    if (cores.size === 1 && cores.has("Única")) return true;
+    return false;
+  }, [produtoFromList]);
+
+  // Busca o detalhe completo (com cores reais) sempre que o produto da lista for insuficiente.
+  useEffect(() => {
+    if (!produtoFromList || !precisaBuscarDetalhe) {
+      setProdutoDetalhe(null);
+      return;
+    }
+    let cancelled = false;
+    const idDetalhe = produtoFromList.produtoId || produtoFromList.codigoProduto || String(produtoFromList.id);
+    setLoadingDetalhe(true);
+    vitrineApiService
+      .getProdutoById(idDetalhe)
+      .then((detalhe) => {
+        if (!cancelled && detalhe) setProdutoDetalhe(detalhe);
+      })
+      .catch(() => { /* silencioso — fallback permanece o produto da lista */ })
+      .finally(() => {
+        if (!cancelled) setLoadingDetalhe(false);
+      });
+    return () => { cancelled = true; };
+  }, [produtoFromList, precisaBuscarDetalhe]);
+
+  // Produto efetivo: prioriza o detalhe completo (com cores reais) quando disponível.
+  const produto = produtoDetalhe ?? produtoFromList;
   const [corSelecionada, setCorSelecionada] = useState("");
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
   const [imagemSelecionadaIndex, setImagemSelecionadaIndex] = useState(0);
@@ -219,7 +255,7 @@ const ProductDetail = () => {
     });
   }, [produto]);
 
-  if (loading) {
+  if (loading || (precisaBuscarDetalhe && loadingDetalhe && !produtoDetalhe)) {
     return <LoadingOverlay />;
   }
 
