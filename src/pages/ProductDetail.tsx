@@ -451,15 +451,19 @@ const ProductDetail = () => {
                     
                     {/* Grid de Cores com Tamanhos */}
                     <div className="flex flex-col gap-2">
-                      {coresDisponiveis.map((cor) => {
-                        const tamanhosDaCor = coresTamanhosMap[cor] || [];
-                        const isSelected = corSelecionada === cor;
+                      {coresList.map((corItem) => {
+                        const cor = corItem.cor;
+                        const tamanhosDaCor = corItem.tamanhos;
+                        const isSelected = corSelecionadaId
+                          ? corSelecionadaId === corItem.produto_cor_id
+                          : corSelecionada === cor;
                         
                         return (
                           <button
-                            key={cor}
+                            key={corItem.produto_cor_id}
                             onClick={() => {
                               setCorSelecionada(cor);
+                              setCorSelecionadaId(corItem.produto_cor_id);
                               setTamanhoSelecionado("");
                             }}
                             className={`group flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98] ${
