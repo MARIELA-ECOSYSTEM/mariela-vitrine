@@ -6,6 +6,19 @@ export interface VarianteProduto {
   disponibilidade: number;
 }
 
+export interface ProdutoCorTamanho {
+  tamanho: string;
+  disponibilidade: number;
+}
+
+export interface ProdutoCor {
+  produto_cor_id: string;
+  cor: string;
+  imagem_thumb: string | null;
+  imagem_full: string | null;
+  tamanhos: ProdutoCorTamanho[];
+}
+
 export interface Produto {
   id: number;
   produtoId?: string;
@@ -16,6 +29,8 @@ export interface Produto {
   colecao?: string | null;
   imagens: string[];
   variants: VarianteProduto[];
+  /** Novo contrato: cores do produto com tamanhos e imagens próprias. */
+  cores?: ProdutoCor[];
   precoCusto: number;
   precoVenda: number;
   precoPromocional?: number;
