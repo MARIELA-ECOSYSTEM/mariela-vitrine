@@ -165,6 +165,14 @@ const ProductDetail = () => {
     setImagemSelecionadaIndex(0);
   }, [corSelecionadaObj?.produto_cor_id]);
 
+  // Auto-seleciona a primeira cor disponível ao carregar o produto.
+  useEffect(() => {
+    if (!corSelecionada && coresList.length > 0) {
+      setCorSelecionada(coresList[0].cor);
+      setCorSelecionadaId(coresList[0].produto_cor_id);
+    }
+  }, [coresList, corSelecionada]);
+
   // Função para lidar com seleção de imagem do carrossel
   const handleImageSelect = (index: number) => {
     setImagemSelecionadaIndex(index);
