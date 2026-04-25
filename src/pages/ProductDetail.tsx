@@ -257,7 +257,7 @@ const ProductDetail = () => {
     });
   }, [produto]);
 
-  if (loading || (precisaBuscarDetalhe && loadingDetalhe && !produtoDetalhe)) {
+  if (loading || (loadingDetalhe && !produtoDetalhe && !produtoFromList)) {
     return <LoadingOverlay />;
   }
 
