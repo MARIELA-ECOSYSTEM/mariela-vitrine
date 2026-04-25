@@ -5,7 +5,7 @@ const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v1";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v2";
 const MAX_CACHE_ITEMS = 40;
 
 const CACHE_TTL = {
