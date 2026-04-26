@@ -108,6 +108,20 @@ export const ImageGallery = ({
     onImageSelect?.(index);
   }, [onImageSelect]);
 
+  /**
+   * Pré-carrega a imagem na direção provável do clique. Usado em
+   * hover/touchstart das setas para reduzir delay perceptível ao trocar
+   * rapidamente. Sem custo se a URL já está em cache (lookup O(1)).
+   */
+  const preloadDirection = useCallback((direction: "next" | "prev") => {
+    if (imagensValidas.length <= 1) return;
+    const targetIdx = direction === "next"
+      ? (indiceAtual === imagensValidas.length - 1 ? 0 : indiceAtual + 1)
+      : (indiceAtual === 0 ? imagensValidas.length - 1 : indiceAtual - 1);
+    const url = imagensValidas[targetIdx];
+    if (url) preloadImage(url).catch(() => {});
+  }, [imagensValidas, indiceAtual]);
+
   return (
     <div className="space-y-3 md:space-y-4">
       {/* Imagem Principal */}
