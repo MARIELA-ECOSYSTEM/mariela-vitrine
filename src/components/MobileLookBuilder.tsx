@@ -963,12 +963,10 @@ const PreviewPanel = ({
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
                   )}
-                  alt={(() => {
-                    const p = selectedProducts.vestido || selectedProducts.conjunto;
-                    const c = selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto;
-                    if (!p) return "Look";
-                    return c ? `${p.nome} — cor ${c}` : p.nome;
-                  })()}
+                  alt={getProductImageByColor(
+                    selectedProducts.vestido || selectedProducts.conjunto,
+                    selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto,
+                  ).alt}
                   className="w-[85%] h-[85%] object-contain drop-shadow-2xl"
                 />
               </div>
