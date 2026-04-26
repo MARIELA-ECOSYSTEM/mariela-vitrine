@@ -778,9 +778,15 @@ const CategorySection = ({
         {selectedProduct && (
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border border-border shrink-0 animate-pop-in">
             <img
+              // `key` força o React a remontar o <img> ao trocar de cor —
+              // garante swap visual imediato mesmo quando o browser reaproveitaria o nó.
+              key={`${selectedProduct.id}-${selectedColor || "default"}`}
               src={getImageForColor(selectedProduct, selectedColor)}
-              alt={selectedProduct.nome}
-              className="w-full h-full object-cover"
+              alt={`${selectedProduct.nome}${selectedColor ? ` - ${selectedColor}` : ""}`}
+              className="w-full h-full object-cover animate-fade-in"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = produtoGenerico;
+              }}
             />
           </div>
         )}
