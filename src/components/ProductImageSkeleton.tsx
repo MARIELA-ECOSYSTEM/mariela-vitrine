@@ -404,6 +404,10 @@ export const ProductImageSkeleton = ({
     if (src === displaySrc) return;
     latestRequestedSrcRef.current = src;
     let cancelled = false;
+    // Registra interesse — pareado com cancelPreload no cleanup para
+    // abortar o download quando o usuário troca de cor ANTES desta
+    // imagem chegar. Sem isto, downloads obsoletos competem por banda.
+    const inflightSrc = src;
     const swap = () => {
       if (cancelled) return;
       // Descarta se uma nova troca já foi solicitada nesse meio tempo.
@@ -420,7 +424,7 @@ export const ProductImageSkeleton = ({
         fadeTimerRef.current = null;
       }, 280);
     };
-    preloadImage(src).then(swap).catch(() => {
+    preloadImage(inflightSrc, "high").then(swap).catch(() => {
       if (cancelled) return;
       // Fallback seguro: se a nova imagem falhou, NÃO trocamos o src nem
       // aplicamos fade — mantemos a imagem anterior visível para evitar
@@ -428,6 +432,10 @@ export const ProductImageSkeleton = ({
     });
     return () => {
       cancelled = true;
+      // Decrementa o refcount do preload que iniciamos. Se ninguém
+      // mais quiser essa imagem (ex.: usuário trocou de cor de novo),
+      // o cancelPreload aborta o download em curso (img.src = "").
+      cancelPreload(inflightSrc);
     };
   }, [src, isInView, displaySrc]);
 
