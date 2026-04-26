@@ -111,14 +111,31 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     return map;
   }, [coresList]);
 
-  // Obter imagem do card.
-  // Regra: o índice (`currentImageIndex`) é a fonte primária — clicar nas setas
-  // SEMPRE muda a imagem. A imagem por cor (`imagem_full`/`thumb`) só entra como
-  // fallback quando o índice atual não corresponde à variante da cor selecionada.
+  // Mapa bidirecional cor ↔ imagem usando `coresList` (fonte canônica por cor).
+  // `produto.variants` tem várias entradas por cor (uma por tamanho) e não é
+  // 1:1 com `produto.imagens`, então não serve para sincronizar cor↔imagem.
+  const imagemPorCor = useMemo(() => {
+    const map: Record<string, string> = {};
+    coresList.forEach((c) => {
+      const url = c.imagem_full || c.imagem_thumb || "";
+      if (url) map[c.cor] = url;
+    });
+    return map;
+  }, [coresList]);
+
+  const corPorImagem = useMemo(() => {
+    const map: Record<string, string> = {};
+    Object.entries(imagemPorCor).forEach(([cor, url]) => {
+      if (url && !map[url]) map[url] = cor;
+    });
+    return map;
+  }, [imagemPorCor]);
+
+  // Imagem atual: índice do carrossel é a fonte primária (setas sempre funcionam).
+  // Fallback: imagem da cor selecionada → primeira imagem → genérico.
   const imagemAtual = useMemo(() => {
     const imgIndice = produto.imagens[currentImageIndex];
     if (imgIndice) return imgIndice;
-    // Sem imagem no índice — tenta imagem da cor selecionada.
     if (corSelecionadaObj) {
       const imgCor = corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb;
       if (imgCor) return imgCor;
@@ -126,13 +143,24 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     return produto.imagens[0] || produtoGenerico;
   }, [produto.imagens, currentImageIndex, corSelecionadaObj]);
 
-  // Sincronizar cor com imagem
+  // Cor vinculada à imagem atual (via mapa cor↔imagem).
   const corDaImagemAtual = useMemo(() => {
-    if (produto.variants[currentImageIndex]) {
-      return produto.variants[currentImageIndex].cor;
+    const url = produto.imagens[currentImageIndex];
+    return (url && corPorImagem[url]) || "";
+  }, [produto.imagens, currentImageIndex, corPorImagem]);
+
+  // Helper: ao trocar imagem via setas, sincroniza a cor selecionada
+  // se a nova imagem pertence a alguma cor conhecida.
+  const syncColorFromImageIndex = (newIndex: number) => {
+    const url = produto.imagens[newIndex];
+    const cor = url ? corPorImagem[url] : "";
+    if (cor) {
+      const corItem = coresList.find((c) => c.cor === cor);
+      setCorSelecionada(cor);
+      setCorSelecionadaId(corItem?.produto_cor_id || cor);
+      setTamanhoSelecionado("");
     }
-    return "";
-  }, [produto.variants, currentImageIndex]);
+  };
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -140,14 +168,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     setSlideDirection('right');
     const newIndex = currentImageIndex === 0 ? produto.imagens.length - 1 : currentImageIndex - 1;
     setCurrentImageIndex(newIndex);
-    // Selecionar a cor da nova imagem para mostrar os tamanhos
-    if (produto.variants[newIndex]) {
-      const novaCor = produto.variants[newIndex].cor;
-      setCorSelecionada(novaCor);
-      const corItem = coresList.find((c) => c.cor === novaCor);
-      if (corItem) setCorSelecionadaId(corItem.produto_cor_id);
-      setTamanhoSelecionado("");
-    }
+    syncColorFromImageIndex(newIndex);
   };
 
   const handleNextImage = (e: React.MouseEvent) => {
@@ -156,22 +177,19 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     setSlideDirection('left');
     const newIndex = currentImageIndex === produto.imagens.length - 1 ? 0 : currentImageIndex + 1;
     setCurrentImageIndex(newIndex);
-    // Selecionar a cor da nova imagem para mostrar os tamanhos
-    if (produto.variants[newIndex]) {
-      const novaCor = produto.variants[newIndex].cor;
-      setCorSelecionada(novaCor);
-      const corItem = coresList.find((c) => c.cor === novaCor);
-      if (corItem) setCorSelecionadaId(corItem.produto_cor_id);
-      setTamanhoSelecionado("");
-    }
+    syncColorFromImageIndex(newIndex);
   };
 
   const handleSelectColor = (cor: string) => {
     const corItem = coresList.find((c) => c.cor === cor);
-    const varianteIndex = produto.variants.findIndex(v => v.cor === cor);
-    if (varianteIndex >= 0 && varianteIndex < produto.imagens.length) {
-      setSlideDirection(varianteIndex > currentImageIndex ? 'left' : 'right');
-      setCurrentImageIndex(varianteIndex);
+    // Localiza a imagem dessa cor em `produto.imagens` (mapa cor→URL→índice).
+    const urlAlvo = imagemPorCor[cor];
+    if (urlAlvo) {
+      const imgIndex = produto.imagens.indexOf(urlAlvo);
+      if (imgIndex >= 0 && imgIndex !== currentImageIndex) {
+        setSlideDirection(imgIndex > currentImageIndex ? 'left' : 'right');
+        setCurrentImageIndex(imgIndex);
+      }
     }
     setCorSelecionada(cor);
     setCorSelecionadaId(corItem?.produto_cor_id || cor);
