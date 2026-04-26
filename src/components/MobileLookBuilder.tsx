@@ -354,6 +354,21 @@ export const MobileLookBuilder = () => {
     setSelectedColors({ ...selectedColors, [category]: "" });
   };
 
+  // Atualiza a cor de uma categoria, reseta o tamanho e dispara um toast amigável
+  // — feedback claro de que a imagem do card refletiu a nova cor.
+  const changeColor = (category: CategoryKey, color: string) => {
+    if (selectedColors[category] === color) return;
+    setSelectedColors({ ...selectedColors, [category]: color });
+    setSelectedSizes({ ...selectedSizes, [category]: "" });
+    const produto = selectedProducts[category];
+    if (produto) {
+      toast({
+        title: `Cor atualizada: ${color} 💜`,
+        description: `Visual do ${produto.nome} no seu look foi atualizado.`,
+      });
+    }
+  };
+
   const getImageForColor = (produto: Produto | null, cor: string) => {
     if (!produto) return produtoGenerico;
     // Contrato novo: cores[] traz a imagem própria por cor (mais confiável).
@@ -501,10 +516,7 @@ export const MobileLookBuilder = () => {
               onToggle={() => setExpandedCategory(expandedCategory === cat.key ? null : cat.key)}
               onSelect={(id) => selectItem(cat.key, id, cat.clearOnSelect)}
               onRemove={() => removeItem(cat.key)}
-              onColorChange={(color) => {
-                setSelectedColors({ ...selectedColors, [cat.key]: color });
-                setSelectedSizes({ ...selectedSizes, [cat.key]: "" });
-              }}
+              onColorChange={(color) => changeColor(cat.key, color)}
               onSizeChange={(size) => setSelectedSizes({ ...selectedSizes, [cat.key]: size })}
               getImageForColor={getImageForColor}
             />
@@ -564,10 +576,7 @@ export const MobileLookBuilder = () => {
             onToggle={() => setExpandedCategory(expandedCategory === cat.key ? null : cat.key)}
             onSelect={(id) => selectItem(cat.key, id, cat.clearOnSelect)}
             onRemove={() => removeItem(cat.key)}
-            onColorChange={(color) => {
-              setSelectedColors({ ...selectedColors, [cat.key]: color });
-              setSelectedSizes({ ...selectedSizes, [cat.key]: "" });
-            }}
+            onColorChange={(color) => changeColor(cat.key, color)}
             onSizeChange={(size) => setSelectedSizes({ ...selectedSizes, [cat.key]: size })}
             getImageForColor={getImageForColor}
           />
