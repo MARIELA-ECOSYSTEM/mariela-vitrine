@@ -723,12 +723,16 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
   const cores: ProdutoCor[] = [];
   corRecords.forEach((corRec, index) => {
     const nome = readString(corRec, ["cor", "nome", "color", "name"], "");
+    // Descarta cores sem nome real ou com fallback legado "Única"/"Unica".
     if (!nome) return;
+    const nomeLower = nome.trim().toLowerCase();
+    if (!nomeLower || nomeLower === "única" || nomeLower === "unica") return;
     const produtoCorId = readString(
       corRec,
       ["produto_cor_id", "produtoCorId", "id", "cor_id", "corId"],
       `${nome}-${index}`,
     );
+    if (!produtoCorId) return;
     const corDisponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], true);
     const tamanhosArray = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade);
     const tamanhos = tamanhosArray
