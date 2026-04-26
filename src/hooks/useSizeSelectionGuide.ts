@@ -58,9 +58,7 @@ export function useSizeSelectionGuide() {
     return 80;
   }, []);
 
-  const guide = useCallback(() => {
-    const el = sectionRef.current;
-
+  const runGuide = useCallback((el: HTMLElement | null) => {
     if (el) {
       const headerOffset = measureHeaderOffset();
       const rect = el.getBoundingClientRect();
@@ -94,19 +92,32 @@ export function useSizeSelectionGuide() {
     }
     focusTimerRef.current = window.setTimeout(() => {
       if (!mountedRef.current) return;
-      const root = sectionRef.current;
+      const root = el;
       if (!root) return;
       const firstSizeBtn = root.querySelector<HTMLButtonElement>(
         "button[data-size-option]:not([disabled])"
       );
       if (firstSizeBtn) {
         firstSizeBtn.focus({ preventScroll: true });
-      } else {
+      } else if (typeof root.focus === "function") {
         root.focus({ preventScroll: true });
       }
       focusTimerRef.current = null;
     }, 350);
   }, [measureHeaderOffset]);
+
+  /** Guia usando a sectionRef interna (uso comum: ProductDetail, ProductCard). */
+  const guide = useCallback(() => {
+    runGuide(sectionRef.current);
+  }, [runGuide]);
+
+  /** Guia para um elemento arbitrário (uso: Monte seu Look — categorias). */
+  const guideElement = useCallback(
+    (el: HTMLElement | null) => {
+      runGuide(el);
+    },
+    [runGuide],
+  );
 
   // Texto exposto na região aria-live; muda quando announceTick > 0.
   const announceMessage =
@@ -118,5 +129,7 @@ export function useSizeSelectionGuide() {
     announceMessage,
     /** Dispara scroll + destaque + anúncio + foco. */
     guide,
+    /** Versão imperativa: dispara o mesmo fluxo para um elemento externo. */
+    guideElement,
   };
 }
