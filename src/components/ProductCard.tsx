@@ -201,9 +201,32 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     if (corSelecionadaObj) {
       const imgCor = (corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb || "").trim();
       if (imgCor) return imgCor;
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn("[ProductCard] Imagem da cor ausente — usando primeira disponível.", {
+          produto: produto.nome,
+          cor: corSelecionada,
+          origem: "imagensValidas[0]",
+        });
+      }
+    }
+    if (import.meta.env.DEV && imagensValidas.length === 0) {
+      // eslint-disable-next-line no-console
+      console.warn("[ProductCard] Sem imagens — usando placeholder.", {
+        produto: produto.nome,
+        cor: corSelecionada,
+        origem: "placeholder",
+      });
     }
     return imagensValidas[0] || produtoGenerico;
-  }, [imagensValidas, currentImageIndex, corSelecionadaObj]);
+  }, [imagensValidas, currentImageIndex, corSelecionadaObj, corSelecionada, produto.nome]);
+
+  // Alt dinâmico: nome do produto + cor (quando disponível). Padrão acessível.
+  const altImagem = useMemo(() => {
+    return corSelecionada
+      ? `${produto.nome} — cor ${corSelecionada}`
+      : produto.nome;
+  }, [produto.nome, corSelecionada]);
 
   // Cor vinculada à imagem atual (via mapa cor↔imagem).
   const corDaImagemAtual = useMemo(() => {
@@ -349,7 +372,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
               <ProductImageSkeleton 
                 src={imagemAtual} 
-                alt={produto.nome}
+                alt={altImagem}
                 className="transition-transform duration-700 group-hover:scale-110"
                 slideDirection={slideDirection}
               />
@@ -518,7 +541,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
         <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 
             src={imagemAtual} 
-            alt={produto.nome}
+            alt={altImagem}
             className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
             slideDirection={slideDirection}
           />

@@ -554,7 +554,11 @@ const ProductDetail = () => {
             <div className="animate-fade-in">
               <ImageGallery
                 images={imagensParaMostrar}
-                productName={produto.nome}
+                productName={
+                  corSelecionada
+                    ? `${produto.nome} — cor ${corSelecionada}`
+                    : produto.nome
+                }
                 emPromocao={produto.emPromocao}
                 isNovidade={produto.isNovidade}
                   publicBadge={publicBadge}
