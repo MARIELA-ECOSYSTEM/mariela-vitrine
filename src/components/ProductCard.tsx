@@ -104,15 +104,27 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   /**
    * O card pode renderizar até 3 containers de tamanho no DOM (lista, grade
    * mobile, grade desktop) — apenas um é visível por vez via Tailwind.
-   * Este callback ref escolhe o container atualmente visível para o hook.
+   * Marcamos cada container com `data-size-section` e a função
+   * `resolveVisibleSection` (chamada NO MOMENTO do guide) escolhe o que está
+   * realmente visível, evitando race entre múltiplos callback refs.
    */
-  const setSizeSectionRef = (el: HTMLDivElement | null) => {
-    if (!el) return;
-    // `offsetParent === null` indica que o elemento está oculto (display:none).
-    if (el.offsetParent !== null) {
-      sizeGuide.sectionRef.current = el;
-    }
-  };
+  const cardRootRef = useRef<HTMLDivElement | null>(null);
+  const resolveVisibleSection = useCallback((): HTMLElement | null => {
+    const root = cardRootRef.current;
+    if (!root) return null;
+    const sections = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-size-section]"),
+    );
+    return (
+      sections.find((s) => {
+        const style = window.getComputedStyle(s);
+        if (style.display === "none" || style.visibility === "hidden") return false;
+        if (s.offsetParent === null && style.position !== "fixed") return false;
+        const r = s.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }) || null
+    );
+  }, []);
   
   const whatsappNumber = "5583986567915";
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
