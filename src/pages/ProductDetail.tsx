@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -93,6 +93,21 @@ const ProductDetail = () => {
   const [imagemSelecionadaIndex, setImagemSelecionadaIndex] = useState(0);
   
   const whatsappNumber = "5583986567915";
+
+  // Ref + estado para guiar o usuário até a seção de tamanhos quando ele clica
+  // no CTA do WhatsApp sem ter selecionado tamanho. Substitui o toast agressivo
+  // por scroll suave + destaque temporário (UX guiada).
+  const tamanhosSectionRef = useRef<HTMLDivElement | null>(null);
+  const [tamanhosHighlight, setTamanhosHighlight] = useState(false);
+
+  const focarSelecaoTamanho = () => {
+    const el = tamanhosSectionRef.current;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    setTamanhosHighlight(true);
+    window.setTimeout(() => setTamanhosHighlight(false), 1600);
+  };
 
   useEffect(() => {
     if (!produto || !id) return;
@@ -488,11 +503,8 @@ const ProductDetail = () => {
     const corValida = !isAcessorio && !!corSelecionada
       && coresList.some((c) => c.cor === corSelecionada);
     if (!isAcessorio && !corValida) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: rola até a seção de variantes e destaca, sem toast agressivo.
+      focarSelecaoTamanho();
       return;
     }
 
@@ -501,11 +513,8 @@ const ProductDetail = () => {
       isAcessorio || tamanhosDisponiveis.includes(tamanhoParaUsar)
     );
     if (!tamanhoValido) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: rola até a seleção de tamanhos e destaca a área.
+      focarSelecaoTamanho();
       return;
     }
     
@@ -700,7 +709,14 @@ const ProductDetail = () => {
 
                   {/* Seletor de Tamanho */}
                   {corSelecionada && (
-                    <div className="space-y-3 animate-fade-in">
+                    <div
+                      ref={tamanhosSectionRef}
+                      className={`space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300 ${
+                        tamanhosHighlight
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)] p-3 -m-3 animate-pulse"
+                          : ""
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <p className="font-medium text-sm md:text-base">
                           Tamanho: <span className="text-primary font-semibold">{tamanhoSelecionado || "Selecione"}</span>
@@ -758,7 +774,9 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] active:scale-[0.98] border-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  Comprar pelo WhatsApp
+                  {!isAcessorio && !tamanhoSelecionado
+                    ? "Selecione o tamanho"
+                    : "Comprar pelo WhatsApp"}
                 </Button>
               </div>
 
