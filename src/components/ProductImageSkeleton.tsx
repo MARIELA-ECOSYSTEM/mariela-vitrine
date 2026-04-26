@@ -9,6 +9,33 @@ interface ProductImageSkeletonProps {
   priority?: boolean; // Para imagens acima do fold
 }
 
+// Cache em memória de URLs já carregadas com sucesso. Evita criar várias
+// instâncias de Image() para a mesma URL e permite troca instantânea ao
+// alternar cores repetidas (sem flicker e sem novo round-trip de rede).
+const loadedImageCache = new Set<string>();
+const inflightLoaders = new Map<string, Promise<void>>();
+
+function preloadImage(src: string): Promise<void> {
+  if (loadedImageCache.has(src)) return Promise.resolve();
+  const existing = inflightLoaders.get(src);
+  if (existing) return existing;
+  const promise = new Promise<void>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      loadedImageCache.add(src);
+      inflightLoaders.delete(src);
+      resolve();
+    };
+    img.onerror = () => {
+      inflightLoaders.delete(src);
+      reject();
+    };
+    img.src = src;
+  });
+  inflightLoaders.set(src, promise);
+  return promise;
+}
+
 // Gerar uma cor dominante baseada no hash da URL (placeholder colorido)
 function generatePlaceholderColor(src: string): string {
   let hash = 0;
@@ -35,6 +62,11 @@ export const ProductImageSkeleton = ({
   // de cor no ProductDetail. Primeira carga ainda passa pelo ciclo normal.
   const [displaySrc, setDisplaySrc] = useState<string>(src);
   const isFirstSrcRef = useRef(true);
+  // Imagem anterior mantida durante o cross-fade ao trocar de URL.
+  // Fica visível por baixo da nova imagem por ~180ms para suavizar a troca.
+  const [previousSrc, setPreviousSrc] = useState<string | null>(null);
+  const [isSwapping, setIsSwapping] = useState(false);
+  const fadeTimerRef = useRef<number | null>(null);
 
   // Placeholder color baseado na URL
   const placeholderColor = useMemo(() => generatePlaceholderColor(src), [src]);
@@ -109,22 +141,35 @@ export const ProductImageSkeleton = ({
     }
     if (src === displaySrc) return;
     let cancelled = false;
-    const preload = new Image();
-    preload.onload = () => {
+    const swap = () => {
       if (cancelled) return;
+      // Mantém a imagem anterior visível durante o fade.
+      setPreviousSrc(displaySrc);
       setDisplaySrc(src);
       setLoadState('loaded');
+      setIsSwapping(true);
+      if (fadeTimerRef.current) window.clearTimeout(fadeTimerRef.current);
+      fadeTimerRef.current = window.setTimeout(() => {
+        setIsSwapping(false);
+        setPreviousSrc(null);
+        fadeTimerRef.current = null;
+      }, 220);
     };
-    preload.onerror = () => {
+    preloadImage(src).then(swap).catch(() => {
       if (cancelled) return;
       setDisplaySrc(src);
       setLoadState('error');
-    };
-    preload.src = src;
+    });
     return () => {
       cancelled = true;
     };
   }, [src, isInView, displaySrc]);
+
+  useEffect(() => {
+    return () => {
+      if (fadeTimerRef.current) window.clearTimeout(fadeTimerRef.current);
+    };
+  }, []);
 
   return (
     <div 
@@ -154,21 +199,36 @@ export const ProductImageSkeleton = ({
       
       {/* Main image - only load when in viewport */}
       {isInView && (
-        <img
-          src={displaySrc}
-          alt={alt}
-          loading={priority ? "eager" : "lazy"}
-          decoding="async"
-          fetchPriority={priority ? "high" : "auto"}
-          className={cn(
-            "w-full h-full object-cover transition-all duration-700 ease-out",
-            loadState === 'loading' ? "opacity-0 scale-[1.02]" : "opacity-100 scale-100",
-            slideDirection === 'left' && "animate-slide-left",
-            slideDirection === 'right' && "animate-slide-right"
+        <>
+          {/* Imagem anterior — fica por baixo durante o cross-fade da troca de cor. */}
+          {previousSrc && previousSrc !== displaySrc && (
+            <img
+              src={previousSrc}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
           )}
-          onLoad={() => setLoadState('loaded')}
-          onError={() => setLoadState('error')}
-        />
+          <img
+            src={displaySrc}
+            alt={alt}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={priority ? "high" : "auto"}
+            className={cn(
+              "relative w-full h-full object-cover",
+              // Carga inicial: fade lento + zoom sutil (mantém UX original).
+              loadState === 'loading' && "opacity-0 scale-[1.02] transition-all duration-700 ease-out",
+              loadState !== 'loading' && !isSwapping && "opacity-100 scale-100 transition-all duration-700 ease-out",
+              // Troca de cor: cross-fade curto (~180ms) sem zoom.
+              isSwapping && "opacity-0 transition-opacity duration-200 ease-out animate-[fade-in_200ms_ease-out_forwards]",
+              slideDirection === 'left' && "animate-slide-left",
+              slideDirection === 'right' && "animate-slide-right"
+            )}
+            onLoad={() => setLoadState('loaded')}
+            onError={() => setLoadState('error')}
+          />
+        </>
       )}
       
       {/* Error state */}
