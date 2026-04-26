@@ -229,6 +229,10 @@ export const MobileLookBuilder = () => {
     conjunto: "",
   });
 
+  // Categoria atualmente aberta no dialog rápido de seleção de tamanho
+  // (acionado tocando num item da prévia que ainda não tem tamanho).
+  const [pendingSizeCategory, setPendingSizeCategory] = useState<CategoryKey | null>(null);
+
   // Filtrar produtos por categoria
   const productsByCategory = useMemo(() => ({
     blusa: produtos.filter(p => p.categoria === "blusas"),
