@@ -4,16 +4,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * Hook reutilizável para guiar o usuário até a seção de seleção de tamanho
  * quando ele tenta executar uma ação (WhatsApp, carrinho, etc.) sem tamanho.
  *
- * Substitui o toast agressivo por:
+ * Mecanismo único de destaque: aplica a classe CSS `.size-guide-highlight`
+ * diretamente no elemento alvo (sem estado React duplicado), garantindo o
+ * mesmo visual em ProductDetail, ProductCard e MobileLookBuilder.
+ *
  *  - scroll suave até a seção, considerando a altura real do header fixo;
- *  - destaque visual temporário que reinicia a cada chamada;
+ *  - destaque visual reiniciado a cada chamada (force reflow);
  *  - anúncio em região aria-live (sem caracteres quebrados);
  *  - foco programático no primeiro botão `[data-size-option]:not([disabled])`
- *    dentro da seção, com fallback para a própria seção (`tabIndex={-1}`).
+ *    VISÍVEL dentro da seção, com fallback para a própria seção
+ *    (`tabIndex={-1}`). Se nem seção nem botão forem encontrados, dispara
+ *    mensagem alternativa orientando a abrir o produto.
  *
  * Uso:
  *   const guide = useSizeSelectionGuide();
- *   <div ref={guide.sectionRef} tabIndex={-1} className={guide.highlight ? "..." : ""}>
+ *   <div ref={guide.sectionRef} tabIndex={-1}>
  *     <button data-size-option>...</button>
  *   </div>
  *   <p aria-live="polite" className="sr-only">{guide.announceMessage}</p>
@@ -21,10 +26,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
  */
 export function useSizeSelectionGuide() {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  const [highlight, setHighlight] = useState(false);
   // Contador serve de "nonce" para reanunciar mesmo quando o texto repete.
   const [announceTick, setAnnounceTick] = useState(0);
-  const highlightTimerRef = useRef<number | null>(null);
+  // Mensagem dinâmica: muda quando não há alvo de tamanho válido (fallback).
+  const [announceText, setAnnounceText] = useState<string>(
+    "Selecione um tamanho para continuar.",
+  );
   const focusTimerRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
 
@@ -32,10 +39,6 @@ export function useSizeSelectionGuide() {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      if (highlightTimerRef.current) {
-        window.clearTimeout(highlightTimerRef.current);
-        highlightTimerRef.current = null;
-      }
       if (focusTimerRef.current) {
         window.clearTimeout(focusTimerRef.current);
         focusTimerRef.current = null;
@@ -58,18 +61,36 @@ export function useSizeSelectionGuide() {
     return 80;
   }, []);
 
+  /**
+   * Verifica se um elemento está visível (não display:none, não em container oculto,
+   * tem dimensões > 0). Considera mobile/desktop layouts (sm:hidden, hidden sm:block).
+   */
+  const isVisible = useCallback((el: HTMLElement): boolean => {
+    if (!el.isConnected) return false;
+    const rects = el.getClientRects();
+    if (rects.length === 0) return false;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return false;
+    return true;
+  }, []);
+
   const runGuide = useCallback((el: HTMLElement | null) => {
-    if (el) {
+    // Fallback seguro: nenhum alvo encontrado — só anuncia mensagem alternativa.
+    if (!el) {
+      setAnnounceText("Abra o produto para selecionar o tamanho.");
+      setAnnounceTick((n) => n + 1);
+      return;
+    }
+
+    {
       const headerOffset = measureHeaderOffset();
       const rect = el.getBoundingClientRect();
       const targetY = window.scrollY + rect.top - headerOffset;
       window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
 
-      // Aplica destaque visual diretamente no DOM (funciona tanto para uso
-      // declarativo via `highlight` state quanto para chamadas imperativas
-      // com `guideElement` em elementos externos ao componente).
+      // Mecanismo único de destaque: aplica a classe `.size-guide-highlight`
+      // diretamente no DOM. Reinicia a animação via reflow forçado.
       el.classList.remove("size-guide-highlight");
-      // força reflow para reiniciar a animação caso já estivesse aplicada
       void el.offsetWidth;
       el.classList.add("size-guide-highlight");
       window.setTimeout(() => {
@@ -77,23 +98,8 @@ export function useSizeSelectionGuide() {
       }, 1600);
     }
 
-    // Reinicia destaque: limpa, desliga, força reflow, religa.
-    if (highlightTimerRef.current) {
-      window.clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = null;
-    }
-    setHighlight(false);
-    requestAnimationFrame(() => {
-      if (!mountedRef.current) return;
-      setHighlight(true);
-      highlightTimerRef.current = window.setTimeout(() => {
-        if (!mountedRef.current) return;
-        setHighlight(false);
-        highlightTimerRef.current = null;
-      }, 1600);
-    });
-
-    // Anúncio acessível (incrementa contador para reanunciar em cliques repetidos).
+    // Anúncio acessível padrão (incrementa contador para reanunciar em cliques repetidos).
+    setAnnounceText("Selecione um tamanho para continuar.");
     setAnnounceTick((n) => n + 1);
 
     // Foco programático no primeiro tamanho disponível, após iniciar o scroll.
@@ -105,9 +111,14 @@ export function useSizeSelectionGuide() {
       if (!mountedRef.current) return;
       const root = el;
       if (!root) return;
-      const firstSizeBtn = root.querySelector<HTMLButtonElement>(
-        "button[data-size-option]:not([disabled])"
+      // Procura primeiro botão de tamanho VISÍVEL (filtra layouts ocultos por
+      // `hidden`, `sm:hidden`, etc.). Fallback: foca a própria seção.
+      const candidates = Array.from(
+        root.querySelectorAll<HTMLButtonElement>(
+          "button[data-size-option]:not([disabled])",
+        ),
       );
+      const firstSizeBtn = candidates.find((btn) => isVisible(btn));
       if (firstSizeBtn) {
         firstSizeBtn.focus({ preventScroll: true });
       } else if (typeof root.focus === "function") {
@@ -115,7 +126,7 @@ export function useSizeSelectionGuide() {
       }
       focusTimerRef.current = null;
     }, 350);
-  }, [measureHeaderOffset]);
+  }, [measureHeaderOffset, isVisible]);
 
   /** Guia usando a sectionRef interna (uso comum: ProductDetail, ProductCard). */
   const guide = useCallback(() => {
@@ -130,13 +141,16 @@ export function useSizeSelectionGuide() {
     [runGuide],
   );
 
-  // Texto exposto na região aria-live; muda quando announceTick > 0.
+  // Texto exposto na região aria-live. Inclui o tick como sufixo invisível
+  // (zero-width space repetido) para forçar leitores de tela a reanunciar
+  // mesmo quando o texto base é idêntico em cliques repetidos.
   const announceMessage =
-    announceTick > 0 ? "Selecione um tamanho para continuar." : "";
+    announceTick > 0
+      ? `${announceText}${"\u200B".repeat(announceTick % 5)}`
+      : "";
 
   return {
     sectionRef,
-    highlight,
     announceMessage,
     /** Dispara scroll + destaque + anúncio + foco. */
     guide,
