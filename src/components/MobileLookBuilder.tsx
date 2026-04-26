@@ -802,7 +802,7 @@ const CategorySection = ({
               // garante swap visual imediato mesmo quando o browser reaproveitaria o nó.
               key={`${selectedProduct.id}-${selectedColor || "default"}`}
               src={getImageForColor(selectedProduct, selectedColor)}
-              alt={`${selectedProduct.nome}${selectedColor ? ` - ${selectedColor}` : ""}`}
+              alt={selectedColor ? `${selectedProduct.nome} — cor ${selectedColor}` : selectedProduct.nome}
               className="w-full h-full object-cover animate-fade-in"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = produtoGenerico;
