@@ -617,7 +617,13 @@ export const MobileLookBuilder = () => {
             </div>
             
             {/* Content */}
-            <div className="overflow-y-auto overscroll-contain max-h-[calc(90vh-120px)] p-4 pb-8">
+            <div
+              className="overflow-y-auto overscroll-contain max-h-[calc(90vh-120px)] p-4 pb-8"
+              style={{
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-y",
+              }}
+            >
               <PreviewPanel
                 selectedProducts={selectedProducts}
                 selectedColors={selectedColors}
