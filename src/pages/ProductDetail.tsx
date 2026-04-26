@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -237,29 +237,51 @@ const ProductDetail = () => {
   // Usado no hover (desktop) e ao selecionar uma cor (mobile) para que a
   // próxima troca pareça instantânea. Respeita o cache global — nunca
   // duplica request.
+  // Throttle por cor: evita disparar preloads repetidos quando o usuário
+  // passa o mouse rapidamente sobre várias cores (ou re-hovera a mesma).
+  const lastPreloadAtRef = useRef<Map<string, number>>(new Map());
+  const PRELOAD_THROTTLE_MS = 500;
+
   const preloadColorNeighbors = useCallback(
     (produtoCorId: string) => {
       if (coresList.length === 0) return;
       const idx = coresList.findIndex((c) => c.produto_cor_id === produtoCorId);
       if (idx < 0) return;
+      const now = Date.now();
+      const last = lastPreloadAtRef.current.get(produtoCorId) ?? 0;
+      if (now - last < PRELOAD_THROTTLE_MS) return;
+      lastPreloadAtRef.current.set(produtoCorId, now);
       const targets = [
         coresList[idx],
         coresList[(idx + 1) % coresList.length],
         coresList[(idx + 2) % coresList.length],
       ];
+      // Heurística leve para "imagem do mesmo tamanho": se a URL contiver
+      // um token reconhecível do tamanho atualmente selecionado (ex.: "_M",
+      // "-G", "/PP/"), priorizamos essa imagem. Caso contrário, cai para a
+      // primeira imagem da cor (comportamento anterior).
+      const sizeToken = (tamanhoSelecionado || "").trim().toUpperCase();
+      const matchesSize = (url: string) => {
+        if (!sizeToken) return false;
+        const u = url.toUpperCase();
+        const pattern = new RegExp(`(^|[^A-Z0-9])${sizeToken}([^A-Z0-9]|$)`);
+        return pattern.test(u);
+      };
       const urls: string[] = [];
       const seen = new Set<string>();
       targets.forEach((c) => {
         if (!c || seen.has(c.produto_cor_id)) return;
         seen.add(c.produto_cor_id);
+        const galeria = c.imagens.map((img) => img.url_full).filter(Boolean);
+        const preferida = galeria.find(matchesSize);
         const principal =
-          c.imagens[0]?.url_full || c.imagem_full || c.imagem_thumb || "";
+          preferida || galeria[0] || c.imagem_full || c.imagem_thumb || "";
         if (principal) urls.push(principal);
       });
       // Limite duro: máximo 2 imagens por interação.
       preloadImagesPrioritized(urls.slice(0, 2), 2);
     },
-    [coresList],
+    [coresList, tamanhoSelecionado],
   );
 
   // Ao trocar cor, volta para a primeira imagem (que agora corresponde à cor selecionada).
