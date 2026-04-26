@@ -280,7 +280,13 @@ const ProductDetail = () => {
       const precoFormatadoSeo = formatBRL(preco);
       const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
       const descricao = produto.descricao || `${produto.nome}${colecaoTexto}. Loja de moda feminina em Campina Grande - PB.`;
-      const imagemPrincipal = produto.imagens[0];
+      // Para share/SEO prioriza imagem da cor selecionada (quando houver) → primeira da galeria
+      // → fallback produto.imagens[0]. Garante OG/twitter cards alinhados com a vitrine.
+      const imagemPrincipal =
+        imagensParaMostrar[0]
+        || corSelecionadaObj?.imagem_full
+        || corSelecionadaObj?.imagem_thumb
+        || produto.imagens[0];
 
       updateSeo({
         title: `${produto.nome} | ${config.nomeLoja}`,
