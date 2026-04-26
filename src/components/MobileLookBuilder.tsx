@@ -68,6 +68,10 @@ export const MobileLookBuilder = () => {
   const { produtos, loading } = useProducts();
   const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
+
+  // Guia compartilhado: usa `guideElement` para focar a categoria que está
+  // sem tamanho ao tentar enviar pelo WhatsApp (em vez de alert agressivo).
+  const sizeGuide = useSizeSelectionGuide();
   const [showPreview, setShowPreview] = useState(false);
   const [isClosingPreview, setIsClosingPreview] = useState(false);
   const [animatingItem, setAnimatingItem] = useState<string | null>(null);
