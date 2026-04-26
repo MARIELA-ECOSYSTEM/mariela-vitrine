@@ -189,28 +189,57 @@ const ProductDetail = () => {
   // Cada entrada carrega a `cor` à qual pertence — usado para sincronização
   // bidirecional cor ↔ imagem (mesma regra do ProductCard).
   type GalleryEntry = { url: string; cor: string | null };
+  // Normaliza URLs para deduplicação: remove querystring de redimensionamento
+  // (ex.: ?w=800&q=75 vs ?w=300&q=70 são variantes da MESMA foto e não devem
+  // virar duas miniaturas distintas na galeria).
+  const normalizeImageKey = (url: string): string => {
+    try {
+      const u = new URL(url, window.location.origin);
+      // Remove parâmetros conhecidos de resize/quality que geram variantes
+      // visualmente equivalentes.
+      ["w", "h", "q", "width", "height", "quality", "fit", "auto", "dpr"].forEach((k) =>
+        u.searchParams.delete(k),
+      );
+      return `${u.origin}${u.pathname}?${u.searchParams.toString()}`;
+    } catch {
+      return url.split("?")[0];
+    }
+  };
   const galeriaUnificada = useMemo<GalleryEntry[]>(() => {
     if (!produto) return [];
     const entries: GalleryEntry[] = [];
     const seen = new Set<string>();
     const push = (url: string | null | undefined, cor: string | null) => {
       const u = (url || "").trim();
-      if (!u || seen.has(u)) return;
-      seen.add(u);
+      if (!u) return;
+      const key = normalizeImageKey(u);
+      if (seen.has(key)) return;
+      seen.add(key);
       entries.push({ url: u, cor });
     };
+    // Verifica se TODAS as cores trazem `imagens[]` próprio (caso típico do
+    // detalhe completo) — nesse caso a galeria por cor é canônica e não
+    // devemos misturar `produto.imagens` (agregado pelo serviço) para evitar
+    // duplicatas de thumbs/variantes da mesma foto.
+    const todasCoresTemImagens =
+      coresList.length > 0 && coresList.every((c) => c.imagens.length > 0);
     if (coresList.length > 0) {
       coresList.forEach((c) => {
         if (c.imagens.length > 0) {
           c.imagens.forEach((img) => push(img.url_full, c.cor));
         } else {
-          push(c.imagem_full, c.cor);
-          push(c.imagem_thumb, c.cor);
+          // Só uma das duas — full tem prioridade, thumb é variante da mesma
+          // foto e não deve gerar entrada extra.
+          push(c.imagem_full || c.imagem_thumb, c.cor);
         }
       });
     }
-    // Inclui imagens "soltas" do produto que não vieram associadas a nenhuma cor.
-    (produto.imagens || []).forEach((img) => push(img, null));
+    // Imagens "soltas" do produto: só inclui quando há lacuna (alguma cor sem
+    // `imagens[]` ou catálogo sem cores). Caso contrário, a galeria por cor
+    // já é completa e canônica.
+    if (!todasCoresTemImagens) {
+      (produto.imagens || []).forEach((img) => push(img, null));
+    }
     if (entries.length === 0) entries.push({ url: produtoGenerico, cor: null });
     return entries;
   }, [produto, coresList]);
