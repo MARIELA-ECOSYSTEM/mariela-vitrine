@@ -722,7 +722,7 @@ const LegacyImageDisplay = ({
             alt={alt}
             loading={priority ? "eager" : "lazy"}
             decoding="async"
-            fetchPriority={priority ? "high" : "auto"}
+            {...({ fetchpriority: priority ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
             className={cn(
               "relative w-full h-full object-cover",
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
