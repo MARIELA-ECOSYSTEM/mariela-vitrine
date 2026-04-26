@@ -24,22 +24,25 @@ function normalizeSize(raw: string): string {
 
 export function isValidSize(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
-  return !INVALID_SIZES.has(normalizeSize(raw));
+  const norm = normalizeSize(raw);
+  if (norm === "") return false;
+  return !INVALID_SIZES.has(norm);
 }
 
 /**
  * Ordena e remove duplicados de uma lista de tamanhos.
- * Mantém a string original (preservando casing da API) na saída.
+ * Aplica `trim()` na saída para garantir consistência (" 38" → "38").
  */
 export function sortSizes(sizes: string[]): string[] {
   const seen = new Set<string>();
   const unique: string[] = [];
   sizes.forEach((s) => {
     if (!isValidSize(s)) return;
-    const key = normalizeSize(s);
+    const trimmed = s.trim();
+    const key = normalizeSize(trimmed);
     if (seen.has(key)) return;
     seen.add(key);
-    unique.push(s);
+    unique.push(trimmed);
   });
 
   return unique.sort((a, b) => {

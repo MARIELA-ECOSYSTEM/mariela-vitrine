@@ -54,7 +54,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   // Sem fallback "Única" — se a API não enviar cores, o card não exibe seletor.
   const coresList = useMemo(() => {
     if (!produto.cores || produto.cores.length === 0) return [];
-    return produto.cores.map((c) => ({
+    const mapped = produto.cores.map((c) => ({
       produto_cor_id: c.produto_cor_id,
       cor: c.cor,
       // Ordenar tamanhos naturalmente (PP, P, M, G, GG, XG... → numéricos)
@@ -67,6 +67,21 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
       imagem_full: c.imagem_full,
       imagem_thumb: c.imagem_thumb,
     }));
+
+    // Log em DEV quando produto tem cores mas nenhum tamanho válido — facilita
+    // diagnóstico de payloads inconsistentes vindos da API. Silencioso em produção.
+    if (import.meta.env.DEV) {
+      const todosVazios = mapped.length > 0 && mapped.every((c) => c.tamanhos.length === 0);
+      if (todosVazios) {
+        console.debug("[ProductCard] Produto com cores mas sem tamanhos válidos:", {
+          produto_id: produto.produtoId || produto.id,
+          nome: produto.nome,
+          cores: produto.cores,
+        });
+      }
+    }
+
+    return mapped;
   }, [produto.cores]);
 
   const primeiraCorDisponivel = coresList[0]?.cor || "";
