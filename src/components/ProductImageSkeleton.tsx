@@ -7,33 +7,127 @@ interface ProductImageSkeletonProps {
   className?: string;
   slideDirection?: 'left' | 'right' | null;
   priority?: boolean; // Para imagens acima do fold
+  /**
+   * Habilita blur-up (placeholder desfocado) APENAS na imagem principal.
+   * Cards/thumbs devem deixar `false` para evitar custo de canvas.
+   * Default: `false` para preservar comportamento atual em cards.
+   */
+  enableBlurUp?: boolean;
 }
 
-// Cache em memória de URLs já carregadas com sucesso. Evita criar várias
-// instâncias de Image() para a mesma URL e permite troca instantânea ao
-// alternar cores repetidas (sem flicker e sem novo round-trip de rede).
-const loadedImageCache = new Set<string>();
-const inflightLoaders = new Map<string, Promise<void>>();
+// =====================================================================
+// Cache + preload de imagens com URL normalizada e cancelamento
+// ---------------------------------------------------------------------
+// - URL normalizada: a chave de cache ignora parâmetros de redimensiona-
+//   mento/qualidade (`?w/?h/?q/...`), então `imagem_thumb` (?w=300) e
+//   `imagem_full` (?w=800) da MESMA foto compartilham o mesmo "carrega-
+//   mento conceitual" e nunca são re-fetched quando o usuário alterna
+//   cor → seta → cor.
+// - Refcount/cancelamento: cada chamada de `preloadImage` registra
+//   interesse (refcount++). `cancelPreload` decrementa. Quando ninguém
+//   mais quer a imagem E ela ainda não chegou, abortamos o download
+//   limpando `img.src` (truque consagrado para cancelar fetch de Image).
+// =====================================================================
 
+const RESIZE_PARAMS = ["w", "h", "q", "width", "height", "quality", "fit", "auto", "dpr", "format"];
+function normalizeImageKey(url: string): string {
+  try {
+    const u = new URL(url, typeof window !== "undefined" ? window.location.origin : "https://placeholder.local");
+    RESIZE_PARAMS.forEach((k) => u.searchParams.delete(k));
+    const search = u.searchParams.toString();
+    return `${u.origin}${u.pathname}${search ? `?${search}` : ""}`;
+  } catch {
+    return url.split("?")[0];
+  }
+}
+
+type LoaderEntry = {
+  promise: Promise<void>;
+  img: HTMLImageElement;
+  refCount: number;
+  done: boolean;
+  realSrc: string; // URL real disparada (pode ter query strings)
+};
+
+const loadedImageCache = new Set<string>(); // chaves NORMALIZADAS já carregadas
+const inflightLoaders = new Map<string, LoaderEntry>(); // chave normalizada → entry
+
+/**
+ * Pré-carrega uma imagem. Retorna uma promise que resolve quando a
+ * imagem (ou outra variante da mesma URL normalizada) já está em cache.
+ * Cada chamada incrementa o refcount; pareie com `cancelPreload` para
+ * permitir cancelamento real se o usuário sair antes de carregar.
+ */
 export function preloadImage(src: string): Promise<void> {
-  if (loadedImageCache.has(src)) return Promise.resolve();
-  const existing = inflightLoaders.get(src);
-  if (existing) return existing;
+  if (!src) return Promise.resolve();
+  const key = normalizeImageKey(src);
+  if (loadedImageCache.has(key)) return Promise.resolve();
+
+  const existing = inflightLoaders.get(key);
+  if (existing) {
+    existing.refCount += 1;
+    return existing.promise;
+  }
+
+  const img = new Image();
+  // Hint para o navegador: preloads em background não devem competir
+  // com a renderização principal.
+  try {
+    (img as unknown as { fetchPriority?: string }).fetchPriority = "low";
+    img.decoding = "async";
+  } catch { /* navegadores antigos */ }
+
   const promise = new Promise<void>((resolve, reject) => {
-    const img = new Image();
     img.onload = () => {
-      loadedImageCache.add(src);
-      inflightLoaders.delete(src);
+      const entry = inflightLoaders.get(key);
+      if (entry) entry.done = true;
+      loadedImageCache.add(key);
+      inflightLoaders.delete(key);
       resolve();
     };
     img.onerror = () => {
-      inflightLoaders.delete(src);
+      inflightLoaders.delete(key);
       reject();
     };
     img.src = src;
   });
-  inflightLoaders.set(src, promise);
+
+  inflightLoaders.set(key, { promise, img, refCount: 1, done: false, realSrc: src });
+  // Engole rejection global pra não poluir console — chamadores tratam.
+  promise.catch(() => {});
   return promise;
+}
+
+/**
+ * Decrementa o interesse por uma URL pré-carregada. Se ninguém mais
+ * estiver esperando E o download não terminou, aborta limpando `src`.
+ * URLs já no cache são ignoradas silenciosamente.
+ */
+export function cancelPreload(src: string | null | undefined): void {
+  if (!src) return;
+  const key = normalizeImageKey(src);
+  const entry = inflightLoaders.get(key);
+  if (!entry || entry.done) return;
+  entry.refCount -= 1;
+  if (entry.refCount > 0) return;
+  // Aborta: limpar `src` interrompe o fetch em browsers modernos.
+  try {
+    entry.img.onload = null;
+    entry.img.onerror = null;
+    entry.img.src = "";
+  } catch { /* ignore */ }
+  inflightLoaders.delete(key);
+}
+
+/** Versão em lote para limpar vários preloads de uma vez. */
+export function cancelPreloads(urls: Array<string | null | undefined>): void {
+  urls.forEach((u) => cancelPreload(u));
+}
+
+/** Verifica se uma URL (normalizada) já está em cache de carregamento. */
+export function isImagePreloaded(src: string | null | undefined): boolean {
+  if (!src) return false;
+  return loadedImageCache.has(normalizeImageKey(src));
 }
 
 /**
@@ -45,7 +139,7 @@ export function preloadImage(src: string): Promise<void> {
 export function preloadImagesPrioritized(
   urls: Array<string | null | undefined>,
   immediateCount = 2,
-) {
+): { cancel: () => void } {
   const unique = Array.from(
     new Set(
       urls
@@ -55,23 +149,44 @@ export function preloadImagesPrioritized(
   );
   const immediate = unique.slice(0, immediateCount);
   const deferred = unique.slice(immediateCount);
+  const started: string[] = [];
   immediate.forEach((u) => {
     preloadImage(u).catch(() => {});
+    started.push(u);
   });
-  if (deferred.length === 0) return;
-  const runDeferred = () => {
-    deferred.forEach((u) => {
-      preloadImage(u).catch(() => {});
-    });
-  };
-  const w = window as unknown as {
-    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-  };
-  if (typeof w.requestIdleCallback === "function") {
-    w.requestIdleCallback(runDeferred, { timeout: 1500 });
-  } else {
-    window.setTimeout(runDeferred, 250);
+  let cancelled = false;
+  let idleHandle: number | null = null;
+  let timeoutHandle: number | null = null;
+  if (deferred.length > 0) {
+    const runDeferred = () => {
+      if (cancelled) return;
+      deferred.forEach((u) => {
+        preloadImage(u).catch(() => {});
+        started.push(u);
+      });
+    };
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof w.requestIdleCallback === "function") {
+      idleHandle = w.requestIdleCallback(runDeferred, { timeout: 1500 });
+    } else {
+      timeoutHandle = window.setTimeout(runDeferred, 250);
+    }
   }
+  return {
+    cancel: () => {
+      cancelled = true;
+      const w = window as unknown as { cancelIdleCallback?: (id: number) => void };
+      if (idleHandle != null && typeof w.cancelIdleCallback === "function") {
+        w.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle != null) window.clearTimeout(timeoutHandle);
+      // Cancela apenas o que JÁ disparamos. Não toca em URLs nunca iniciadas.
+      cancelPreloads(started);
+    },
+  };
 }
 
 // Gerar uma cor dominante baseada no hash da URL (placeholder colorido)
