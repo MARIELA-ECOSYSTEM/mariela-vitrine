@@ -6,7 +6,7 @@ import { useState, useMemo } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import produtoGenerico from "@/assets/produto-generico.png";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { sortSizes, isValidSize } from "@/lib/sizeUtils";
+import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -94,6 +95,24 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Hook compartilhado para guiar o usuário até o seletor de tamanho do card
+  // (mesma UX do ProductDetail e Monte seu Look). Sem toast agressivo.
+  const sizeGuide = useSizeSelectionGuide();
+
+  /**
+   * O card pode renderizar até 3 containers de tamanho no DOM (lista, grade
+   * mobile, grade desktop) — apenas um é visível por vez via Tailwind.
+   * Este callback ref escolhe o container atualmente visível para o hook.
+   */
+  const setSizeSectionRef = (el: HTMLDivElement | null) => {
+    if (!el) return;
+    // `offsetParent === null` indica que o elemento está oculto (display:none).
+    if (el.offsetParent !== null) {
+      sizeGuide.sectionRef.current = el;
+    }
+  };
   
   const whatsappNumber = "5583986567915";
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
@@ -241,25 +260,31 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   const precoFormatado = formatBRL(getDisplayPrice(produto));
   const precoOriginalFormatado = promo.isPromo ? formatBRL(promo.precoVenda) : undefined;
 
+  /**
+   * Estratégia híbrida (acordada com o usuário):
+   * - Se o card tem variantes inline (cores disponíveis) E o usuário ainda não
+   *   selecionou cor/tamanho, guia inline (scroll + destaque + foco no 1º tamanho).
+   * - Se o card NÃO tem variantes inline (ex.: produto sem cores carregadas),
+   *   navega para a página de detalhe para o usuário escolher lá.
+   * Nunca mostra toast vermelho de erro.
+   */
+  const guiarSelecaoOuNavegar = (): boolean => {
+    if (isAcessorio) return true; // acessórios usam tamanho "U"
+    const temVariantesInline = coresList.length > 0;
+    if (!temVariantesInline) {
+      navigate(getProductPathWithSearch(produto));
+      return false;
+    }
+    sizeGuide.guide();
+    return false;
+  };
+
   const handleAdicionarCarrinho = () => {
     const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
     const corParaAdicionar = corSelecionada;
-    
-    if (!isAcessorio && !corParaAdicionar) {
-      toast({
-        title: "Selecione uma cor",
-        description: "Por favor, escolha a cor antes de adicionar ao carrinho.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!tamanhoParaAdicionar) {
-      toast({
-        title: "Selecione um tamanho",
-        description: "Por favor, escolha o tamanho antes de adicionar ao carrinho.",
-        variant: "destructive",
-      });
+
+    if (!isAcessorio && (!corParaAdicionar || !tamanhoParaAdicionar)) {
+      guiarSelecaoOuNavegar();
       return;
     }
     
@@ -274,22 +299,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
 
   const handleWhatsApp = () => {
     const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
-    
-    if (!isAcessorio && !corSelecionada) {
-      toast({
-        title: "Selecione uma cor",
-        description: "Por favor, escolha a cor antes de enviar pelo WhatsApp.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!tamanhoParaUsar) {
-      toast({
-        title: "Selecione um tamanho",
-        description: "Por favor, escolha o tamanho antes de enviar pelo WhatsApp.",
-        variant: "destructive",
-      });
+
+    if (!isAcessorio && (!corSelecionada || !tamanhoParaUsar)) {
+      guiarSelecaoOuNavegar();
       return;
     }
     
@@ -415,7 +427,15 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                     </div>
                     
                     {corSelecionada && (
-                      <div>
+                      <div
+                        ref={setSizeSectionRef}
+                        tabIndex={-1}
+                        className={cn(
+                          "scroll-mt-24 rounded-md transition-all duration-300",
+                          sizeGuide.highlight &&
+                            "ring-2 ring-primary ring-offset-2 ring-offset-background p-2 -m-2 animate-pulse"
+                        )}
+                      >
                         <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
                         <div className="flex flex-wrap gap-1">
                           {todosTamanhos.map((tamanho) => {
@@ -423,6 +443,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                             return (
                               <Button
                                 key={tamanho}
+                                data-size-option
                                 variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
@@ -461,6 +482,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                   <MessageCircle className="h-4 w-4" />
                   WhatsApp
                 </Button>
+                <p aria-live="polite" aria-atomic="true" className="sr-only">
+                  {sizeGuide.announceMessage}
+                </p>
               </div>
             </div>
           </div>
@@ -607,13 +631,22 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             
             {/* Mobile: tamanhos maiores */}
             {corSelecionada && (
-              <div className="flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in">
+              <div
+                ref={setSizeSectionRef}
+                tabIndex={-1}
+                className={cn(
+                  "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300",
+                  sizeGuide.highlight &&
+                    "ring-2 ring-primary ring-offset-2 ring-offset-background p-1.5 -m-1.5 animate-pulse"
+                )}
+              >
                 {todosTamanhos.map((tamanho) => {
                   const disponivel = tamanhosDisponiveis.includes(tamanho);
                   return (
                     <button
                       key={tamanho}
                       type="button"
+                      data-size-option
                       onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
                       disabled={!disponivel}
                       aria-disabled={!disponivel}
@@ -681,7 +714,15 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 </div>
                 
                 {corSelecionada && (
-                  <div className="mt-2">
+                  <div
+                    ref={setSizeSectionRef}
+                    tabIndex={-1}
+                    className={cn(
+                      "mt-2 scroll-mt-24 rounded-md transition-all duration-300",
+                      sizeGuide.highlight &&
+                        "ring-2 ring-primary ring-offset-2 ring-offset-background p-2 -m-2 animate-pulse"
+                    )}
+                  >
                     <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
                     <div className="flex flex-wrap gap-1">
                       {todosTamanhos.map((tamanho) => {
@@ -689,6 +730,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                         return (
                           <Button
                             key={tamanho}
+                            data-size-option
                             variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                             size="sm"
                             onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
@@ -730,6 +772,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 <span className="hidden xs:inline">WhatsApp</span>
               </Button>
             </div>
+            <p aria-live="polite" aria-atomic="true" className="sr-only">
+              {sizeGuide.announceMessage}
+            </p>
           </div>
         </div>
       </CardContent>

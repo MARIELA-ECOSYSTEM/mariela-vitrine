@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 import { toast } from "@/hooks/use-toast";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 
 interface SelectedItems {
   blusa: number | null;
@@ -67,6 +68,10 @@ export const MobileLookBuilder = () => {
   const { produtos, loading } = useProducts();
   const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
+
+  // Guia compartilhado: usa `guideElement` para focar a categoria que está
+  // sem tamanho ao tentar enviar pelo WhatsApp (em vez de alert agressivo).
+  const sizeGuide = useSizeSelectionGuide();
   const [showPreview, setShowPreview] = useState(false);
   const [isClosingPreview, setIsClosingPreview] = useState(false);
   const [animatingItem, setAnimatingItem] = useState<string | null>(null);
@@ -348,18 +353,24 @@ export const MobileLookBuilder = () => {
 
   const handleWhatsApp = () => {
     const whatsappNumber = "5583986567915";
-    
-    const validateSizes = () => {
-      if (selectedProducts.blusa && !selectedSizes.blusa) return "Selecione o tamanho da blusa";
-      if (selectedProducts.bottom && !selectedSizes.bottom) return "Selecione o tamanho da peça inferior";
-      if (selectedProducts.vestido && !selectedSizes.vestido) return "Selecione o tamanho do vestido";
-      if (selectedProducts.conjunto && !selectedSizes.conjunto) return "Selecione o tamanho do conjunto";
-      return null;
-    };
 
-    const error = validateSizes();
-    if (error) {
-      alert(error);
+    // Identifica a primeira categoria com produto selecionado mas sem tamanho.
+    // Bolsa não tem tamanho — é ignorada na validação.
+    const categoriasComTamanho: CategoryKey[] = ["blusa", "bottom", "vestido", "conjunto"];
+    const categoriaFaltante = categoriasComTamanho.find(
+      (k) => selectedProducts[k] && !selectedSizes[k],
+    );
+    if (categoriaFaltante) {
+      // Expande a categoria para garantir que o seletor de tamanho fique visível,
+      // depois localiza o nó pelo data-attribute e dispara o guia (scroll + destaque + foco).
+      setExpandedCategory(categoriaFaltante);
+      // Aguarda um frame para a expansão renderizar antes de medir/rolar.
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(
+          `[data-category="${categoriaFaltante}"]`,
+        );
+        sizeGuide.guideElement(el);
+      });
       return;
     }
     
@@ -559,6 +570,9 @@ export const MobileLookBuilder = () => {
                 <span className="sm:hidden">WhatsApp</span>
               </Button>
             </div>
+            <p aria-live="polite" aria-atomic="true" className="sr-only">
+              {sizeGuide.announceMessage}
+            </p>
           </div>
         </div>
       )}
@@ -693,7 +707,10 @@ const CategorySection = ({
       "bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300",
       isDisabled && "opacity-50 pointer-events-none",
       selectedProduct && "border-primary/40 bg-primary/5 shadow-sm"
-    )}>
+    )}
+    data-category={category.key}
+    tabIndex={-1}
+    >
       {/* Header */}
       <button
         onClick={onToggle}
@@ -800,6 +817,7 @@ const CategorySection = ({
                   {availableSizes.map((tamanho) => (
                     <button
                       key={tamanho}
+                      data-size-option
                       onClick={() => {
                         if ('vibrate' in navigator) navigator.vibrate(10);
                         onSizeChange(tamanho);

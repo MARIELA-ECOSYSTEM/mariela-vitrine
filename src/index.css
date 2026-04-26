@@ -354,3 +354,19 @@ All colors MUST be HSL.
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Destaque visual aplicado pelo hook useSizeSelectionGuide quando o usuário
+   tenta uma ação (WhatsApp/carrinho) sem ter selecionado tamanho.
+   Substitui o toast agressivo por um pulso suave + ring na seção de tamanhos. */
+@keyframes size-guide-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.0); }
+  40% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0.18); }
+}
+
+.size-guide-highlight {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 4px;
+  border-radius: 0.75rem;
+  animation: size-guide-pulse 1.6s ease-out 1;
+  scroll-margin-top: 6rem;
+}
