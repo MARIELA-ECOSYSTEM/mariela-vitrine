@@ -51,8 +51,20 @@ interface ProductCardProps {
  * Esse hash + `useMemo` mantém a referência anterior estável, evitando
  * que TODOS os `useMemo` internos (cores, mapas, imagens) recalculem e
  * que componentes filhos memoizados re-renderizem à toa.
+ *
+ * Otimizações:
+ * - Cache por referência via `WeakMap` (1 cálculo por objeto `Produto`).
+ *   Como a referência é descartada quando a lista é substituída, o GC
+ *   limpa o cache automaticamente — sem leaks.
+ * - Na prática, cada render do ProductCard chama esta função 2x
+ *   (comparador do `memo` + estabilização interna). Com o cache,
+ *   a 2ª chamada custa O(1).
  */
-function getProdutoSignature(p: Produto): string {
+const SIGNATURE_CACHE = new WeakMap<Produto, string>();
+
+export function getProdutoSignature(p: Produto): string {
+  const cached = SIGNATURE_CACHE.get(p);
+  if (cached !== undefined) return cached;
   const cores = p.cores
     ? p.cores
         .map(
@@ -63,7 +75,7 @@ function getProdutoSignature(p: Produto): string {
         .join(";")
     : "";
   const imgs = (p.imagens ?? []).join("|");
-  return [
+  const sig = [
     p.id,
     p.produtoId ?? "",
     p.nome,
@@ -74,6 +86,8 @@ function getProdutoSignature(p: Produto): string {
     imgs,
     cores,
   ].join("§");
+  SIGNATURE_CACHE.set(p, sig);
+  return sig;
 }
 
 const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: ProductCardProps) => {
