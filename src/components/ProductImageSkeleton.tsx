@@ -456,6 +456,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
             alt={alt}
             priority
             enableBlurUp={false}
+            silentError
           />
         </div>
         {/* Slot central (atual) */}
@@ -474,6 +475,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
             alt={alt}
             priority
             enableBlurUp={false}
+            silentError
           />
         </div>
       </div>
