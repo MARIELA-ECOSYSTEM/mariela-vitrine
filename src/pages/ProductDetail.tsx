@@ -63,6 +63,12 @@ const ProductDetail = () => {
   // Marca o id já buscado para evitar refetch quando `produtoFromList` muda de
   // referência (ex.: refresh silencioso da lista pelo `useProducts`).
   const fetchedIdRef = useRef<string | null>(null);
+
+  // Chave estável de localStorage para persistir a seleção de cor/imagem por
+  // produto. Não dispara navegação — apenas grava no storage e restaura no
+  // mount. A URL continua sendo a fonte canônica para sharing.
+  const STORAGE_PREFIX = "mariela_pdp_selection";
+  const storageKeyForProduct = (pid: string | number) => `${STORAGE_PREFIX}:${String(pid)}`;
   // Inicializa a partir da query string para suportar share/bookmark
   const initialQuery = useMemo(() => new URLSearchParams(location.search), []);
   const [corSelecionadaId, setCorSelecionadaId] = useState<string>("");
@@ -382,12 +388,16 @@ const ProductDetail = () => {
   }, [tamanhosDisponiveis, tamanhoSelecionado]);
 
   // Persiste cor/tamanho na URL (sem recarregar) para permitir share da seleção
-  // exata. Lê `location` via window dentro do effect para NÃO reagir à própria
+  // exata, e simultaneamente em localStorage para restaurar a seleção quando
+  // o usuário voltar ao produto via link direto sem query string.
+  // Lê `location` via window dentro do effect para NÃO reagir à própria
   // mudança de query string que ele dispara — isso evita um loop sutil que
-  // re-disparava effects dependentes (SEO, redirect, etc.) e dava sensação
-  // de "reload" ao trocar cor/tamanho.
+  // re-disparava effects dependentes (SEO, redirect) e dava sensação de
+  // "reload" ao trocar cor/tamanho.
   useEffect(() => {
     if (!produto) return;
+    const pid = produto.produtoId || produto.id;
+    // 1) URL — apenas se mudou (replaceState direto, sem invocar router).
     const currentSearch = window.location.search;
     const currentPath = window.location.pathname;
     const params = new URLSearchParams(currentSearch);
@@ -398,10 +408,63 @@ const ProductDetail = () => {
     const next = params.toString();
     const target = `${currentPath}${next ? `?${next}` : ""}`;
     if (target !== `${currentPath}${currentSearch}`) {
-      navigate(target, { replace: true });
+      // window.history.replaceState evita disparar listeners do react-router
+      // e, portanto, não causa nenhuma re-execução de effects que dependam
+      // de `location.search` em outros componentes.
+      window.history.replaceState(null, "", target);
+    }
+    // 2) localStorage — sobrevive a reload/recarga sem query string.
+    try {
+      const payload = JSON.stringify({
+        cor: corSelecionada || null,
+        tamanho: tamanhoSelecionado || null,
+        imagemIndex: imagemSelecionadaIndex,
+        ts: Date.now(),
+      });
+      window.localStorage.setItem(storageKeyForProduct(pid), payload);
+    } catch {
+      /* storage indisponível — ignora silenciosamente */
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [corSelecionada, tamanhoSelecionado, produto?.id]);
+  }, [corSelecionada, tamanhoSelecionado, imagemSelecionadaIndex, produto?.id]);
+
+  // Restaura seleção persistida no localStorage quando NÃO há `?cor=` na URL.
+  // Roda 1x por produto. A URL sempre tem prioridade sobre o storage.
+  const restoredFromStorageRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!produto) return;
+    const pid = String(produto.produtoId || produto.id);
+    if (restoredFromStorageRef.current === pid) return;
+    if (coresList.length === 0) return;
+    restoredFromStorageRef.current = pid;
+
+    // Se a URL já trouxe cor, ela vence.
+    const corNaUrl = new URLSearchParams(window.location.search).get("cor");
+    if (corNaUrl) return;
+
+    try {
+      const raw = window.localStorage.getItem(storageKeyForProduct(pid));
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        cor?: string | null;
+        tamanho?: string | null;
+        imagemIndex?: number;
+      };
+      if (saved.cor) {
+        const corItem = coresList.find((c) => c.cor.toLowerCase() === saved.cor!.toLowerCase());
+        if (corItem) {
+          setCorSelecionada(corItem.cor);
+          setCorSelecionadaId(corItem.produto_cor_id);
+          if (saved.tamanho && corItem.tamanhos.includes(saved.tamanho)) {
+            setTamanhoSelecionado(saved.tamanho);
+          }
+        }
+      }
+    } catch {
+      /* JSON inválido ou storage indisponível — ignora */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [produto?.id, coresList]);
 
   // Pré-carregamento controlado: pré-carrega APENAS as imagens adicionais da
   // cor selecionada (a primeira já é carregada pelo <img> principal). Não
@@ -472,21 +535,32 @@ const ProductDetail = () => {
     [galeriaUnificada, coresList, corSelecionada, tamanhoSelecionado],
   );
 
+  // SEO/JSON-LD: só recalcula quando muda produto, cor ou tamanho REAIS
+  // (chaves primitivas) — não a cada render por causa de arrays/objetos
+  // recriados. Isso evita reescrever <title>, meta tags e <script type="ld+json">
+  // a cada interação, o que causava trabalho desnecessário no document head.
+  const seoProdutoId = String(produto?.produtoId || produto?.id || "");
+  const seoImagemPrincipal = useMemo(() => {
+    if (!produto) return "";
+    return (
+      imagensParaMostrar[0] ||
+      corSelecionadaObj?.imagem_full ||
+      corSelecionadaObj?.imagem_thumb ||
+      produto.imagens[0] ||
+      ""
+    );
+  }, [produto, imagensParaMostrar, corSelecionadaObj]);
+
   useEffect(() => {
     if (!produto) return;
-
+    let cancelled = false;
     vitrineApiService.getConfig().then((config) => {
+      if (cancelled) return;
       const preco = getDisplayPrice(produto);
       const precoFormatadoSeo = formatBRL(preco);
       const promoSeo = getPromoInfo(produto);
       const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
-      // Para share/SEO prioriza imagem da cor selecionada (quando houver) → primeira da galeria
-      // → fallback produto.imagens[0]. Garante OG/twitter cards alinhados com a vitrine.
-      const imagemPrincipal =
-        imagensParaMostrar[0]
-        || corSelecionadaObj?.imagem_full
-        || corSelecionadaObj?.imagem_thumb
-        || produto.imagens[0];
+      const imagemPrincipal = seoImagemPrincipal || produto.imagens[0];
 
       // Title dinâmico: inclui preço quando em promoção (maior CTR em SERPs).
       const seoTitle = promoSeo.isPromo
@@ -582,9 +656,18 @@ const ProductDetail = () => {
         ],
       });
     });
-  }, [produto, imagensParaMostrar, corSelecionadaObj]);
+    return () => { cancelled = true; };
+    // Deps estáveis: re-roda apenas quando produto/cor/tamanho mudam de valor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seoProdutoId, corSelecionada, tamanhoSelecionado, seoImagemPrincipal]);
 
-  if (loading || (loadingDetalhe && !produtoDetalhe && !produtoFromList)) {
+  // LoadingOverlay APENAS no carregamento inicial bruto — quando não há nenhum
+  // dado em memória (nem da lista, nem do detalhe). Quando o detalhe está
+  // sendo refrescado em background mas já temos dados exibíveis, NUNCA
+  // bloqueamos a página: a UI permanece responsiva e o loading de imagens é
+  // delegado ao <ProductImageSkeleton> (mídia local, não bloqueia layout).
+  const hasAnyData = !!(produtoDetalhe || produtoFromList);
+  if ((loading || loadingDetalhe) && !hasAnyData) {
     return <LoadingOverlay />;
   }
 
