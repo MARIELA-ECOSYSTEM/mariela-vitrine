@@ -183,26 +183,51 @@ const ProductDetail = () => {
     return map;
   }, [coresList]);
 
-  // Galeria efetiva exibida no <ImageGallery>:
-  // 1) Se a cor selecionada tem `imagens[]` (detalhe completo), usa só elas.
-  // 2) Senão, usa imagem_full/imagem_thumb da cor + restante do produto.imagens.
-  // 3) Senão, usa produto.imagens.
-  // 4) Fallback final (imagem é a ÚNICA exceção permitida): placeholder genérico,
-  //    para evitar layout vazio sem inventar dados de produto.
-  const imagensParaMostrar = useMemo(() => {
-    if (!produto) return [] as string[];
-    if (corSelecionadaObj && corSelecionadaObj.imagens.length > 0) {
-      // Galeria por cor — fonte canônica quando o detalhe trouxer.
-      return corSelecionadaObj.imagens.map((img) => img.url_full);
+  // Galeria UNIFICADA exibida no <ImageGallery>:
+  // Mostra TODAS as imagens do produto (todas as cores) como uma só lista,
+  // permitindo que o usuário navegue por setas e thumbnails entre cores.
+  // Cada entrada carrega a `cor` à qual pertence — usado para sincronização
+  // bidirecional cor ↔ imagem (mesma regra do ProductCard).
+  type GalleryEntry = { url: string; cor: string | null };
+  const galeriaUnificada = useMemo<GalleryEntry[]>(() => {
+    if (!produto) return [];
+    const entries: GalleryEntry[] = [];
+    const seen = new Set<string>();
+    const push = (url: string | null | undefined, cor: string | null) => {
+      const u = (url || "").trim();
+      if (!u || seen.has(u)) return;
+      seen.add(u);
+      entries.push({ url: u, cor });
+    };
+    if (coresList.length > 0) {
+      coresList.forEach((c) => {
+        if (c.imagens.length > 0) {
+          c.imagens.forEach((img) => push(img.url_full, c.cor));
+        } else {
+          push(c.imagem_full, c.cor);
+          push(c.imagem_thumb, c.cor);
+        }
+      });
     }
-    if (corSelecionadaObj && (corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb)) {
-      const principal = corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb!;
-      const restantes = produto.imagens.filter((img) => img !== principal);
-      return [principal, ...restantes];
-    }
-    if (produto.imagens.length > 0) return produto.imagens;
-    return [produtoGenerico];
-  }, [produto, corSelecionadaObj]);
+    // Inclui imagens "soltas" do produto que não vieram associadas a nenhuma cor.
+    (produto.imagens || []).forEach((img) => push(img, null));
+    if (entries.length === 0) entries.push({ url: produtoGenerico, cor: null });
+    return entries;
+  }, [produto, coresList]);
+
+  const imagensParaMostrar = useMemo(
+    () => galeriaUnificada.map((g) => g.url),
+    [galeriaUnificada],
+  );
+
+  // Mapas auxiliares para sync bidirecional cor ↔ imagem.
+  const primeiraImagemPorCor = useMemo(() => {
+    const map: Record<string, number> = {};
+    galeriaUnificada.forEach((g, idx) => {
+      if (g.cor && !(g.cor in map)) map[g.cor] = idx;
+    });
+    return map;
+  }, [galeriaUnificada]);
 
   // Preload antecipado das imagens de TODAS as cores em background. A cor
   // selecionada e a próxima da lista entram como prioridade imediata; o
@@ -284,11 +309,15 @@ const ProductDetail = () => {
     [coresList, tamanhoSelecionado],
   );
 
-  // Ao trocar cor, volta para a primeira imagem (que agora corresponde à cor selecionada).
+  // Ao trocar cor, salta para a primeira imagem dessa cor na galeria unificada.
   useEffect(() => {
     if (!corSelecionadaObj) return;
-    setImagemSelecionadaIndex(0);
-  }, [corSelecionadaObj?.produto_cor_id]);
+    const idx = primeiraImagemPorCor[corSelecionadaObj.cor];
+    if (typeof idx === "number" && idx !== imagemSelecionadaIndex) {
+      setImagemSelecionadaIndex(idx);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corSelecionadaObj?.produto_cor_id, primeiraImagemPorCor]);
 
   // Auto-seleciona a cor com base na query string (?cor=...) ou na primeira disponível.
   useEffect(() => {
@@ -367,12 +396,32 @@ const ProductDetail = () => {
     };
   }, [imagensParaMostrar]);
 
-  // Função para lidar com seleção de imagem do carrossel.
-  // Memoizada para evitar re-render desnecessário do ImageGallery quando
-  // outros estados (cor, tamanho) mudarem.
-  const handleImageSelect = useCallback((index: number) => {
-    setImagemSelecionadaIndex(index);
-  }, []);
+  // Sync bidirecional: ao selecionar imagem (setas, thumbnails, swipe),
+  // se essa imagem pertence a uma cor conhecida, atualiza a cor selecionada
+  // — mesma regra usada no ProductCard. Reconcilia o tamanho se necessário.
+  const handleImageSelect = useCallback(
+    (index: number) => {
+      setImagemSelecionadaIndex(index);
+      const entry = galeriaUnificada[index];
+      if (!entry?.cor) return;
+      if (entry.cor === corSelecionada) return;
+      const corItem = coresList.find((c) => c.cor === entry.cor);
+      if (!corItem) return;
+      setCorSelecionada(corItem.cor);
+      setCorSelecionadaId(corItem.produto_cor_id);
+      // Reconcilia tamanho com a nova cor (preserva se válido; senão limpa
+      // ou auto-seleciona quando há um único tamanho).
+      const tamanhosDaCor = corItem.tamanhos;
+      if (tamanhoSelecionado && tamanhosDaCor.includes(tamanhoSelecionado)) {
+        // mantém
+      } else if (tamanhosDaCor.length === 1) {
+        setTamanhoSelecionado(tamanhosDaCor[0]);
+      } else {
+        setTamanhoSelecionado("");
+      }
+    },
+    [galeriaUnificada, coresList, corSelecionada, tamanhoSelecionado],
+  );
 
   useEffect(() => {
     if (!produto) return;
