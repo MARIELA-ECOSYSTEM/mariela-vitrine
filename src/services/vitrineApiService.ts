@@ -6,8 +6,9 @@ const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v4";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v5";
 const LEGACY_CACHE_KEYS = [
+  "mariela_vitrine_api_cache_v4",
   "mariela_vitrine_api_cache_v3",
   "mariela_vitrine_api_cache_v2",
   "mariela_vitrine_api_cache_v1",
