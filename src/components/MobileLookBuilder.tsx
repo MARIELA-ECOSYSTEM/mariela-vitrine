@@ -559,6 +559,7 @@ export const MobileLookBuilder = () => {
                     className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border-2 border-primary/30 bg-background animate-pop-in"
                   >
                     <img
+                      key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
                       alt={product.nome}
                       className="w-full h-full object-cover"
@@ -1095,6 +1096,7 @@ const PreviewPanel = ({
                 <div key={key} className="flex items-center justify-between bg-secondary/30 rounded-lg p-2 animate-pop-in">
                   <div className="flex items-center gap-2 min-w-0">
                     <img
+                      key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
                       alt={product.nome}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
