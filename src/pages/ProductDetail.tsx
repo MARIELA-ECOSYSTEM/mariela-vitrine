@@ -107,18 +107,43 @@ const ProductDetail = () => {
 
   // Cores reais do contrato novo (produto.cores). Se ausente, deriva de variants (legado),
   // descartando a entrada "Única" quando houver outras cores reais presentes.
-  const coresList = useMemo(() => {
-    if (!produto) return [] as Array<{ produto_cor_id: string; cor: string; tamanhos: string[]; imagem_full: string | null; imagem_thumb: string | null }>;
+  // Inclui `imagens[]` (galeria por cor) quando o detalhe trouxer.
+  type CorListItem = {
+    produto_cor_id: string;
+    cor: string;
+    tamanhos: string[];
+    imagem_full: string | null;
+    imagem_thumb: string | null;
+    imagens: Array<{ url_full: string; url_thumb: string }>;
+  };
+  const coresList = useMemo<CorListItem[]>(() => {
+    if (!produto) return [];
     if (produto.cores && produto.cores.length > 0) {
       return produto.cores
         .filter((c) => c.tamanhos.some((t) => t.disponibilidade > 0))
-        .map((c) => ({
-          produto_cor_id: c.produto_cor_id,
-          cor: c.cor,
-          tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
-          imagem_full: c.imagem_full,
-          imagem_thumb: c.imagem_thumb,
-        }));
+        .map((c) => {
+          // Galeria da cor: prioriza `imagens[]` do detalhe; senão deriva de imagem_full/thumb.
+          const galeria = (c.imagens && c.imagens.length > 0
+            ? c.imagens
+            : c.imagem_full || c.imagem_thumb
+              ? [{ url_full: c.imagem_full, url_thumb: c.imagem_thumb, principal: true, ordem: 0 }]
+              : []
+          )
+            .map((img) => {
+              const full = img.url_full || img.url_thumb || "";
+              const thumb = img.url_thumb || img.url_full || "";
+              return full ? { url_full: full, url_thumb: thumb || full } : null;
+            })
+            .filter((x): x is { url_full: string; url_thumb: string } => !!x);
+          return {
+            produto_cor_id: c.produto_cor_id,
+            cor: c.cor,
+            tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
+            imagem_full: c.imagem_full,
+            imagem_thumb: c.imagem_thumb,
+            imagens: galeria,
+          };
+        });
     }
     // Fallback (legado): derivar de variants
     const map: Record<string, string[]> = {};
@@ -134,6 +159,7 @@ const ProductDetail = () => {
       tamanhos,
       imagem_full: null,
       imagem_thumb: null,
+      imagens: [],
     }));
   }, [produto]);
 
@@ -150,12 +176,18 @@ const ProductDetail = () => {
     return map;
   }, [coresList]);
 
-  // Carrossel: usa imagens da cor selecionada quando o contrato novo está presente; caso contrário, todas.
+  // Galeria efetiva exibida no <ImageGallery>:
+  // 1) Se a cor selecionada tem `imagens[]` (detalhe completo), usa só elas.
+  // 2) Senão, usa imagem_full/imagem_thumb da cor + restante do produto.imagens.
+  // 3) Fallback final: produto.imagens.
   const imagensParaMostrar = useMemo(() => {
-    if (!produto) return [];
+    if (!produto) return [] as string[];
+    if (corSelecionadaObj && corSelecionadaObj.imagens.length > 0) {
+      // Galeria por cor — fonte canônica quando o detalhe trouxer.
+      return corSelecionadaObj.imagens.map((img) => img.url_full);
+    }
     if (corSelecionadaObj && (corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb)) {
       const principal = corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb!;
-      // Mantém o restante da galeria depois da imagem da cor (sem duplicar).
       const restantes = produto.imagens.filter((img) => img !== principal);
       return [principal, ...restantes];
     }
