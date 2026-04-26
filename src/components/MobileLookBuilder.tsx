@@ -67,7 +67,32 @@ export const MobileLookBuilder = () => {
   const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [isClosingPreview, setIsClosingPreview] = useState(false);
   const [animatingItem, setAnimatingItem] = useState<string | null>(null);
+
+  // Refs para gerenciar foco — devolver foco ao botão "Ver" ao fechar.
+  const lastTriggerRef = useRef<HTMLElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+
+  // Fechamento animado: dispara animação de saída e desmonta após o término.
+  const closePreview = () => {
+    if (isClosingPreview) return;
+    setIsClosingPreview(true);
+    window.setTimeout(() => {
+      setShowPreview(false);
+      setIsClosingPreview(false);
+      // Devolve o foco ao gatilho original.
+      if (lastTriggerRef.current && typeof lastTriggerRef.current.focus === "function") {
+        lastTriggerRef.current.focus();
+      }
+    }, 230);
+  };
+
+  // Helper para abrir o preview registrando o gatilho que recebeu foco.
+  const openPreview = (e?: React.MouseEvent<HTMLElement>) => {
+    lastTriggerRef.current = (e?.currentTarget as HTMLElement) || null;
+    setShowPreview(true);
+  };
 
   // Trava scroll do body enquanto o modal de pré-visualização estiver aberto.
   // Restaura o overflow original ao fechar/desmontar — evita "body travado".
@@ -78,6 +103,25 @@ export const MobileLookBuilder = () => {
     return () => {
       document.body.style.overflow = original;
     };
+  }, [showPreview]);
+
+  // ESC fecha o modal (acessibilidade desktop) + foco inicial no sheet.
+  useEffect(() => {
+    if (!showPreview) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePreview();
+    };
+    window.addEventListener("keydown", onKey);
+    // Foca no sheet ao abrir (próximo tick para garantir mount).
+    const t = window.setTimeout(() => {
+      sheetRef.current?.focus();
+    }, 50);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.clearTimeout(t);
+    };
+    // closePreview é estável o suficiente neste escopo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPreview]);
   
   const [selectedItems, setSelectedItems] = useState<SelectedItems>({
