@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 import { toast } from "@/hooks/use-toast";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 
 interface SelectedItems {
   blusa: number | null;
