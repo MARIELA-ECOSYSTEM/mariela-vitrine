@@ -104,6 +104,9 @@ export const ProductImageSkeleton = ({
   // Fica visível por baixo da nova imagem por ~180ms para suavizar a troca.
   const [previousSrc, setPreviousSrc] = useState<string | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
+  // Opacidade inicial da imagem anterior durante o cross-fade.
+  // Fica em 1 e cai para 0 ao longo da transição, garantindo que a nova
+  // imagem "emerja" por cima sem flash de fundo.
   const fadeTimerRef = useRef<number | null>(null);
   // Último src solicitado por prop — usado para descartar resultados de
   // preloads obsoletos quando o usuário troca de cor rapidamente.
@@ -198,7 +201,7 @@ export const ProductImageSkeleton = ({
         setIsSwapping(false);
         setPreviousSrc(null);
         fadeTimerRef.current = null;
-      }, 180);
+      }, 280);
     };
     preloadImage(src).then(swap).catch(() => {
       if (cancelled) return;
@@ -252,7 +255,10 @@ export const ProductImageSkeleton = ({
               src={previousSrc}
               alt=""
               aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover"
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ease-out",
+                isSwapping ? "opacity-0" : "opacity-100",
+              )}
             />
           )}
           <img
@@ -266,11 +272,13 @@ export const ProductImageSkeleton = ({
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
               loadState === 'loading' && "opacity-0 scale-[1.02] transition-all duration-700 ease-out",
               loadState !== 'loading' && !isSwapping && "opacity-100 scale-100 transition-all duration-700 ease-out",
-              // Troca de cor: cross-fade curto (~180ms) sem zoom, ease-out
-              // consistente entre desktop e mobile.
-              isSwapping && "opacity-0 transition-opacity duration-200 ease-out animate-[fade-in_180ms_ease-out_forwards]",
-              slideDirection === 'left' && "animate-slide-left",
-              slideDirection === 'right' && "animate-slide-right"
+              // Troca de cor: cross-fade ~280ms com easing suave, sem zoom.
+              // Quando estiver em swap, NÃO aplicamos slide — evita combinar
+              // duas animações concorrentes (ficava "saltado"). Slide só
+              // ocorre na navegação por setas (sem isSwapping).
+              isSwapping && "opacity-0 transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] animate-[fade-in_280ms_cubic-bezier(0.22,1,0.36,1)_forwards]",
+              !isSwapping && slideDirection === 'left' && "animate-slide-left",
+              !isSwapping && slideDirection === 'right' && "animate-slide-right"
             )}
             onLoad={() => setLoadState('loaded')}
             onError={() => {
