@@ -661,6 +661,8 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
     // NÃO inventar cor: descartamos a variant se a API não enviar cor real.
     const cor = readString(variant, ["cor", "color", "nome_cor", "nomeCor"], "");
     if (!cor) return;
+    const corLower = cor.trim().toLowerCase();
+    if (!corLower || corLower === "única" || corLower === "unica") return;
     const sizeRecords = asArray(variant.tamanhos ?? variant.sizes ?? variant.grade);
 
     if (sizeRecords.length > 0) {
