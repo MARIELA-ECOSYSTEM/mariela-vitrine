@@ -372,17 +372,29 @@ const TRACK_DURATION_MS = 420;
 const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlurUp }: ImageTrackProps) => {
   const len = images.length;
   const prevIndexRef = useRef<number>(currentIndex);
-  const trackRef = useRef<HTMLDivElement | null>(null);
   // Slots: [esquerdo, centro, direito]. Centro é sempre o currentIndex.
-  // Esquerdo/direito derivam ciclicamente.
+  // Esquerdo/direito derivam ciclicamente para que a navegação next/prev
+  // sempre tenha vizinho montado e pré-carregado.
   const leftIdx = (currentIndex - 1 + len) % len;
   const rightIdx = (currentIndex + 1) % len;
 
-  // Direção do slide a aplicar — calculada quando currentIndex muda.
-  // 'next' empurra o trilho para a esquerda (translateX -200%),
-  // 'prev' empurra para a direita (translateX 0%).
+  // Direção do slide aplicada quando currentIndex muda.
   const [direction, setDirection] = useState<"next" | "prev" | null>(null);
   const [animating, setAnimating] = useState(false);
+
+  // Pré-carrega slot atual + vizinhos com PRIORIDADE ALTA assim que o
+  // índice muda. Garante que a imagem do slot já esteja no cache do
+  // browser antes do `<img>` ser pintado, eliminando frames vazios na
+  // troca por seta/cor. Respeita o cache global — sem fetch duplicado.
+  useEffect(() => {
+    const targets = [images[currentIndex], images[leftIdx], images[rightIdx]]
+      .filter((u): u is string => typeof u === "string" && u.length > 0);
+    targets.forEach((u) => preloadImage(u, "high").catch(() => {}));
+    return () => {
+      // Não cancela: as 3 imagens visíveis devem permanecer "quentes"
+      // até o próximo ciclo, que substitui pelo novo conjunto.
+    };
+  }, [images, currentIndex, leftIdx, rightIdx]);
 
   useEffect(() => {
     const prev = prevIndexRef.current;
@@ -401,36 +413,47 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
     return () => window.clearTimeout(t);
   }, [currentIndex, len]);
 
-  // Translate alvo durante a animação. Como o trilho tem `width: 300%`,
-  // percentuais de `translateX` são relativos ao próprio trilho — então
-  // cada slot equivale a 33.3333%, não 100%. O valor anterior (-100%)
-  // deslocava o trilho 3 larguras de container e deixava a imagem fora da tela.
+  // Translate alvo durante a animação. Trilho tem `width: 300%`, então
+  // cada slot equivale a 33.3333% do próprio trilho. Estado neutro =
+  // slot central visível (-33.3333%).
   let translate = "-33.3333%";
   if (animating && direction === "next") translate = "-66.6667%";
   if (animating && direction === "prev") translate = "0%";
 
+  // Cada slot ocupa 1/3 do trilho. Usamos `flex: 0 0 33.3333%` em vez
+  // de `width` inline para impedir que `flex` recalcule e colapse os
+  // slots em layouts complexos (containers `aspect-square`, `min-w-0`,
+  // etc.). `min-width:0` garante que o slot não estoure o trilho.
+  const slotStyle: React.CSSProperties = {
+    flex: "0 0 33.3333%",
+    maxWidth: "33.3333%",
+    minWidth: 0,
+    height: "100%",
+    position: "relative",
+  };
+
   return (
     <div className={cn("relative w-full h-full overflow-hidden", className)}>
       <div
-        ref={trackRef}
-        className="absolute inset-0 flex h-full will-change-transform"
+        className="absolute inset-0 flex flex-row flex-nowrap items-stretch will-change-transform"
         style={{
           width: "300%",
+          height: "100%",
           transform: `translateX(${translate})`,
           transition: animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
         }}
       >
-        {/* Slot esquerdo */}
-        <div className="relative h-full" style={{ width: "33.3333%" }}>
+        {/* Slot esquerdo — priority=true para evitar lazy-load durante o slide. */}
+        <div style={slotStyle}>
           <LegacyImageDisplay
             src={images[leftIdx]}
             alt={alt}
-            priority={false}
+            priority
             enableBlurUp={false}
           />
         </div>
         {/* Slot central (atual) */}
-        <div className="relative h-full" style={{ width: "33.3333%" }}>
+        <div style={slotStyle}>
           <LegacyImageDisplay
             src={images[currentIndex]}
             alt={alt}
@@ -439,11 +462,11 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
           />
         </div>
         {/* Slot direito */}
-        <div className="relative h-full" style={{ width: "33.3333%" }}>
+        <div style={slotStyle}>
           <LegacyImageDisplay
             src={images[rightIdx]}
             alt={alt}
-            priority={false}
+            priority
             enableBlurUp={false}
           />
         </div>
