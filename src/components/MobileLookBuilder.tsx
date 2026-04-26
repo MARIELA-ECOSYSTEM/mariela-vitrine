@@ -1004,6 +1004,7 @@ const PreviewPanel = ({
               /* Full Outfit - Larger display */
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
                 <img
+                  key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
                   src={getImageForColor(
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
@@ -1019,6 +1020,7 @@ const PreviewPanel = ({
                 <div className="flex-1 flex items-end justify-center w-full pb-0 z-10">
                   {selectedProducts.blusa ? (
                     <img
+                      key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
                       src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
                       alt={selectedProducts.blusa.nome}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
@@ -1034,6 +1036,7 @@ const PreviewPanel = ({
                 <div className="flex-1 flex items-start justify-center w-full pt-0 -mt-6 sm:-mt-8">
                   {selectedProducts.bottom ? (
                     <img
+                      key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
                       src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
                       alt={selectedProducts.bottom.nome}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
@@ -1051,6 +1054,7 @@ const PreviewPanel = ({
             {selectedProducts.bolsa && (
               <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in">
                 <img
+                  key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={selectedProducts.bolsa.nome}
                   className="w-full h-full object-contain"
