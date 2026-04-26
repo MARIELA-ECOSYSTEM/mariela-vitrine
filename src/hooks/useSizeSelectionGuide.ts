@@ -64,6 +64,17 @@ export function useSizeSelectionGuide() {
       const rect = el.getBoundingClientRect();
       const targetY = window.scrollY + rect.top - headerOffset;
       window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
+
+      // Aplica destaque visual diretamente no DOM (funciona tanto para uso
+      // declarativo via `highlight` state quanto para chamadas imperativas
+      // com `guideElement` em elementos externos ao componente).
+      el.classList.remove("size-guide-highlight");
+      // força reflow para reiniciar a animação caso já estivesse aplicada
+      void el.offsetWidth;
+      el.classList.add("size-guide-highlight");
+      window.setTimeout(() => {
+        el.classList.remove("size-guide-highlight");
+      }, 1600);
     }
 
     // Reinicia destaque: limpa, desliga, força reflow, religa.
