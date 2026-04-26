@@ -19,7 +19,7 @@ import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesPr
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
-import { trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
+import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import type { Produto } from "@/data/products";
 import produtoGenerico from "@/assets/produto-generico.png";
 
@@ -642,7 +642,15 @@ const ProductDetail = () => {
                             onClick={() => {
                               setCorSelecionada(cor);
                               setCorSelecionadaId(corItem.produto_cor_id);
-                              setTamanhoSelecionado("");
+                              // Preserva tamanho se ainda existir na nova cor; senão limpa.
+                              // Se houver apenas 1 tamanho disponível, auto-seleciona.
+                              if (tamanhoSelecionado && tamanhosDaCor.includes(tamanhoSelecionado)) {
+                                // mantém
+                              } else if (tamanhosDaCor.length === 1) {
+                                setTamanhoSelecionado(tamanhosDaCor[0]);
+                              } else {
+                                setTamanhoSelecionado("");
+                              }
                             }}
                             className={`group flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98] ${
                               isSelected
