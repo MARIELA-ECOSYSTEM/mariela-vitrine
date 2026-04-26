@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
 import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER } from "@/lib/productImage";
-import { ProductImageSkeleton, preloadImage, preloadImagesPrioritized } from "./ProductImageSkeleton";
+import { ProductImageSkeleton, preloadAdjacentImage, preloadImagesPrioritized, type PreloadPriority } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
@@ -239,19 +239,20 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   }, []);
 
   /**
-   * Preload focado em UMA direção: dispara somente a imagem na direção
-   * provável do clique (next ou prev). Usado em hover/touchstart das
-   * setas do card para reduzir delay perceptível ao trocar rapidamente.
+   * Preload focado em UMA direção. Usa o helper compartilhado
+   * `preloadAdjacentImage` para garantir que a direção prevista é
+   * idêntica entre card e galeria. Prioridade muda conforme o trigger:
+   * - hover/focus = `low` (apenas intenção, não compete com imagem
+   *   principal)
+   * - touchstart  = `high` (clique iminente em mobile — compensa o
+   *   delay típico do tap)
    */
-  const preloadOnArrowHover = useCallback((direction: "next" | "prev") => {
-    if (imagensValidas.length <= 1) return;
-    const targetIdx = direction === "next"
-      ? (currentImageIndex + 1) % imagensValidas.length
-      : (currentImageIndex - 1 + imagensValidas.length) % imagensValidas.length;
-    const url = imagensValidas[targetIdx];
-    if (!url) return;
-    preloadImage(url).catch(() => {});
-  }, [imagensValidas, currentImageIndex]);
+  const preloadOnArrowHover = useCallback(
+    (direction: "next" | "prev", priority: PreloadPriority = "low") => {
+      preloadAdjacentImage(imagensValidas, currentImageIndex, direction, priority);
+    },
+    [imagensValidas, currentImageIndex],
+  );
 
   // Garante limpeza ao desmontar o card (ex.: filtro reordenando lista).
   useEffect(() => () => { lastPreloadHandleRef.current?.cancel(); }, []);
