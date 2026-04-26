@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
@@ -45,28 +45,27 @@ interface ProductCardProps {
 export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: ProductCardProps) => {
   // Cards usam EXCLUSIVAMENTE os dados vindos da listagem `/vitrine-api/produtos`.
   // Não há fallback por `/produto/{id}` — isso evita N+1 requests.
-  const cardRef = useRef<HTMLDivElement>(null);
   const produto = produtoProp;
 
   const publicBadge = getPublicProductBadge(produto);
 
-  // Lista unificada de cores: prioriza produto.cores (novo contrato) e descarta "Única"
-  // quando há cores reais. Faz fallback para variants legado quando ausente.
+  // Lista unificada de cores. Regra definitiva:
+  //  1. Se `produto.cores` veio na listagem e contém ao menos 1 entrada → usar EXCLUSIVAMENTE essas cores.
+  //  2. Caso contrário (ausente ou vazio) → fallback discreto "Única" derivado das variants.
   const coresList = useMemo(() => {
     if (produto.cores && produto.cores.length > 0) {
-      return produto.cores
-        .filter((c) => c.tamanhos.some((t) => t.disponibilidade > 0))
-        .map((c) => ({
-          produto_cor_id: c.produto_cor_id,
-          cor: c.cor,
-          tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
-          imagem_full: c.imagem_full,
-          imagem_thumb: c.imagem_thumb,
-        }));
+      // Mantém todas as cores reais. Tamanhos podem estar vazios na listagem
+      // (o detalhe traz a grade completa) — não filtrar a cor por causa disso.
+      return produto.cores.map((c) => ({
+        produto_cor_id: c.produto_cor_id,
+        cor: c.cor,
+        tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
+        imagem_full: c.imagem_full,
+        imagem_thumb: c.imagem_thumb,
+      }));
     }
-    // Fallback legado: derivar de variants, descartando entrada "Única" se for
-    // a única cor (vinda do fallback genérico da listagem) — evita exibir o
-    // chip enganoso enquanto a busca lazy do detalhe não chegou.
+    // Fallback legado: derivar de variants quando `cores` ausente.
+    // Aceita "Única" apenas neste caminho (sem cores reais na listagem).
     const map: Record<string, string[]> = {};
     produto.variants
       .filter((v) => v.disponibilidade > 0)
@@ -74,10 +73,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
         if (!map[v.cor]) map[v.cor] = [];
         if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
       });
-    const entries = Object.entries(map);
-    const apenasUnica = entries.length === 1 && entries[0][0] === "Única";
-    if (apenasUnica) return [];
-    return entries.map(([cor, tamanhos]) => ({
+    return Object.entries(map).map(([cor, tamanhos]) => ({
       produto_cor_id: cor,
       cor,
       tamanhos,
@@ -254,7 +250,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   // Layout em lista (horizontal)
   if (layoutMode === "lista") {
     return (
-      <Card ref={cardRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
+      <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row">
             <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
@@ -405,7 +401,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
 
   // Layout em grade (vertical - padrão)
   return (
-    <Card ref={cardRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
+    <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
       <CardContent className="p-0 flex flex-col flex-1">
         <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 

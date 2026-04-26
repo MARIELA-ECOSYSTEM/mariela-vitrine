@@ -5,8 +5,18 @@ const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v2";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v3";
 const MAX_CACHE_ITEMS = 40;
+const LEGACY_CACHE_KEYS = ["mariela_vitrine_api_cache_v2", "mariela_vitrine_api_cache_v1"];
+
+// Limpa caches antigos para forçar reload do novo contrato com `cores` na listagem.
+if (typeof localStorage !== "undefined") {
+  try {
+    LEGACY_CACHE_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* cache opcional */
+  }
+}
 
 const CACHE_TTL = {
   config: 5 * 60 * 1000,
@@ -564,9 +574,10 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
           }
         });
       } else {
-        // Cor sem grade — assumir tamanho único disponível
+        // Cor sem grade (típico da listagem `/vitrine-api/produtos`).
+        // Default `disponivel = true` quando o campo não existe, para não filtrar a cor.
         const quantidade = readNumber(corRec, ["quantidade", "disponibilidade", "estoque"], 0);
-        const disponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], quantidade > 0);
+        const disponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], true);
         if (quantidade > 0 || disponivel) {
           variants.push({
             tamanho: readString(corRec, ["tamanho", "size"], "U"),
@@ -644,7 +655,9 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       ["produto_cor_id", "produtoCorId", "id", "cor_id", "corId"],
       `${nome}-${index}`,
     );
-    const tamanhos = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade)
+    const corDisponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], true);
+    const tamanhosArray = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade);
+    const tamanhos = tamanhosArray
       .map(asRecord)
       .map((tam) => {
         const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
@@ -655,6 +668,15 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
         };
       })
       .filter((t) => t.disponibilidade > 0);
+
+    // Listagem (`/vitrine-api/produtos`) não envia `tamanhos` por cor — apenas
+    // `disponivel`. Nesse caso, mantemos a cor com tamanho placeholder "U" para
+    // não filtrá-la no card. O detalhe (`/produto/{id}`) traz tamanhos reais.
+    if (tamanhosArray.length === 0 && corDisponivel) {
+      tamanhos.push({ tamanho: "U", disponibilidade: 1 });
+    }
+
+    if (tamanhos.length === 0) return;
 
     cores.push({
       produto_cor_id: produtoCorId,
