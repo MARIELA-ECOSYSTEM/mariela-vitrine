@@ -760,11 +760,9 @@ const CategorySection = ({
               // garante swap visual imediato mesmo quando o browser reaproveitaria o nó.
               key={`${selectedProduct.id}-${selectedColor || "default"}`}
               src={getImageForColor(selectedProduct, selectedColor)}
-              alt={selectedColor ? `${selectedProduct.nome} — cor ${selectedColor}` : selectedProduct.nome}
+              alt={getProductImageByColor(selectedProduct, selectedColor).alt}
               className="w-full h-full object-cover animate-fade-in"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = produtoGenerico;
-              }}
+              onError={handleProductImageError}
             />
           </div>
         )}
@@ -890,12 +888,10 @@ const CategorySection = ({
                     )}
                   >
                     <img
-                      src={produto.imagens[0] || produtoGenerico}
-                      alt={produto.nome}
+                      src={produto.imagens[0] || PRODUCT_IMAGE_PLACEHOLDER}
+                      alt={getProductImageByColor(produto, null).alt}
                       className="w-full h-full object-cover transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = produtoGenerico;
-                      }}
+                      onError={handleProductImageError}
                     />
                     {selectedProduct?.id === produto.id && (
                       <div className="absolute inset-0 bg-primary/20 flex items-center justify-center animate-fade-in">
