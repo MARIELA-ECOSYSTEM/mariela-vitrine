@@ -241,7 +241,9 @@ export const Header = () => {
               <span
                 className={cn(
                   "font-serif text-xl sm:text-2xl font-bold leading-tight transition-colors",
-                  isOverlay ? "text-white drop-shadow-md" : "text-primary",
+                  isOverlay
+                    ? overlayTextLight ? "text-white drop-shadow-md" : "text-foreground drop-shadow-sm"
+                    : "text-primary",
                 )}
               >
                 Mariela
@@ -249,20 +251,22 @@ export const Header = () => {
               <span
                 className={cn(
                   "text-[10px] sm:text-xs font-medium tracking-wide transition-colors",
-                  isOverlay ? "text-white/85 drop-shadow" : "text-muted-foreground",
+                  isOverlay
+                    ? overlayTextLight ? "text-white/85 drop-shadow" : "text-foreground/75 drop-shadow-sm"
+                    : "text-muted-foreground",
                 )}
               >
                 Moda Feminina
               </span>
             </div>
             {refreshState === 'loading' && (
-              <RefreshCw className={cn("h-4 w-4 animate-spin", isOverlay ? "text-white" : "text-muted-foreground")} />
+              <RefreshCw className={cn("h-4 w-4 animate-spin", isOverlay ? (overlayTextLight ? "text-white" : "text-foreground") : "text-muted-foreground")} />
             )}
             {refreshState === 'success' && (
               <Check className="h-4 w-4 text-green-500 animate-scale-in" />
             )}
             {refreshState === 'idle' && (
-              <RefreshCw className={cn("h-4 w-4 opacity-0 group-hover:opacity-100 transition-all", isOverlay ? "text-white" : "text-muted-foreground")} />
+              <RefreshCw className={cn("h-4 w-4 opacity-0 group-hover:opacity-100 transition-all", isOverlay ? (overlayTextLight ? "text-white" : "text-foreground") : "text-muted-foreground")} />
             )}
           </button>
 
@@ -283,10 +287,12 @@ export const Header = () => {
                   "text-sm font-medium transition-colors relative py-1",
                   isOverlay
                     ? cn(
-                        "text-white drop-shadow hover:text-white/80",
-                        isActive(link.path) && !link.scrollTo && "nav-link-active",
+                        overlayTextLight
+                          ? "text-white drop-shadow hover:text-white/80"
+                          : "text-foreground drop-shadow-sm hover:text-foreground/75",
+                        isLinkActive(link) && "nav-link-active",
                       )
-                    : isActive(link.path) && !link.scrollTo
+                    : isLinkActive(link)
                       ? "text-primary nav-link-active"
                       : "text-foreground hover:text-primary",
                 )}
@@ -304,7 +310,11 @@ export const Header = () => {
               size="icon"
               onClick={toggleTheme}
               className={cn(
-                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+                isOverlay
+                  ? overlayTextLight
+                    ? "text-white hover:bg-white/15 hover:text-white"
+                    : "text-foreground hover:bg-foreground/10"
+                  : "hover:bg-primary/10",
               )}
               aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
             >
@@ -317,7 +327,11 @@ export const Header = () => {
               size="icon"
               className={cn(
                 "relative",
-                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+                isOverlay
+                  ? overlayTextLight
+                    ? "text-white hover:bg-white/15 hover:text-white"
+                    : "text-foreground hover:bg-foreground/10"
+                  : "hover:bg-primary/10",
               )}
               aria-label="Carrinho de compras"
             >
@@ -337,7 +351,11 @@ export const Header = () => {
               variant="ghost"
               size="icon"
               className={cn(
-                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+                isOverlay
+                  ? overlayTextLight
+                    ? "text-white hover:bg-white/15 hover:text-white"
+                    : "text-foreground hover:bg-foreground/10"
+                  : "hover:bg-primary/10",
               )}
               aria-label="WhatsApp da Mariela"
             >
@@ -356,7 +374,11 @@ export const Header = () => {
               variant="ghost"
               size="icon"
               className={cn(
-                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+                isOverlay
+                  ? overlayTextLight
+                    ? "text-white hover:bg-white/15 hover:text-white"
+                    : "text-foreground hover:bg-foreground/10"
+                  : "hover:bg-primary/10",
               )}
               aria-label="Instagram da Mariela"
             >
@@ -377,7 +399,11 @@ export const Header = () => {
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Abrir menu"
                 className={cn(
-                  isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+                  isOverlay
+                    ? overlayTextLight
+                      ? "text-white hover:bg-white/15 hover:text-white"
+                      : "text-foreground hover:bg-foreground/10"
+                    : "hover:bg-primary/10",
                 )}
               >
                 <Menu className="h-6 w-6" />
