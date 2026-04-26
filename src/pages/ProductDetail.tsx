@@ -22,7 +22,7 @@ import { getPublicProductBadge } from "@/services/productInsightsService";
 import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
-import produtoGenerico from "@/assets/produto-generico.png";
+import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
