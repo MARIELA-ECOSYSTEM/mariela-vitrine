@@ -564,7 +564,7 @@ export const MobileLookBuilder = () => {
           className="lg:hidden fixed inset-0 z-[60] flex flex-col"
           role="dialog"
           aria-modal="true"
-          aria-label="Pré-visualização do look"
+          aria-labelledby="mobile-look-preview-title"
         >
           {/* Backdrop */}
           <button
@@ -594,7 +594,12 @@ export const MobileLookBuilder = () => {
             
             {/* Header */}
             <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
-              <h3 className="text-lg font-serif font-bold">Pré-Visualização</h3>
+              <h3
+                id="mobile-look-preview-title"
+                className="text-lg font-serif font-bold"
+              >
+                Pré-Visualização
+              </h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -607,7 +612,7 @@ export const MobileLookBuilder = () => {
             </div>
             
             {/* Content */}
-            <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-4 pb-8">
+            <div className="overflow-y-auto overscroll-contain max-h-[calc(90vh-120px)] p-4 pb-8">
               <PreviewPanel
                 selectedProducts={selectedProducts}
                 selectedColors={selectedColors}
