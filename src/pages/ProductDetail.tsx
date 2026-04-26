@@ -248,9 +248,13 @@ const ProductDetail = () => {
     };
     schedule(() => {
       coresList.forEach((c) => {
-        const url = c.imagem_full || c.imagem_thumb;
+        // Pré-carrega só a primeira imagem de cada outra cor (capa) — evita pesar o mobile.
+        const url = c.imagens[0]?.url_full || c.imagem_full || c.imagem_thumb;
         if (!url) return;
-        if (corSelecionadaObj && url === (corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb)) return;
+        const atual = corSelecionadaObj?.imagens[0]?.url_full
+          || corSelecionadaObj?.imagem_full
+          || corSelecionadaObj?.imagem_thumb;
+        if (atual && url === atual) return;
         const link = document.createElement("link");
         link.rel = "prefetch";
         link.as = "image";
