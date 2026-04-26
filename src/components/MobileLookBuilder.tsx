@@ -521,13 +521,21 @@ export const MobileLookBuilder = () => {
           <button
             type="button"
             aria-label="Fechar pré-visualização"
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in cursor-default"
-            onClick={() => setShowPreview(false)}
+            className={cn(
+              "absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default",
+              isClosingPreview ? "animate-backdrop-out" : "animate-fade-in",
+            )}
+            onClick={closePreview}
           />
           
           {/* Bottom Sheet */}
           <div
-            className="mt-auto bg-background rounded-t-3xl max-h-[90vh] overflow-hidden animate-bottom-sheet relative"
+            ref={sheetRef}
+            tabIndex={-1}
+            className={cn(
+              "mt-auto bg-background rounded-t-3xl max-h-[90vh] overflow-hidden relative outline-none",
+              isClosingPreview ? "animate-bottom-sheet-out" : "animate-bottom-sheet",
+            )}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}
@@ -538,7 +546,13 @@ export const MobileLookBuilder = () => {
             {/* Header */}
             <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
               <h3 className="text-lg font-serif font-bold">Pré-Visualização</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)} className="touch-feedback">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closePreview}
+                aria-label="Fechar pré-visualização"
+                className="touch-feedback"
+              >
                 <X className="h-5 w-5" />
               </Button>
             </div>
