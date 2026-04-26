@@ -14,7 +14,6 @@ import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl 
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackWhatsappClick } from "@/services/vitrineTrackingService";
-import { useProdutoCores } from "@/hooks/useProdutoCores";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -44,17 +43,10 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: ProductCardProps) => {
-  // Ref no card para detectar visibilidade e disparar busca lazy do detalhe
-  // somente quando a listagem (`/produtos`) não retornou `cores` reais.
+  // Cards usam EXCLUSIVAMENTE os dados vindos da listagem `/vitrine-api/produtos`.
+  // Não há fallback por `/produto/{id}` — isso evita N+1 requests.
   const cardRef = useRef<HTMLDivElement>(null);
-  const { cores: coresEnriquecidas, imagens: imagensEnriquecidas } = useProdutoCores(produtoProp, cardRef);
-
-  // Produto efetivo: mescla `cores`/`imagens` enriquecidas (se vieram do detalhe).
-  const produto = useMemo<Produto>(() => ({
-    ...produtoProp,
-    cores: coresEnriquecidas ?? produtoProp.cores,
-    imagens: imagensEnriquecidas.length > 0 ? imagensEnriquecidas : produtoProp.imagens,
-  }), [produtoProp, coresEnriquecidas, imagensEnriquecidas]);
+  const produto = produtoProp;
 
   const publicBadge = getPublicProductBadge(produto);
 
