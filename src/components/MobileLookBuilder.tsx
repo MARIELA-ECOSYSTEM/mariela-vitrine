@@ -68,6 +68,17 @@ export const MobileLookBuilder = () => {
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [animatingItem, setAnimatingItem] = useState<string | null>(null);
+
+  // Trava scroll do body enquanto o modal de pré-visualização estiver aberto.
+  // Restaura o overflow original ao fechar/desmontar — evita "body travado".
+  useEffect(() => {
+    if (!showPreview) return;
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, [showPreview]);
   
   const [selectedItems, setSelectedItems] = useState<SelectedItems>({
     blusa: null,
