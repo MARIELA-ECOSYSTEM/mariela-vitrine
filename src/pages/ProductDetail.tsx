@@ -94,6 +94,21 @@ const ProductDetail = () => {
   
   const whatsappNumber = "5583986567915";
 
+  // Ref + estado para guiar o usuário até a seção de tamanhos quando ele clica
+  // no CTA do WhatsApp sem ter selecionado tamanho. Substitui o toast agressivo
+  // por scroll suave + destaque temporário (UX guiada).
+  const tamanhosSectionRef = useRef<HTMLDivElement | null>(null);
+  const [tamanhosHighlight, setTamanhosHighlight] = useState(false);
+
+  const focarSelecaoTamanho = () => {
+    const el = tamanhosSectionRef.current;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    setTamanhosHighlight(true);
+    window.setTimeout(() => setTamanhosHighlight(false), 1600);
+  };
+
   useEffect(() => {
     if (!produto || !id) return;
     navigate(`${getProductPath(produto)}${location.search}`, { replace: true });
