@@ -17,7 +17,7 @@ import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
-import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { ProductDetailSkeleton } from "@/components/ProductDetailSkeleton";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
@@ -668,7 +668,10 @@ const ProductDetail = () => {
   // delegado ao <ProductImageSkeleton> (mídia local, não bloqueia layout).
   const hasAnyData = !!(produtoDetalhe || produtoFromList);
   if ((loading || loadingDetalhe) && !hasAnyData) {
-    return <LoadingOverlay />;
+    // Skeleton estrutural — preserva o layout (header/grid) e mostra
+    // placeholders apenas onde os dados/mídia ainda vão chegar.
+    // Não bloqueia a UI nem sobrepõe a página.
+    return <ProductDetailSkeleton />;
   }
 
   if (!produto) {
