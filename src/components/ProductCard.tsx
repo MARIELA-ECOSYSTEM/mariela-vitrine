@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
@@ -110,20 +110,19 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
    */
   const cardRootRef = useRef<HTMLDivElement | null>(null);
   const resolveVisibleSection = useCallback((): HTMLElement | null => {
-    const root = cardRootRef.current;
-    if (!root) return null;
+    const root = cardRootRef.current ?? document;
+    const scope = root instanceof HTMLElement ? root : document;
     const sections = Array.from(
-      root.querySelectorAll<HTMLElement>("[data-size-section]"),
+      scope.querySelectorAll<HTMLElement>("[data-size-section]"),
     );
-    return (
-      sections.find((s) => {
-        const style = window.getComputedStyle(s);
-        if (style.display === "none" || style.visibility === "hidden") return false;
-        if (s.offsetParent === null && style.position !== "fixed") return false;
-        const r = s.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
-      }) || null
-    );
+    const visible = sections.find((s: HTMLElement) => {
+      const style = window.getComputedStyle(s);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      if (s.offsetParent === null && style.position !== "fixed") return false;
+      const r = s.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    });
+    return visible ?? null;
   }, []);
   
   const whatsappNumber = "5583986567915";
