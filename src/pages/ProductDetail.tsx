@@ -21,6 +21,7 @@ import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import type { Produto } from "@/data/products";
+import produtoGenerico from "@/assets/produto-generico.png";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -179,7 +180,9 @@ const ProductDetail = () => {
   // Galeria efetiva exibida no <ImageGallery>:
   // 1) Se a cor selecionada tem `imagens[]` (detalhe completo), usa só elas.
   // 2) Senão, usa imagem_full/imagem_thumb da cor + restante do produto.imagens.
-  // 3) Fallback final: produto.imagens.
+  // 3) Senão, usa produto.imagens.
+  // 4) Fallback final (imagem é a ÚNICA exceção permitida): placeholder genérico,
+  //    para evitar layout vazio sem inventar dados de produto.
   const imagensParaMostrar = useMemo(() => {
     if (!produto) return [] as string[];
     if (corSelecionadaObj && corSelecionadaObj.imagens.length > 0) {
@@ -191,7 +194,8 @@ const ProductDetail = () => {
       const restantes = produto.imagens.filter((img) => img !== principal);
       return [principal, ...restantes];
     }
-    return produto.imagens;
+    if (produto.imagens.length > 0) return produto.imagens;
+    return [produtoGenerico];
   }, [produto, corSelecionadaObj]);
 
   // Ao trocar cor, volta para a primeira imagem (que agora corresponde à cor selecionada).
@@ -235,26 +239,33 @@ const ProductDetail = () => {
     }
   }, [corSelecionada, tamanhoSelecionado, produto, location.pathname, location.search, navigate]);
 
-  // Pré-carregamento leve das imagens de cada cor (lazy + low priority) para evitar
-  // flash de troca ao alternar cores no mobile, sem pesar o carregamento inicial.
+  // Pré-carregamento controlado: pré-carrega APENAS as imagens adicionais da
+  // cor selecionada (a primeira já é carregada pelo <img> principal). Não
+  // pré-carregamos capas de outras cores para evitar requests desnecessários
+  // no mobile e duplicação. O cleanup remove os <link> ao trocar de cor —
+  // requests pendentes são cancelados pelo browser quando o link é removido
+  // antes de completar, garantindo que apenas a última seleção atualize a UI.
   useEffect(() => {
-    if (coresList.length <= 1) return;
+    if (!imagensParaMostrar || imagensParaMostrar.length <= 1) return;
+    // Pula o placeholder local — não há ganho em "prefetchar" import estático.
+    const adicionais = imagensParaMostrar.slice(1).filter(
+      (url) => typeof url === "string" && url && url !== produtoGenerico,
+    );
+    if (adicionais.length === 0) return;
+
     const links: HTMLLinkElement[] = [];
-    // Aguarda 1 frame ocioso para não competir com a imagem principal.
-    const schedule = (cb: () => void) => {
-      const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number };
-      if (typeof w.requestIdleCallback === "function") w.requestIdleCallback(cb);
-      else setTimeout(cb, 300);
-    };
+    const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number };
+    const schedule = (cb: () => void) =>
+      typeof w.requestIdleCallback === "function" ? w.requestIdleCallback(cb) : setTimeout(cb, 300);
+
+    let cancelled = false;
     schedule(() => {
-      coresList.forEach((c) => {
-        // Pré-carrega só a primeira imagem de cada outra cor (capa) — evita pesar o mobile.
-        const url = c.imagens[0]?.url_full || c.imagem_full || c.imagem_thumb;
-        if (!url) return;
-        const atual = corSelecionadaObj?.imagens[0]?.url_full
-          || corSelecionadaObj?.imagem_full
-          || corSelecionadaObj?.imagem_thumb;
-        if (atual && url === atual) return;
+      if (cancelled) return;
+      // Deduplica para evitar múltiplos prefetch da mesma URL ao trocar rápido.
+      const seen = new Set<string>();
+      adicionais.forEach((url) => {
+        if (seen.has(url)) return;
+        seen.add(url);
         const link = document.createElement("link");
         link.rel = "prefetch";
         link.as = "image";
@@ -264,8 +275,11 @@ const ProductDetail = () => {
         links.push(link);
       });
     });
-    return () => { links.forEach((l) => l.parentNode?.removeChild(l)); };
-  }, [coresList, corSelecionadaObj]);
+    return () => {
+      cancelled = true;
+      links.forEach((l) => l.parentNode?.removeChild(l));
+    };
+  }, [imagensParaMostrar]);
 
   // Função para lidar com seleção de imagem do carrossel
   const handleImageSelect = (index: number) => {
