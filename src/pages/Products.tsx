@@ -476,8 +476,8 @@ const Products = () => {
     <PullToRefresh onRefresh={handlePullRefresh} disabled={loading}>
       <div className="min-h-screen pt-[60px] sm:pt-[68px]">
         <Header />
-        <main className="pb-12 bg-background">
-          <div className="container mx-auto px-3 sm:px-4 md:px-6">
+        <main className="bg-background">
+          <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-12">
             <Breadcrumbs currentPage="Todos os Produtos" />
             
             {/* Silent background refresh when data is stale - no visible indicator */}
