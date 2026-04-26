@@ -363,7 +363,7 @@ const ProductDetail = () => {
         ],
       });
     });
-  }, [produto]);
+  }, [produto, imagensParaMostrar, corSelecionadaObj]);
 
   if (loading || (loadingDetalhe && !produtoDetalhe && !produtoFromList)) {
     return <LoadingOverlay />;
