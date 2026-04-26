@@ -184,6 +184,44 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     return map;
   }, [imagensValidas]);
 
+  // ============================================================
+  // Preload inteligente de vizinhos (next/prev + cor adjacente)
+  // ------------------------------------------------------------
+  // Em hover/focus do card pré-carregamos a próxima e a anterior
+  // imagem do carrossel + a imagem da próxima cor da lista. Isso
+  // torna a troca por seta ou por cor instantânea (cache do
+  // ProductImageSkeleton) sem provocar fetch massivo.
+  //
+  // Throttle por 500ms para evitar flood quando o ponteiro passa
+  // rapidamente sobre vários cards.
+  // ============================================================
+  const lastPreloadAtRef = useRef<number>(0);
+  const preloadNeighbors = useCallback(() => {
+    const now = Date.now();
+    if (now - lastPreloadAtRef.current < 500) return;
+    lastPreloadAtRef.current = now;
+
+    const targets: string[] = [];
+    if (imagensValidas.length > 1) {
+      const nextIdx = (currentImageIndex + 1) % imagensValidas.length;
+      const prevIdx = (currentImageIndex - 1 + imagensValidas.length) % imagensValidas.length;
+      const nextUrl = imagensValidas[nextIdx];
+      const prevUrl = imagensValidas[prevIdx];
+      if (nextUrl) targets.push(nextUrl);
+      if (prevUrl) targets.push(prevUrl);
+    }
+    // Próxima cor da lista (ciclo) — antecipa troca de variação.
+    if (coresList.length > 1) {
+      const corIdx = Math.max(0, coresList.findIndex((c) => c.cor === corSelecionada));
+      const nextCor = coresList[(corIdx + 1) % coresList.length];
+      const url = (nextCor?.imagem_full || nextCor?.imagem_thumb || "").trim();
+      if (url) targets.push(url);
+    }
+    if (targets.length === 0) return;
+    // Carrega as 2 primeiras imediatamente; o resto fica no idle.
+    preloadImagesPrioritized(targets, 2);
+  }, [imagensValidas, currentImageIndex, coresList, corSelecionada]);
+
   // Imagem atual: índice do carrossel é a fonte primária (setas sempre funcionam).
   // Fallback: imagem da cor selecionada → primeira imagem válida → genérico.
   const imagemAtual = useMemo(() => {
