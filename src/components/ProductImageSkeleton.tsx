@@ -13,6 +13,18 @@ interface ProductImageSkeletonProps {
    * Default: `false` para preservar comportamento atual em cards.
    */
   enableBlurUp?: boolean;
+  /**
+   * Modo "trilho" estilo Posthaus/Swiper. Quando `images` + `currentIndex`
+   * são passados, o componente renderiza 3 slots horizontais (prev/cur/next)
+   * e desliza com `transform: translateX` + cubic-bezier. As setas/swipe
+   * apenas mudam o índice — a animação fica 100% por conta do CSS, sem
+   * trocar `src` (zero flicker, máxima fluidez).
+   *
+   * Quando ausente, o componente mantém o modo legado (cross-fade do `src`)
+   * — usado em troca de cor cujo destino não é necessariamente vizinho.
+   */
+  images?: string[];
+  currentIndex?: number;
 }
 
 // =====================================================================
