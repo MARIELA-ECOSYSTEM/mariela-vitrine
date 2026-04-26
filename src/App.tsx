@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { ProductsProvider } from "@/contexts/ProductsContext";
+import { HeaderOverlayProvider } from "@/contexts/HeaderOverlayContext";
 import { PageTransition } from "@/components/PageTransition";
 import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator";
 import { InstallPWAPrompt } from "@/components/InstallPWAPrompt";
@@ -50,13 +51,15 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <CartProvider>
       <ProductsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
+        <HeaderOverlayProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
+        </HeaderOverlayProvider>
       </ProductsProvider>
     </CartProvider>
   </QueryClientProvider>
