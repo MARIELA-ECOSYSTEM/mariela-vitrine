@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageContainer } from "@/components/PageContainer";
 import { MobileLookBuilder } from "@/components/MobileLookBuilder";
 
 const MonteSeuLook = () => {
@@ -8,7 +9,7 @@ const MonteSeuLook = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/10 to-background pt-[60px] sm:pt-[68px]">
       <Header />
       <main className="flex-1">
-        <div className="container mx-auto px-4 md:px-6 py-6 md:py-12">
+        <PageContainer>
           <Breadcrumbs currentPage="Monte Seu Look" />
           
           {/* Hero header - Compact on mobile */}
@@ -24,7 +25,7 @@ const MonteSeuLook = () => {
           <div className="max-w-6xl mx-auto">
             <MobileLookBuilder />
           </div>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>
