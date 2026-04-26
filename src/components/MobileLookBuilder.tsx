@@ -687,6 +687,11 @@ export const MobileLookBuilder = () => {
                 getImageForColor={getImageForColor}
                 missingSize={missingSize}
                 isMobile
+                onPickSize={(cat) => {
+                  // Fecha a prévia mobile e abre o dialog de seleção rápida.
+                  setIsPreviewOpen(false);
+                  setPendingSizeCategory(cat);
+                }}
               />
             </div>
           </div>
