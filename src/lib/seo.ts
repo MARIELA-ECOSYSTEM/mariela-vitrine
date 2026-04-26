@@ -6,6 +6,10 @@ type SeoOptions = {
   title: string;
   description: string;
   image?: string | null;
+  /** Largura recomendada para previews sociais (px). Default 1200. */
+  imageWidth?: number;
+  /** Altura recomendada para previews sociais (px). Default 1200. */
+  imageHeight?: number;
   url?: string;
   type?: "website" | "product";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[] | null;
@@ -72,11 +76,24 @@ function setJsonLd(data?: SeoOptions["jsonLd"]): void {
   if (!existing) document.head.appendChild(script);
 }
 
-export function updateSeo({ title, description, image, url = window.location.href, type = "website", jsonLd }: SeoOptions): void {
+export function updateSeo({
+  title,
+  description,
+  image,
+  imageWidth = 1200,
+  imageHeight = 1200,
+  url = window.location.href,
+  type = "website",
+  jsonLd,
+}: SeoOptions): void {
   const safeTitle = title || DEFAULT_TITLE;
   const safeDescription = description || DEFAULT_DESCRIPTION;
   const safeUrl = absoluteUrl(url);
   const safeImage = absoluteUrl(image);
+  // Garante https para og:image:secure_url (alguns crawlers exigem).
+  const safeImageHttps = safeImage.startsWith("http://")
+    ? safeImage.replace(/^http:\/\//, "https://")
+    : safeImage;
 
   document.title = safeTitle;
   setMeta("description", safeDescription);
@@ -87,10 +104,15 @@ export function updateSeo({ title, description, image, url = window.location.hre
   setProperty("og:title", safeTitle);
   setProperty("og:description", safeDescription);
   setProperty("og:image", safeImage);
+  setProperty("og:image:secure_url", safeImageHttps);
+  setProperty("og:image:width", String(imageWidth));
+  setProperty("og:image:height", String(imageHeight));
+  setProperty("og:image:alt", safeTitle);
   setProperty("og:url", safeUrl);
   setMeta("twitter:card", "summary_large_image");
   setMeta("twitter:title", safeTitle);
   setMeta("twitter:description", safeDescription);
   setMeta("twitter:image", safeImage);
+  setMeta("twitter:image:alt", safeTitle);
   setJsonLd(jsonLd);
 }
