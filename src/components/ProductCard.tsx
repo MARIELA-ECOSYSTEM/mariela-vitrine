@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
@@ -14,6 +14,7 @@ import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl 
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackWhatsappClick } from "@/services/vitrineTrackingService";
+import { useProdutoCores } from "@/hooks/useProdutoCores";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -42,7 +43,19 @@ interface ProductCardProps {
   layoutMode?: "grade" | "lista";
 }
 
-export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps) => {
+export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: ProductCardProps) => {
+  // Ref no card para detectar visibilidade e disparar busca lazy do detalhe
+  // somente quando a listagem (`/produtos`) não retornou `cores` reais.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { cores: coresEnriquecidas, imagens: imagensEnriquecidas } = useProdutoCores(produtoProp, cardRef);
+
+  // Produto efetivo: mescla `cores`/`imagens` enriquecidas (se vieram do detalhe).
+  const produto = useMemo<Produto>(() => ({
+    ...produtoProp,
+    cores: coresEnriquecidas ?? produtoProp.cores,
+    imagens: imagensEnriquecidas.length > 0 ? imagensEnriquecidas : produtoProp.imagens,
+  }), [produtoProp, coresEnriquecidas, imagensEnriquecidas]);
+
   const publicBadge = getPublicProductBadge(produto);
 
   // Lista unificada de cores: prioriza produto.cores (novo contrato) e descarta "Única"
@@ -59,6 +72,9 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
           imagem_thumb: c.imagem_thumb,
         }));
     }
+    // Fallback legado: derivar de variants, descartando entrada "Única" se for
+    // a única cor (vinda do fallback genérico da listagem) — evita exibir o
+    // chip enganoso enquanto a busca lazy do detalhe não chegou.
     const map: Record<string, string[]> = {};
     produto.variants
       .filter((v) => v.disponibilidade > 0)
@@ -66,7 +82,10 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
         if (!map[v.cor]) map[v.cor] = [];
         if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
       });
-    return Object.entries(map).map(([cor, tamanhos]) => ({
+    const entries = Object.entries(map);
+    const apenasUnica = entries.length === 1 && entries[0][0] === "Única";
+    if (apenasUnica) return [];
+    return entries.map(([cor, tamanhos]) => ({
       produto_cor_id: cor,
       cor,
       tamanhos,
