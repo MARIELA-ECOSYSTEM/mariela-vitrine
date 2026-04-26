@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
@@ -104,15 +104,26 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   /**
    * O card pode renderizar até 3 containers de tamanho no DOM (lista, grade
    * mobile, grade desktop) — apenas um é visível por vez via Tailwind.
-   * Este callback ref escolhe o container atualmente visível para o hook.
+   * Marcamos cada container com `data-size-section` e a função
+   * `resolveVisibleSection` (chamada NO MOMENTO do guide) escolhe o que está
+   * realmente visível, evitando race entre múltiplos callback refs.
    */
-  const setSizeSectionRef = (el: HTMLDivElement | null) => {
-    if (!el) return;
-    // `offsetParent === null` indica que o elemento está oculto (display:none).
-    if (el.offsetParent !== null) {
-      sizeGuide.sectionRef.current = el;
-    }
-  };
+  const cardRootRef = useRef<HTMLDivElement | null>(null);
+  const resolveVisibleSection = useCallback((): HTMLElement | null => {
+    const root = cardRootRef.current ?? document;
+    const scope = root instanceof HTMLElement ? root : document;
+    const sections = Array.from(
+      scope.querySelectorAll<HTMLElement>("[data-size-section]"),
+    );
+    const visible = sections.find((s: HTMLElement) => {
+      const style = window.getComputedStyle(s);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      if (s.offsetParent === null && style.position !== "fixed") return false;
+      const r = s.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    });
+    return visible ?? null;
+  }, []);
   
   const whatsappNumber = "5583986567915";
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
@@ -275,7 +286,16 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
       navigate(getProductPathWithSearch(produto));
       return false;
     }
-    sizeGuide.guide();
+    // Re-resolve o container visível NO MOMENTO do clique (lista vs. grade vs. mobile/desktop)
+    // — evita race entre callbacks de ref de containers ocultos.
+    const visibleSection = resolveVisibleSection();
+    if (visibleSection) {
+      sizeGuide.sectionRef.current = visibleSection;
+      sizeGuide.guide();
+    } else {
+      // Sem nenhum seletor visível inline → navega para o detalhe.
+      navigate(getProductPathWithSearch(produto));
+    }
     return false;
   };
 
@@ -323,7 +343,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   // Layout em lista (horizontal)
   if (layoutMode === "lista") {
     return (
-      <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
+      <Card ref={cardRootRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row">
             <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
@@ -428,7 +448,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                     
                     {corSelecionada && (
                       <div
-                        ref={setSizeSectionRef}
+                        data-size-section
                         tabIndex={-1}
                         className={cn(
                           "scroll-mt-24 rounded-md transition-all duration-300"
@@ -493,7 +513,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
 
   // Layout em grade (vertical - padrão)
   return (
-    <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
+    <Card ref={cardRootRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
       <CardContent className="p-0 flex flex-col flex-1">
         <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 
@@ -630,7 +650,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             {/* Mobile: tamanhos maiores */}
             {corSelecionada && (
               <div
-                ref={setSizeSectionRef}
+                data-size-section
                 tabIndex={-1}
                 className={cn(
                   "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300"
@@ -711,7 +731,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 
                 {corSelecionada && (
                   <div
-                    ref={setSizeSectionRef}
+                    data-size-section
                     tabIndex={-1}
                     className={cn(
                       "mt-2 scroll-mt-24 rounded-md transition-all duration-300"

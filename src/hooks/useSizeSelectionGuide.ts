@@ -25,7 +25,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *   <button onClick={() => guide.guide()}>Selecione o tamanho</button>
  */
 export function useSizeSelectionGuide() {
-  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   // Contador serve de "nonce" para reanunciar mesmo quando o texto repete.
   const [announceTick, setAnnounceTick] = useState(0);
   // Mensagem dinâmica: muda quando não há alvo de tamanho válido (fallback).
@@ -64,9 +64,18 @@ export function useSizeSelectionGuide() {
   /**
    * Verifica se um elemento está visível (não display:none, não em container oculto,
    * tem dimensões > 0). Considera mobile/desktop layouts (sm:hidden, hidden sm:block).
+   * Checa: conexão ao DOM, offsetParent, getComputedStyle (display/visibility/opacity)
+   * e dimensões > 0. Cobre casos de elementos ocultos por classes responsivas.
    */
   const isVisible = useCallback((el: HTMLElement): boolean => {
     if (!el.isConnected) return false;
+    // offsetParent é null quando o elemento (ou ancestral) tem display:none.
+    // Exceção: <body> e position:fixed podem ter offsetParent null mas estarem visíveis.
+    const style = window.getComputedStyle(el);
+    if (style.display === "none") return false;
+    if (style.visibility === "hidden" || style.visibility === "collapse") return false;
+    if (parseFloat(style.opacity || "1") === 0) return false;
+    if (el.offsetParent === null && style.position !== "fixed") return false;
     const rects = el.getClientRects();
     if (rects.length === 0) return false;
     const rect = el.getBoundingClientRect();

@@ -694,7 +694,7 @@ const ProductDetail = () => {
                   {/* Seletor de Tamanho */}
                   {corSelecionada && (
                     <div
-                      ref={sizeGuide.sectionRef}
+                      ref={sizeGuide.sectionRef as React.RefObject<HTMLDivElement>}
                       tabIndex={-1}
                       className="space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300"
                     >
