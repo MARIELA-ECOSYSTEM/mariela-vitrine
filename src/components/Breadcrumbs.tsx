@@ -38,9 +38,9 @@ export const Breadcrumbs = ({ items, currentPage }: BreadcrumbsProps) => {
   })();
 
   return (
-    <nav 
-      aria-label="Breadcrumb" 
-      className="flex items-center gap-2 text-sm text-muted-foreground mb-6 animate-fade-in"
+    <nav
+      aria-label="Breadcrumb"
+      className="flex items-center gap-2 text-sm text-muted-foreground mb-4 md:mb-6 animate-fade-in"
     >
       <Link 
         to="/" 
