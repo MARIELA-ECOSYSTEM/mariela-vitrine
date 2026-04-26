@@ -278,6 +278,10 @@ export const ImageGallery = ({
           <>
             <button
               onClick={(e) => { e.stopPropagation(); handleAnterior(); }}
+              onMouseEnter={() => preloadDirection("prev")}
+              onPointerEnter={() => preloadDirection("prev")}
+              onTouchStart={() => preloadDirection("prev")}
+              onFocus={() => preloadDirection("prev")}
               className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 md:p-2.5 rounded-full shadow-md transition-all hover:scale-110 active:scale-95"
               aria-label="Imagem anterior"
             >
@@ -285,6 +289,10 @@ export const ImageGallery = ({
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); handleProxima(); }}
+              onMouseEnter={() => preloadDirection("next")}
+              onPointerEnter={() => preloadDirection("next")}
+              onTouchStart={() => preloadDirection("next")}
+              onFocus={() => preloadDirection("next")}
               className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 md:p-2.5 rounded-full shadow-md transition-all hover:scale-110 active:scale-95"
               aria-label="Próxima imagem"
             >
