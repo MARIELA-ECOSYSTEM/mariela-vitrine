@@ -77,3 +77,37 @@ vitrine, validar no DevTools (aba Network):
   `cores` e `variants`.
 - `src/data/products.ts` — tipos `Produto`, `ProdutoCor`, `VarianteProduto`.
 - `src/lib/productCache.ts` — cache local da listagem completa de produtos.
+
+---
+
+## Espaçamento de páginas — `PageContainer`
+
+Use `<PageContainer>` (`src/components/PageContainer.tsx`) como wrapper
+padrão do conteúdo de toda página interna. Ele aplica:
+
+- `container mx-auto`
+- `padX` default: `px-3 sm:px-4 md:px-6`
+- `padY` default: `py-6 md:py-12`
+
+### Regras
+
+1. Todas as páginas internas (Products, Cart, MonteSeuLook, etc.) devem
+   usar `<PageContainer>` em vez de `<div className="container mx-auto …">`.
+2. O offset do header fixo (`pt-[60px] sm:pt-[68px]`) pertence ao layout
+   externo da página, **não** ao `PageContainer`. Não duplique.
+3. `padX` e `padY` são independentes — sobrescreva apenas o que precisar.
+
+### Exceções autorizadas
+
+| Página | Motivo | Padrão |
+|---|---|---|
+| `Index` (Home) | Header transparente em overlay sobre o banner. Hero deve sangrar até o topo. | **Não usa** `PageContainer`. Layout sem `pt-[60px]`. |
+| `ProductDetail` | Galeria + grid `lg:grid-cols-2` com espaçamento próprio; `<main>` já define `pb-8 md:pb-16`. | `padY="pt-0 pb-0"` (ou continua com `<div className="container …">` próprio). |
+| `Instalar` | Hero com gradiente decorativo de largura total + `max-w-2xl` interno. | Wrapper próprio dentro de `<section>`. |
+
+### Checklist ao criar nova página
+
+- [ ] Usa `<PageContainer>` no conteúdo principal.
+- [ ] Layout externo aplica `pt-[60px] sm:pt-[68px]` (exceto Home).
+- [ ] Não há `container mx-auto` manual com `py-*` redundante.
+- [ ] Breadcrumbs e cards alinham ao mesmo grid (mesmo `padX` que o restante do conteúdo).
