@@ -1066,12 +1066,31 @@ const PreviewPanel = ({
           <div className="space-y-1.5 sm:space-y-2 text-sm">
             {Object.entries(selectedProducts).map(([key, product]) => {
               if (!product) return null;
-              const color = selectedColors[key as CategoryKey];
-              const size = selectedSizes[key as CategoryKey];
+              const cat = key as CategoryKey;
+              const color = selectedColors[cat];
+              const size = selectedSizes[cat];
               const price = product.precoPromocional || product.precoVenda;
+              const requiresSize = sizedCategories.includes(cat);
+              const isIncomplete = requiresSize && !size;
+              const Wrapper: "button" | "div" = isIncomplete && onPickSize ? "button" : "div";
               
               return (
-                <div key={key} className="flex items-center justify-between bg-secondary/30 rounded-lg p-2 animate-pop-in">
+                <Wrapper
+                  key={key}
+                  type={Wrapper === "button" ? "button" : undefined}
+                  onClick={isIncomplete && onPickSize ? () => onPickSize(cat) : undefined}
+                  aria-label={
+                    isIncomplete
+                      ? `Selecionar tamanho para ${product.nome}`
+                      : undefined
+                  }
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-lg p-2 animate-pop-in text-left transition-all",
+                    isIncomplete
+                      ? "bg-destructive/10 border border-destructive/40 ring-1 ring-destructive/30 hover:bg-destructive/15 active:scale-[0.99] cursor-pointer"
+                      : "bg-secondary/30",
+                  )}
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <img
                       key={`${product.id}-${color || "default"}`}
@@ -1081,15 +1100,21 @@ const PreviewPanel = ({
                     />
                     <div className="min-w-0">
                       <p className="font-medium truncate text-xs sm:text-sm">{product.nome}</p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">
-                        {color && `${color}`}{color && size && " • "}{size && `Tam. ${size}`}
-                      </p>
+                      {isIncomplete ? (
+                        <p className="text-[10px] sm:text-xs font-medium text-destructive">
+                          {color ? `${color} • ` : ""}Toque para escolher o tamanho
+                        </p>
+                      ) : (
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">
+                          {color && `${color}`}{color && size && " • "}{size && `Tam. ${size}`}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <span className="font-medium text-primary shrink-0 text-xs sm:text-sm">
                     {formatBRL(price)}
                   </span>
-                </div>
+                </Wrapper>
               );
             })}
           </div>
