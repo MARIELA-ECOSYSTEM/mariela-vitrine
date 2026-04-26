@@ -507,11 +507,8 @@ const ProductDetail = () => {
     const corValida = !isAcessorio && !!corParaAdicionar
       && coresList.some((c) => c.cor === corParaAdicionar);
     if (!isAcessorio && !corValida) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
+      focarSelecaoTamanho();
       return;
     }
 
@@ -520,11 +517,8 @@ const ProductDetail = () => {
       isAcessorio || tamanhosDisponiveis.includes(tamanhoParaAdicionar)
     );
     if (!tamanhoValido) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
+      focarSelecaoTamanho();
       return;
     }
     
