@@ -561,7 +561,7 @@ export const MobileLookBuilder = () => {
                     <img
                       key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
-                      alt={product.nome}
+                      alt={color ? `${product.nome} — cor ${color}` : product.nome}
                       className="w-full h-full object-cover"
                     />
                   </div>
