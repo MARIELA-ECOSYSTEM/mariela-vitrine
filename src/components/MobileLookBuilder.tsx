@@ -354,19 +354,13 @@ export const MobileLookBuilder = () => {
     setSelectedColors({ ...selectedColors, [category]: "" });
   };
 
-  // Atualiza a cor de uma categoria, reseta o tamanho e dispara um toast amigável
-  // — feedback claro de que a imagem do card refletiu a nova cor.
+  // Atualiza a cor de uma categoria e reseta o tamanho.
+  // Sem toast — a troca de imagem no card já é o feedback visual suficiente,
+  // evitar ruído (e duplicação em cliques rápidos).
   const changeColor = (category: CategoryKey, color: string) => {
     if (selectedColors[category] === color) return;
     setSelectedColors({ ...selectedColors, [category]: color });
     setSelectedSizes({ ...selectedSizes, [category]: "" });
-    const produto = selectedProducts[category];
-    if (produto) {
-      toast({
-        title: `Cor atualizada: ${color} 💜`,
-        description: `Visual do ${produto.nome} no seu look foi atualizado.`,
-      });
-    }
   };
 
   const getImageForColor = (produto: Produto | null, cor: string) => {
@@ -382,16 +376,41 @@ export const MobileLookBuilder = () => {
         null;
       if (fromCor) return fromCor;
     }
-    if (!produto.imagens || produto.imagens.length === 0) return produtoGenerico;
+    if (!produto.imagens || produto.imagens.length === 0) {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn("[MonteSeuLook] Sem imagens — usando placeholder.", {
+          produto: produto.nome,
+          cor,
+          origem: "placeholder",
+        });
+      }
+      return produtoGenerico;
+    }
     if (!cor) return produto.imagens[0] || produtoGenerico;
     
     const coresUnicas = [...new Set(produto.variants.map(v => v.cor))];
     const corIndex = coresUnicas.findIndex(c => c === cor);
     
     if (corIndex >= 0 && produto.imagens[corIndex]) {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug("[MonteSeuLook] Imagem por cor via fallback de índice.", {
+          produto: produto.nome,
+          cor,
+          origem: "imagens[index]",
+        });
+      }
       return produto.imagens[corIndex];
     }
-    
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn("[MonteSeuLook] Imagem para a cor não encontrada — usando primeira disponível.", {
+        produto: produto.nome,
+        cor,
+        origem: "imagens[0]",
+      });
+    }
     return produto.imagens[0] || produtoGenerico;
   };
 
@@ -540,6 +559,7 @@ export const MobileLookBuilder = () => {
                     className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border-2 border-primary/30 bg-background animate-pop-in"
                   >
                     <img
+                      key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
                       alt={product.nome}
                       className="w-full h-full object-cover"
@@ -984,6 +1004,7 @@ const PreviewPanel = ({
               /* Full Outfit - Larger display */
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
                 <img
+                  key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
                   src={getImageForColor(
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
@@ -999,6 +1020,7 @@ const PreviewPanel = ({
                 <div className="flex-1 flex items-end justify-center w-full pb-0 z-10">
                   {selectedProducts.blusa ? (
                     <img
+                      key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
                       src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
                       alt={selectedProducts.blusa.nome}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
@@ -1014,6 +1036,7 @@ const PreviewPanel = ({
                 <div className="flex-1 flex items-start justify-center w-full pt-0 -mt-6 sm:-mt-8">
                   {selectedProducts.bottom ? (
                     <img
+                      key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
                       src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
                       alt={selectedProducts.bottom.nome}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
@@ -1031,6 +1054,7 @@ const PreviewPanel = ({
             {selectedProducts.bolsa && (
               <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in">
                 <img
+                  key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={selectedProducts.bolsa.nome}
                   className="w-full h-full object-contain"
@@ -1076,6 +1100,7 @@ const PreviewPanel = ({
                 <div key={key} className="flex items-center justify-between bg-secondary/30 rounded-lg p-2 animate-pop-in">
                   <div className="flex items-center gap-2 min-w-0">
                     <img
+                      key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
                       alt={product.nome}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
