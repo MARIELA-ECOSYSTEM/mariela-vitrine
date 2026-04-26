@@ -981,7 +981,7 @@ const PreviewPanel = ({
                     <img
                       key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
                       src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
-                      alt={selectedColors.blusa ? `${selectedProducts.blusa.nome} — cor ${selectedColors.blusa}` : selectedProducts.blusa.nome}
+                      alt={getProductImageByColor(selectedProducts.blusa, selectedColors.blusa).alt}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
@@ -997,7 +997,7 @@ const PreviewPanel = ({
                     <img
                       key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
                       src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
-                      alt={selectedColors.bottom ? `${selectedProducts.bottom.nome} — cor ${selectedColors.bottom}` : selectedProducts.bottom.nome}
+                      alt={getProductImageByColor(selectedProducts.bottom, selectedColors.bottom).alt}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
@@ -1015,7 +1015,7 @@ const PreviewPanel = ({
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
-                  alt={selectedColors.bolsa ? `${selectedProducts.bolsa.nome} — cor ${selectedColors.bolsa}` : selectedProducts.bolsa.nome}
+                  alt={getProductImageByColor(selectedProducts.bolsa, selectedColors.bolsa).alt}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -1061,7 +1061,7 @@ const PreviewPanel = ({
                     <img
                       key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
-                      alt={color ? `${product.nome} — cor ${color}` : product.nome}
+                      alt={getProductImageByColor(product, color).alt}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
                     />
                     <div className="min-w-0">
