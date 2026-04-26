@@ -49,23 +49,34 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
 
   const publicBadge = getPublicProductBadge(produto);
 
+  // Aviso apenas em desenvolvimento quando a listagem não trouxer `cores`.
+  // Não exibe erro ao usuário; apenas sinaliza inconsistência de contrato.
+  if (import.meta.env.DEV && (!produto.cores || produto.cores.length === 0)) {
+    // eslint-disable-next-line no-console
+    console.debug(
+      `[ProductCard] produto sem 'cores' na listagem — fallback "Única" será usado`,
+      { id: produto.produtoId || produto.id, nome: produto.nome },
+    );
+  }
+
   // Lista unificada de cores. Regra definitiva:
-  //  1. Se `produto.cores` veio na listagem e contém ao menos 1 entrada → usar EXCLUSIVAMENTE essas cores.
-  //  2. Caso contrário (ausente ou vazio) → fallback discreto "Única" derivado das variants.
+  //  1. Se `produto.cores` veio na listagem e contém ao menos 1 entrada → usar
+  //     EXCLUSIVAMENTE essas cores. Não filtrar por tamanhos (na listagem o
+  //     campo `tamanhos` pode vir como placeholder "U", a grade real só vem
+  //     no detalhe `/produto/{id}`).
+  //  2. Caso contrário (ausente OU vazio) → fallback discreto "Única" derivado
+  //     das variants. Único caminho que aceita o rótulo "Única".
   const coresList = useMemo(() => {
     if (produto.cores && produto.cores.length > 0) {
-      // Mantém todas as cores reais. Tamanhos podem estar vazios na listagem
-      // (o detalhe traz a grade completa) — não filtrar a cor por causa disso.
       return produto.cores.map((c) => ({
         produto_cor_id: c.produto_cor_id,
         cor: c.cor,
-        tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
+        tamanhos: c.tamanhos.map((t) => t.tamanho),
         imagem_full: c.imagem_full,
         imagem_thumb: c.imagem_thumb,
       }));
     }
-    // Fallback legado: derivar de variants quando `cores` ausente.
-    // Aceita "Única" apenas neste caminho (sem cores reais na listagem).
+    // Fallback legado: derivar de variants quando `cores` ausente/vazio.
     const map: Record<string, string[]> = {};
     produto.variants
       .filter((v) => v.disponibilidade > 0)
@@ -80,7 +91,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
       imagem_full: null as string | null,
       imagem_thumb: null as string | null,
     }));
-  }, [produto.cores, produto.variants]);
+  }, [produto.cores, produto.variants, produto.id, produto.nome, produto.produtoId]);
 
   const primeiraCorDisponivel = coresList[0]?.cor || "";
   const primeiraCorIdDisponivel = coresList[0]?.produto_cor_id || "";

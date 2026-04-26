@@ -117,6 +117,7 @@ export interface RespostaDestaques {
 type CacheEntry<T> = {
   value: T;
   timestamp: number;
+  etag?: string;
 };
 
 export interface VitrineConfig {
@@ -221,26 +222,48 @@ function writeLocalStorageCache(cache: Record<string, CacheEntry<unknown>>): voi
 }
 
 function getCached<T>(key: string, maxAge: number): T | null {
+  const entry = getCachedEntry<T>(key, maxAge);
+  return entry ? entry.value : null;
+}
+
+function getCachedEntry<T>(key: string, maxAge: number): CacheEntry<T> | null {
   const now = Date.now();
   const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
-  if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry.value;
+  if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry;
 
   const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
   if (storageEntry && now - storageEntry.timestamp <= maxAge) {
     memoryCache.set(key, storageEntry);
-    return storageEntry.value;
+    return storageEntry;
   }
 
   return null;
 }
 
-function setCached<T>(key: string, value: T): void {
-  const entry: CacheEntry<T> = { value, timestamp: Date.now() };
+function getStaleCachedEntry<T>(key: string): CacheEntry<T> | null {
+  const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
+  if (memoryEntry) return memoryEntry;
+  const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
+  return storageEntry ?? null;
+}
+
+function setCached<T>(key: string, value: T, etag?: string): void {
+  const entry: CacheEntry<T> = { value, timestamp: Date.now(), etag };
   memoryCache.set(key, entry);
 
   const cache = readLocalStorageCache();
   cache[key] = entry as CacheEntry<unknown>;
   writeLocalStorageCache(cache);
+}
+
+function refreshCachedTimestamp(key: string): void {
+  const memoryEntry = memoryCache.get(key);
+  if (memoryEntry) memoryEntry.timestamp = Date.now();
+  const cache = readLocalStorageCache();
+  if (cache[key]) {
+    cache[key].timestamp = Date.now();
+    writeLocalStorageCache(cache);
+  }
 }
 
 function stableParamsKey(params?: QueryParams): string {
@@ -273,7 +296,9 @@ export function getVitrineApiErrorMessage(error: unknown): string {
   return "Não foi possível carregar os dados da vitrine.";
 }
 
-async function requestJson<T>(url: string): Promise<T> {
+type RequestResult<T> = { notModified: true } | { notModified: false; data: T; etag?: string };
+
+async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<RequestResult<T>> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -281,20 +306,29 @@ async function requestJson<T>(url: string): Promise<T> {
     const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
     try {
+      const headers: Record<string, string> = { Accept: "application/json" };
+      if (ifNoneMatch) headers["If-None-Match"] = ifNoneMatch;
+
       const response = await fetch(url, {
         method: "GET",
-        headers: { Accept: "application/json" },
+        headers,
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
+
+      if (response.status === 304) {
+        return { notModified: true };
+      }
 
       if (!response.ok) {
         logVitrineWarning(`HTTP ${response.status} em ${url}`);
         throw createApiError(response.status);
       }
 
-      return await response.json() as T;
+      const data = await response.json() as T;
+      const etag = response.headers.get("ETag") ?? response.headers.get("etag") ?? undefined;
+      return { notModified: false, data, etag };
     } catch (error) {
       clearTimeout(timeoutId);
       lastError = error instanceof Error ? error : new VitrineApiError("Erro desconhecido na vitrine.");
@@ -319,24 +353,51 @@ async function requestJson<T>(url: string): Promise<T> {
 
 async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number, validate?: ResponseValidator<T>): Promise<T> {
   const url = buildUrl(path, params);
-  const cached = getCached<unknown>(url, ttl);
-  if (cached) {
+  const freshEntry = getCachedEntry<unknown>(url, ttl);
+  if (freshEntry) {
     try {
-      return validate ? validate(cached) : cached as T;
+      return validate ? validate(freshEntry.value) : (freshEntry.value as T);
     } catch (error) {
       logVitrineWarning(`Cache inválido em ${url}`, error);
     }
   }
 
+  // Para revalidação condicional, considerar entrada stale com ETag salvo.
+  const staleEntry = getStaleCachedEntry<unknown>(url);
+  const ifNoneMatch = staleEntry?.etag;
+
   // Dedupe de chamadas concorrentes para a mesma URL
   const existing = inflightRequests.get(url);
-  const promise = existing ?? requestJson<unknown>(url);
+  const promise = existing ?? requestJson<unknown>(url, ifNoneMatch);
   if (!existing) inflightRequests.set(url, promise);
 
   try {
-    const data = await promise;
-    const validated = validate ? validate(data) : data as T;
-    setCached(url, validated);
+    const result = await promise as RequestResult<unknown>;
+    if (result.notModified && staleEntry) {
+      // Servidor confirmou que payload não mudou — reutiliza cache e renova timestamp.
+      refreshCachedTimestamp(url);
+      try {
+        return validate ? validate(staleEntry.value) : (staleEntry.value as T);
+      } catch (error) {
+        logVitrineWarning(`Cache stale inválido após 304 em ${url}`, error);
+        // cai para tratar como erro abaixo
+        throw error;
+      }
+    }
+    if (result.notModified) {
+      // 304 sem entrada local — força nova requisição sem ETag.
+      const retry = await requestJson<unknown>(url) as RequestResult<unknown>;
+      if (retry.notModified === true) {
+        throw new VitrineApiError("Resposta inesperada (304) sem cache local.");
+      }
+      const validatedRetry = validate ? validate(retry.data) : (retry.data as T);
+      setCached(url, validatedRetry, retry.etag);
+      return validatedRetry;
+    }
+    // result aqui é { notModified: false; data; etag? }
+    const fresh = result as Extract<RequestResult<unknown>, { notModified: false }>;
+    const validated = validate ? validate(fresh.data) : (fresh.data as T);
+    setCached(url, validated, fresh.etag);
     return validated;
   } catch (error) {
     const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
