@@ -457,7 +457,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             slideDirection={slideDirection}
           />
           {/* Navigation Arrows - sempre visíveis em mobile */}
-          {produto.imagens.length > 1 && (
+          {imagensValidas.length > 1 && (
             <>
               <button
                 onClick={handlePrevImage}
@@ -493,9 +493,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             )}
           </div>
           {/* Image indicators */}
-          {produto.imagens.length > 1 && (
+          {imagensValidas.length > 1 && (
             <div className="absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5 sm:gap-1">
-              {produto.imagens.map((_, idx) => (
+              {imagensValidas.map((_, idx) => (
                 <span
                   key={idx}
                   className={cn(
