@@ -117,6 +117,7 @@ export interface RespostaDestaques {
 type CacheEntry<T> = {
   value: T;
   timestamp: number;
+  etag?: string;
 };
 
 export interface VitrineConfig {
