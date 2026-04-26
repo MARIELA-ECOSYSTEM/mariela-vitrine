@@ -597,10 +597,15 @@ export const MobileLookBuilder = () => {
               <Button
                 onClick={handleWhatsApp}
                 className="bg-green-600 hover:bg-green-700 text-white gap-2 shrink-0 h-10 sm:h-11 px-4 sm:px-6 touch-feedback"
+                aria-label={missingSize ? "Selecione o tamanho" : "Quero garantir meu look — enviar via WhatsApp"}
               >
-                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden sm:inline">Enviar</span>
-                <span className="sm:hidden">WhatsApp</span>
+                <WhatsAppIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">
+                  {missingSize ? "Selecione o tamanho" : "Quero garantir meu look 💜"}
+                </span>
+                <span className="sm:hidden">
+                  {missingSize ? "Selecione o tamanho" : "Quero meu look 💜"}
+                </span>
               </Button>
             </div>
             <p aria-live="polite" aria-atomic="true" className="sr-only">
