@@ -11,12 +11,32 @@ export interface ProdutoCorTamanho {
   disponibilidade: number;
 }
 
+export interface ProdutoCorImagem {
+  /** Identificador da imagem na vitrine-api. */
+  id?: string;
+  /** URL da miniatura (300px). Pode ser null em casos legados. */
+  url_thumb: string | null;
+  /** URL da versão grande (800px). Pode ser null em casos legados. */
+  url_full: string | null;
+  /** Marca a imagem principal da cor (deve aparecer primeiro na galeria). */
+  principal?: boolean;
+  /** Ordem de exibição (asc). */
+  ordem?: number;
+}
+
 export interface ProdutoCor {
   produto_cor_id: string;
   cor: string;
   imagem_thumb: string | null;
   imagem_full: string | null;
   tamanhos: ProdutoCorTamanho[];
+  /**
+   * Galeria completa da cor — vem somente no endpoint de detalhe
+   * (`/vitrine-api/produto/{id}`). Pode estar ausente na listagem.
+   * Quando presente, é a fonte canônica da galeria por cor:
+   * ordene por `principal` desc → `ordem` asc → estável.
+   */
+  imagens?: ProdutoCorImagem[];
 }
 
 export interface Produto {

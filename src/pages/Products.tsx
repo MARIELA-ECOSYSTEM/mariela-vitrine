@@ -600,7 +600,7 @@ const Products = () => {
                 {/* Botões Promoção e Novidades */}
                 <div className="flex gap-1.5 sm:gap-2 order-3 sm:order-2">
                   <Button
-                    variant={mostrarPromocao ? "default" : "outline"}
+                    variant={mostrarPromocao ? "destructive" : "outline"}
                     onClick={() => {
                       setMostrarPromocao(!mostrarPromocao);
                       setMostrarNovidades(false);
@@ -610,7 +610,7 @@ const Products = () => {
                     size="sm"
                     className={cn(
                       "gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 h-8 sm:h-9 text-xs sm:text-sm",
-                      mostrarPromocao && "shadow-md"
+                      mostrarPromocao && "shadow-md ring-2 ring-destructive/30"
                     )}
                   >
                     <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
