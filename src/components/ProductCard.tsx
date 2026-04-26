@@ -684,17 +684,26 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                   <div className="mt-2">
                     <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
                     <div className="flex flex-wrap gap-1">
-                      {tamanhosDisponiveis.map((tamanho) => (
-                        <Button
-                          key={tamanho}
-                          variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setTamanhoSelecionado(tamanho)}
-                          className="text-xs h-7 px-2.5"
-                        >
-                          {tamanho}
-                        </Button>
-                      ))}
+                      {todosTamanhos.map((tamanho) => {
+                        const disponivel = tamanhosDisponiveis.includes(tamanho);
+                        return (
+                          <Button
+                            key={tamanho}
+                            variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
+                            disabled={!disponivel}
+                            aria-disabled={!disponivel}
+                            title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
+                            className={cn(
+                              "text-xs h-7 px-2.5",
+                              !disponivel && "line-through opacity-50 cursor-not-allowed",
+                            )}
+                          >
+                            {tamanho}
+                          </Button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
