@@ -503,7 +503,32 @@ function isValidImageUrl(url: string): boolean {
 }
 
 function uniqueImages(images: string[]): string[] {
-  return Array.from(new Set(images.filter((url) => typeof url === "string" && isValidImageUrl(url))));
+  // Deduplica ignorando parâmetros de redimensionamento/qualidade
+  // (ex.: `?w=300` vs `?w=800` da MESMA foto). Sem isso, o serviço agrega
+  // a `imagem_thumb` e a `imagem_full` da mesma cor como se fossem fotos
+  // diferentes — fenômeno relatado como "3ª imagem fantasma" em
+  // ProductCard, MonteSeuLook etc.
+  const RESIZE_PARAMS = ["w", "h", "q", "width", "height", "quality", "fit", "auto", "dpr", "format"];
+  const normalize = (url: string): string => {
+    try {
+      const u = new URL(url, typeof window !== "undefined" ? window.location.origin : "https://placeholder.local");
+      RESIZE_PARAMS.forEach((k) => u.searchParams.delete(k));
+      const search = u.searchParams.toString();
+      return `${u.origin}${u.pathname}${search ? `?${search}` : ""}`;
+    } catch {
+      return url.split("?")[0];
+    }
+  };
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const url of images) {
+    if (typeof url !== "string" || !isValidImageUrl(url)) continue;
+    const key = normalize(url);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(url);
+  }
+  return out;
 }
 
 function stableNumericId(value: string): number {
