@@ -372,7 +372,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
               <ProductImageSkeleton 
                 src={imagemAtual} 
-                alt={produto.nome}
+                alt={altImagem}
                 className="transition-transform duration-700 group-hover:scale-110"
                 slideDirection={slideDirection}
               />
@@ -541,7 +541,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
         <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 
             src={imagemAtual} 
-            alt={produto.nome}
+            alt={altImagem}
             className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
             slideDirection={slideDirection}
           />
