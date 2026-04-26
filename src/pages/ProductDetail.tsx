@@ -728,6 +728,7 @@ const ProductDetail = () => {
                           <button
                             key={corItem.produto_cor_id}
                             onMouseEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
+                            onPointerEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onFocus={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onClick={() => {
                               setCorSelecionada(cor);
