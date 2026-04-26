@@ -661,6 +661,8 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
     // NÃO inventar cor: descartamos a variant se a API não enviar cor real.
     const cor = readString(variant, ["cor", "color", "nome_cor", "nomeCor"], "");
     if (!cor) return;
+    const corLower = cor.trim().toLowerCase();
+    if (!corLower || corLower === "única" || corLower === "unica") return;
     const sizeRecords = asArray(variant.tamanhos ?? variant.sizes ?? variant.grade);
 
     if (sizeRecords.length > 0) {
@@ -723,12 +725,16 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
   const cores: ProdutoCor[] = [];
   corRecords.forEach((corRec, index) => {
     const nome = readString(corRec, ["cor", "nome", "color", "name"], "");
+    // Descarta cores sem nome real ou com fallback legado "Única"/"Unica".
     if (!nome) return;
+    const nomeLower = nome.trim().toLowerCase();
+    if (!nomeLower || nomeLower === "única" || nomeLower === "unica") return;
     const produtoCorId = readString(
       corRec,
       ["produto_cor_id", "produtoCorId", "id", "cor_id", "corId"],
       `${nome}-${index}`,
     );
+    if (!produtoCorId) return;
     const corDisponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], true);
     const tamanhosArray = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade);
     const tamanhos = tamanhosArray
