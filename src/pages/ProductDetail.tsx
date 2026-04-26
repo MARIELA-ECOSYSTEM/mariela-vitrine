@@ -60,21 +60,27 @@ const ProductDetail = () => {
   const produtoFromList = produtos.find(p => matchesProductSlug(p, productParam));
   const [produtoDetalhe, setProdutoDetalhe] = useState<Produto | null>(null);
   const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+  // Marca o id já buscado para evitar refetch quando `produtoFromList` muda de
+  // referência (ex.: refresh silencioso da lista pelo `useProducts`).
+  const fetchedIdRef = useRef<string | null>(null);
   // Inicializa a partir da query string para suportar share/bookmark
   const initialQuery = useMemo(() => new URLSearchParams(location.search), []);
   const [corSelecionadaId, setCorSelecionadaId] = useState<string>("");
 
-  // Sempre busca o detalhe completo (com cores reais) ao abrir /products/{slug},
-  // invalidando o cache antes para evitar reutilizar resposta antiga sem `cores`.
+  // Busca o detalhe completo UMA VEZ por id de produto. Evita o "flicker de
+  // reload" causado por refetches em cascata quando a lista (`produtos`) é
+  // refrescada silenciosamente em background ou quando a query string muda.
+  // Também não invalida o cache aqui — confiamos no TTL do serviço.
   useEffect(() => {
     if (!produtoFromList) {
       setProdutoDetalhe(null);
+      fetchedIdRef.current = null;
       return;
     }
-    let cancelled = false;
     const idDetalhe = produtoFromList.produtoId || produtoFromList.codigoProduto || String(produtoFromList.id);
-    // Invalida explicitamente o cache desse detalhe antes de buscar.
-    vitrineApiService.invalidateProdutoCache(idDetalhe);
+    if (fetchedIdRef.current === idDetalhe) return; // já buscado, não refaz
+    let cancelled = false;
+    fetchedIdRef.current = idDetalhe;
     setLoadingDetalhe(true);
     vitrineApiService
       .getProdutoById(idDetalhe)
@@ -86,7 +92,7 @@ const ProductDetail = () => {
         if (!cancelled) setLoadingDetalhe(false);
       });
     return () => { cancelled = true; };
-  }, [produtoFromList?.produtoId, produtoFromList?.id]);
+  }, [produtoFromList?.produtoId, produtoFromList?.id, produtoFromList?.codigoProduto]);
 
   // Produto efetivo: prioriza o detalhe completo (com cores reais) quando disponível.
   const produto = produtoDetalhe ?? produtoFromList;
@@ -100,10 +106,17 @@ const ProductDetail = () => {
   const sizeGuide = useSizeSelectionGuide();
   const focarSelecaoTamanho = sizeGuide.guide;
 
+  // Redirect 1x do path legado (`/produto/:id`) para o slug canônico.
+  // Não depende de `location.search` para não re-disparar quando os filtros
+  // de cor/tamanho mudarem na URL (que é exatamente o caso do "reload visual").
+  const didRedirectLegacyRef = useRef(false);
   useEffect(() => {
     if (!produto || !id) return;
-    navigate(`${getProductPath(produto)}${location.search}`, { replace: true });
-  }, [id, location.search, navigate, produto]);
+    if (didRedirectLegacyRef.current) return;
+    didRedirectLegacyRef.current = true;
+    navigate(`${getProductPath(produto)}${window.location.search}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, produto?.id]);
 
   // Tracking: produto_visualizado (1x por sessão por produto)
   useEffect(() => {
@@ -368,20 +381,27 @@ const ProductDetail = () => {
     }
   }, [tamanhosDisponiveis, tamanhoSelecionado]);
 
-  // Persiste cor/tamanho na URL (sem recarregar) para permitir share da seleção exata.
+  // Persiste cor/tamanho na URL (sem recarregar) para permitir share da seleção
+  // exata. Lê `location` via window dentro do effect para NÃO reagir à própria
+  // mudança de query string que ele dispara — isso evita um loop sutil que
+  // re-disparava effects dependentes (SEO, redirect, etc.) e dava sensação
+  // de "reload" ao trocar cor/tamanho.
   useEffect(() => {
     if (!produto) return;
-    const params = new URLSearchParams(location.search);
+    const currentSearch = window.location.search;
+    const currentPath = window.location.pathname;
+    const params = new URLSearchParams(currentSearch);
     if (corSelecionada) params.set("cor", corSelecionada);
     else params.delete("cor");
     if (tamanhoSelecionado) params.set("tamanho", tamanhoSelecionado);
     else params.delete("tamanho");
     const next = params.toString();
-    const target = `${location.pathname}${next ? `?${next}` : ""}`;
-    if (target !== `${location.pathname}${location.search}`) {
+    const target = `${currentPath}${next ? `?${next}` : ""}`;
+    if (target !== `${currentPath}${currentSearch}`) {
       navigate(target, { replace: true });
     }
-  }, [corSelecionada, tamanhoSelecionado, produto, location.pathname, location.search, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corSelecionada, tamanhoSelecionado, produto?.id]);
 
   // Pré-carregamento controlado: pré-carrega APENAS as imagens adicionais da
   // cor selecionada (a primeira já é carregada pelo <img> principal). Não
