@@ -95,6 +95,11 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Hook compartilhado para guiar o usuário até o seletor de tamanho do card
+  // (mesma UX do ProductDetail e Monte seu Look). Sem toast agressivo.
+  const sizeGuide = useSizeSelectionGuide();
   
   const whatsappNumber = "5583986567915";
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
