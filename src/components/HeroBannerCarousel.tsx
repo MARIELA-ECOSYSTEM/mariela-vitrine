@@ -1,12 +1,21 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import bannerLooks from "@/assets/banner-looks.jpg";
 import logoSimple from "@/assets/logo-simple.png";
+import { useHeaderOverlay } from "@/contexts/HeaderOverlayContext";
 
 export const HeroBannerCarousel = () => {
   const navigate = useNavigate();
+  const { setBannerImage } = useHeaderOverlay();
+
+  useEffect(() => {
+    setBannerImage(bannerLooks);
+    return () => setBannerImage(null);
+  }, [setBannerImage]);
 
   return (
     <section
+      id="home"
       className="relative w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] overflow-hidden cursor-pointer"
       onClick={() => navigate("/monte-seu-look")}
     >
