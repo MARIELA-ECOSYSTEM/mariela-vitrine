@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageContainer } from "@/components/PageContainer";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton, ProductsLoadingSkeleton } from "@/components/ProductSkeleton";
 import { ProductFilters } from "@/components/ProductFilters";
@@ -477,7 +478,7 @@ const Products = () => {
       <div className="min-h-screen pt-[60px] sm:pt-[68px]">
         <Header />
         <main className="bg-background">
-          <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-12">
+          <PageContainer>
             <Breadcrumbs currentPage="Todos os Produtos" />
             
             {/* Silent background refresh when data is stale - no visible indicator */}
@@ -758,7 +759,7 @@ const Products = () => {
                 </div>
               )}
             </div>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>

@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageContainer } from "@/components/PageContainer";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +31,7 @@ const Cart = () => {
       <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
         <Header />
         <main className="flex-1">
-          <div className="container mx-auto px-6 py-12">
+          <PageContainer padX="px-4 md:px-6">
             <Breadcrumbs currentPage="Carrinho" />
             <Card className="max-w-2xl mx-auto text-center py-16">
               <CardContent>
@@ -44,7 +45,7 @@ const Cart = () => {
                 </Button>
               </CardContent>
             </Card>
-          </div>
+          </PageContainer>
         </main>
         <Footer />
       </div>
@@ -55,7 +56,7 @@ const Cart = () => {
     <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
       <Header />
       <main className="flex-1">
-        <div className="container mx-auto px-6 py-12">
+        <PageContainer padX="px-4 md:px-6">
           <Breadcrumbs currentPage="Meu Carrinho" />
           <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-8">
@@ -127,7 +128,7 @@ const Cart = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>
