@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface ProductImageSkeletonProps {
@@ -328,6 +328,7 @@ export const ProductImageSkeleton = ({
         currentIndex={currentIndex}
         alt={alt}
         className={className}
+        slideDirection={slideDirection}
         priority={priority}
         enableBlurUp={enableBlurUp}
       />
@@ -368,6 +369,7 @@ interface ImageTrackProps {
   currentIndex: number;
   alt: string;
   className?: string;
+  slideDirection?: 'left' | 'right' | null;
   priority?: boolean;
   enableBlurUp?: boolean;
 }
@@ -375,56 +377,80 @@ interface ImageTrackProps {
 const TRACK_EASING = "cubic-bezier(0.22, 1, 0.36, 1)"; // mesma curva da Posthaus
 const TRACK_DURATION_MS = 420;
 
-const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlurUp }: ImageTrackProps) => {
+const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, priority, enableBlurUp }: ImageTrackProps) => {
   const len = images.length;
-  const prevIndexRef = useRef<number>(currentIndex);
-  // Slots: [esquerdo, centro, direito]. Centro é sempre o currentIndex.
-  // Esquerdo/direito derivam ciclicamente para que a navegação next/prev
-  // sempre tenha vizinho montado e pré-carregado.
-  const leftIdx = (currentIndex - 1 + len) % len;
-  const rightIdx = (currentIndex + 1) % len;
+  const [trackState, setTrackState] = useState({
+    centerIndex: currentIndex,
+    targetIndex: currentIndex,
+    direction: null as "next" | "prev" | null,
+    animating: false,
+  });
+  const trackStateRef = useRef(trackState);
+  const frameRef = useRef<number | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
 
-  // Direção do slide aplicada quando currentIndex muda.
-  const [direction, setDirection] = useState<"next" | "prev" | null>(null);
-  const [animating, setAnimating] = useState(false);
+  useEffect(() => {
+    trackStateRef.current = trackState;
+  }, [trackState]);
+
+  const centerIdx = Math.min(trackState.centerIndex, len - 1);
+  const targetIdx = Math.min(trackState.targetIndex, len - 1);
+  let leftIdx = (centerIdx - 1 + len) % len;
+  let rightIdx = (centerIdx + 1) % len;
+  if (trackState.direction === "prev") leftIdx = targetIdx;
+  if (trackState.direction === "next") rightIdx = targetIdx;
 
   // Pré-carrega slot atual + vizinhos com PRIORIDADE ALTA assim que o
   // índice muda. Garante que a imagem do slot já esteja no cache do
   // browser antes do `<img>` ser pintado, eliminando frames vazios na
   // troca por seta/cor. Respeita o cache global — sem fetch duplicado.
   useEffect(() => {
-    const targets = [images[currentIndex], images[leftIdx], images[rightIdx]]
+    const targets = [images[centerIdx], images[targetIdx], images[leftIdx], images[rightIdx]]
       .filter((u): u is string => typeof u === "string" && u.length > 0);
     targets.forEach((u) => preloadImage(u, "high").catch(() => {}));
     return () => {
       // Não cancela: as 3 imagens visíveis devem permanecer "quentes"
       // até o próximo ciclo, que substitui pelo novo conjunto.
     };
-  }, [images, currentIndex, leftIdx, rightIdx]);
+  }, [images, centerIdx, targetIdx, leftIdx, rightIdx]);
 
-  useEffect(() => {
-    const prev = prevIndexRef.current;
-    if (prev === currentIndex) return;
-    // Heurística direção: caminho mais curto no ciclo.
-    const forward = (currentIndex - prev + len) % len;
-    const backward = (prev - currentIndex + len) % len;
-    const dir: "next" | "prev" = forward <= backward ? "next" : "prev";
-    prevIndexRef.current = currentIndex;
-    setDirection(dir);
-    setAnimating(true);
-    const t = window.setTimeout(() => {
-      setAnimating(false);
-      setDirection(null);
+  useLayoutEffect(() => {
+    const previous = trackStateRef.current.animating
+      ? trackStateRef.current.targetIndex
+      : trackStateRef.current.centerIndex;
+    if (previous === currentIndex) return;
+
+    if (frameRef.current != null) window.cancelAnimationFrame(frameRef.current);
+    if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
+
+    const forward = (currentIndex - previous + len) % len;
+    const backward = (previous - currentIndex + len) % len;
+    const dir: "next" | "prev" = slideDirection === "right"
+      ? "prev"
+      : slideDirection === "left"
+      ? "next"
+      : forward <= backward
+      ? "next"
+      : "prev";
+
+    setTrackState({ centerIndex: previous, targetIndex: currentIndex, direction: dir, animating: true });
+    settleTimerRef.current = window.setTimeout(() => {
+      setTrackState({ centerIndex: currentIndex, targetIndex: currentIndex, direction: null, animating: false });
+      settleTimerRef.current = null;
     }, TRACK_DURATION_MS + 30);
-    return () => window.clearTimeout(t);
-  }, [currentIndex, len]);
+
+    return () => {
+      if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
+      if (frameRef.current != null) window.cancelAnimationFrame(frameRef.current);
+    };
+  }, [currentIndex, len, slideDirection]);
 
   // Translate alvo durante a animação. Trilho tem `width: 300%`, então
   // cada slot equivale a 33.3333% do próprio trilho. Estado neutro =
   // slot central visível (-33.3333%).
   let translate = "-33.3333%";
-  if (animating && direction === "next") translate = "-66.6667%";
-  if (animating && direction === "prev") translate = "0%";
+  if (trackState.animating && trackState.direction === "next") translate = "-66.6667%";
+  if (trackState.animating && trackState.direction === "prev") translate = "0%";
 
   // Cada slot ocupa 1/3 do trilho. Usamos `flex: 0 0 33.3333%` em vez
   // de `width` inline para impedir que `flex` recalcule e colapse os
@@ -446,12 +472,13 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
           width: "300%",
           height: "100%",
           transform: `translateX(${translate})`,
-          transition: animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
+          transition: trackState.animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
         }}
       >
         {/* Slot esquerdo — priority=true para evitar lazy-load durante o slide. */}
         <div style={slotStyle}>
           <LegacyImageDisplay
+            key={`left-${images[leftIdx]}`}
             src={images[leftIdx]}
             alt={alt}
             priority
@@ -462,7 +489,8 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
         {/* Slot central (atual) */}
         <div style={slotStyle}>
           <LegacyImageDisplay
-            src={images[currentIndex]}
+            key={`center-${images[centerIdx]}`}
+            src={images[centerIdx]}
             alt={alt}
             priority={priority}
             enableBlurUp={enableBlurUp}
@@ -471,6 +499,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
         {/* Slot direito */}
         <div style={slotStyle}>
           <LegacyImageDisplay
+            key={`right-${images[rightIdx]}`}
             src={images[rightIdx]}
             alt={alt}
             priority
@@ -497,7 +526,7 @@ const LegacyImageDisplay = ({
   enableBlurUp = false,
   silentError = false,
 }: Omit<ProductImageSkeletonProps, "images" | "currentIndex">) => {
-  const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>(() => isImagePreloaded(src) ? 'loaded' : 'loading');
   const [isInView, setIsInView] = useState(priority); // Priority images load immediately
   const imgRef = useRef<HTMLDivElement>(null);
   const [blurDataUrl, setBlurDataUrl] = useState<string | null>(null);
@@ -693,7 +722,7 @@ const LegacyImageDisplay = ({
             alt={alt}
             loading={priority ? "eager" : "lazy"}
             decoding="async"
-            fetchPriority={priority ? "high" : "auto"}
+            {...({ fetchpriority: priority ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
             className={cn(
               "relative w-full h-full object-cover",
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
