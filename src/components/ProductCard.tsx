@@ -247,25 +247,31 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   const precoFormatado = formatBRL(getDisplayPrice(produto));
   const precoOriginalFormatado = promo.isPromo ? formatBRL(promo.precoVenda) : undefined;
 
+  /**
+   * Estratégia híbrida (acordada com o usuário):
+   * - Se o card tem variantes inline (cores disponíveis) E o usuário ainda não
+   *   selecionou cor/tamanho, guia inline (scroll + destaque + foco no 1º tamanho).
+   * - Se o card NÃO tem variantes inline (ex.: produto sem cores carregadas),
+   *   navega para a página de detalhe para o usuário escolher lá.
+   * Nunca mostra toast vermelho de erro.
+   */
+  const guiarSelecaoOuNavegar = (): boolean => {
+    if (isAcessorio) return true; // acessórios usam tamanho "U"
+    const temVariantesInline = coresList.length > 0;
+    if (!temVariantesInline) {
+      navigate(getProductPathWithSearch(produto));
+      return false;
+    }
+    sizeGuide.guide();
+    return false;
+  };
+
   const handleAdicionarCarrinho = () => {
     const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
     const corParaAdicionar = corSelecionada;
-    
-    if (!isAcessorio && !corParaAdicionar) {
-      toast({
-        title: "Selecione uma cor",
-        description: "Por favor, escolha a cor antes de adicionar ao carrinho.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!tamanhoParaAdicionar) {
-      toast({
-        title: "Selecione um tamanho",
-        description: "Por favor, escolha o tamanho antes de adicionar ao carrinho.",
-        variant: "destructive",
-      });
+
+    if (!isAcessorio && (!corParaAdicionar || !tamanhoParaAdicionar)) {
+      guiarSelecaoOuNavegar();
       return;
     }
     
@@ -280,22 +286,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
 
   const handleWhatsApp = () => {
     const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
-    
-    if (!isAcessorio && !corSelecionada) {
-      toast({
-        title: "Selecione uma cor",
-        description: "Por favor, escolha a cor antes de enviar pelo WhatsApp.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!tamanhoParaUsar) {
-      toast({
-        title: "Selecione um tamanho",
-        description: "Por favor, escolha o tamanho antes de enviar pelo WhatsApp.",
-        variant: "destructive",
-      });
+
+    if (!isAcessorio && (!corSelecionada || !tamanhoParaUsar)) {
+      guiarSelecaoOuNavegar();
       return;
     }
     
