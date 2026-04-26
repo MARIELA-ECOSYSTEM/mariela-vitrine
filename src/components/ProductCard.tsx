@@ -118,6 +118,15 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     [corSelecionada, coresTamanhosMap],
   );
 
+  // União de TODOS os tamanhos do produto (em qualquer cor), ordenada.
+  // Usada para renderizar chips desabilitados de tamanhos indisponíveis
+  // na cor atual — sem inventar dados, apenas espelhando a oferta real.
+  const todosTamanhos = useMemo(() => {
+    const set = new Set<string>();
+    coresList.forEach((c) => c.tamanhos.forEach((t) => set.add(t)));
+    return sortSizes(Array.from(set));
+  }, [coresList]);
+
   // Filtra apenas URLs de imagem não vazias/válidas (string não-vazia).
   // Evita índices "fantasmas" no carrossel quando a API envia entradas vazias.
   const imagensValidas = useMemo(
@@ -172,14 +181,13 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     return (url && corPorImagem[url]) || "";
   }, [imagensValidas, currentImageIndex, corPorImagem]);
 
-  // Helper: preserva o tamanho selecionado se ele ainda existir para a nova cor.
-  // Caso contrário, limpa para evitar combinação inválida (cor X tamanho).
+  // Helper: ao trocar de cor, mantém o tamanho se ainda for válido para a
+  // nova cor; caso contrário, seleciona automaticamente o primeiro tamanho
+  // válido daquela cor (ou limpa, se a cor não tiver tamanhos).
   const reconcileSizeForColor = (cor: string) => {
-    if (!tamanhoSelecionado) return;
     const tamanhosDaCor = coresTamanhosMap[cor] || [];
-    if (!tamanhosDaCor.includes(tamanhoSelecionado)) {
-      setTamanhoSelecionado("");
-    }
+    if (tamanhoSelecionado && tamanhosDaCor.includes(tamanhoSelecionado)) return;
+    setTamanhoSelecionado(tamanhosDaCor[0] || "");
   };
 
   // Helper: ao trocar imagem via setas, sincroniza a cor selecionada
@@ -410,17 +418,26 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                       <div>
                         <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
                         <div className="flex flex-wrap gap-1">
-                          {tamanhosDisponiveis.map((tamanho) => (
-                            <Button
-                              key={tamanho}
-                              variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setTamanhoSelecionado(tamanho)}
-                              className="text-xs h-7"
-                            >
-                              {tamanho}
-                            </Button>
-                          ))}
+                          {todosTamanhos.map((tamanho) => {
+                            const disponivel = tamanhosDisponiveis.includes(tamanho);
+                            return (
+                              <Button
+                                key={tamanho}
+                                variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
+                                disabled={!disponivel}
+                                aria-disabled={!disponivel}
+                                title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
+                                className={cn(
+                                  "text-xs h-7",
+                                  !disponivel && "line-through opacity-50 cursor-not-allowed",
+                                )}
+                              >
+                                {tamanho}
+                              </Button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -591,20 +608,28 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             {/* Mobile: tamanhos maiores */}
             {corSelecionada && (
               <div className="flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in">
-                {tamanhosDisponiveis.map((tamanho) => (
-                  <button
-                    key={tamanho}
-                    onClick={() => setTamanhoSelecionado(tamanho)}
-                    className={cn(
-                      "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
-                      tamanhoSelecionado === tamanho
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary border border-border text-foreground"
-                    )}
-                  >
-                    {tamanho}
-                  </button>
-                ))}
+                {todosTamanhos.map((tamanho) => {
+                  const disponivel = tamanhosDisponiveis.includes(tamanho);
+                  return (
+                    <button
+                      key={tamanho}
+                      type="button"
+                      onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
+                      disabled={!disponivel}
+                      aria-disabled={!disponivel}
+                      title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
+                      className={cn(
+                        "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
+                        tamanhoSelecionado === tamanho
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary border border-border text-foreground",
+                        !disponivel && "line-through opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      {tamanho}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -659,17 +684,26 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                   <div className="mt-2">
                     <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
                     <div className="flex flex-wrap gap-1">
-                      {tamanhosDisponiveis.map((tamanho) => (
-                        <Button
-                          key={tamanho}
-                          variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setTamanhoSelecionado(tamanho)}
-                          className="text-xs h-7 px-2.5"
-                        >
-                          {tamanho}
-                        </Button>
-                      ))}
+                      {todosTamanhos.map((tamanho) => {
+                        const disponivel = tamanhosDisponiveis.includes(tamanho);
+                        return (
+                          <Button
+                            key={tamanho}
+                            variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
+                            disabled={!disponivel}
+                            aria-disabled={!disponivel}
+                            title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
+                            className={cn(
+                              "text-xs h-7 px-2.5",
+                              !disponivel && "line-through opacity-50 cursor-not-allowed",
+                            )}
+                          >
+                            {tamanho}
+                          </Button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
