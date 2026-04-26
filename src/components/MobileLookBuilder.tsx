@@ -467,15 +467,25 @@ export const MobileLookBuilder = () => {
 
       {/* Mobile Preview Modal - Full Screen Bottom Sheet */}
       {showPreview && createPortal(
-        <div className="lg:hidden fixed inset-0 z-[60] flex flex-col">
+        <div
+          className="lg:hidden fixed inset-0 z-[60] flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pré-visualização do look"
+        >
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+          <button
+            type="button"
+            aria-label="Fechar pré-visualização"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in cursor-default"
             onClick={() => setShowPreview(false)}
           />
           
           {/* Bottom Sheet */}
-          <div className="mt-auto bg-background rounded-t-3xl max-h-[90vh] overflow-hidden animate-bottom-sheet relative">
+          <div
+            className="mt-auto bg-background rounded-t-3xl max-h-[90vh] overflow-hidden animate-bottom-sheet relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
