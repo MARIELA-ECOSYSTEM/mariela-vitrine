@@ -222,26 +222,48 @@ function writeLocalStorageCache(cache: Record<string, CacheEntry<unknown>>): voi
 }
 
 function getCached<T>(key: string, maxAge: number): T | null {
+  const entry = getCachedEntry<T>(key, maxAge);
+  return entry ? entry.value : null;
+}
+
+function getCachedEntry<T>(key: string, maxAge: number): CacheEntry<T> | null {
   const now = Date.now();
   const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
-  if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry.value;
+  if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry;
 
   const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
   if (storageEntry && now - storageEntry.timestamp <= maxAge) {
     memoryCache.set(key, storageEntry);
-    return storageEntry.value;
+    return storageEntry;
   }
 
   return null;
 }
 
-function setCached<T>(key: string, value: T): void {
-  const entry: CacheEntry<T> = { value, timestamp: Date.now() };
+function getStaleCachedEntry<T>(key: string): CacheEntry<T> | null {
+  const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
+  if (memoryEntry) return memoryEntry;
+  const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
+  return storageEntry ?? null;
+}
+
+function setCached<T>(key: string, value: T, etag?: string): void {
+  const entry: CacheEntry<T> = { value, timestamp: Date.now(), etag };
   memoryCache.set(key, entry);
 
   const cache = readLocalStorageCache();
   cache[key] = entry as CacheEntry<unknown>;
   writeLocalStorageCache(cache);
+}
+
+function refreshCachedTimestamp(key: string): void {
+  const memoryEntry = memoryCache.get(key);
+  if (memoryEntry) memoryEntry.timestamp = Date.now();
+  const cache = readLocalStorageCache();
+  if (cache[key]) {
+    cache[key].timestamp = Date.now();
+    writeLocalStorageCache(cache);
+  }
 }
 
 function stableParamsKey(params?: QueryParams): string {
