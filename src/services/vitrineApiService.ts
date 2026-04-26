@@ -5,8 +5,18 @@ const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v2";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v3";
 const MAX_CACHE_ITEMS = 40;
+const LEGACY_CACHE_KEYS = ["mariela_vitrine_api_cache_v2", "mariela_vitrine_api_cache_v1"];
+
+// Limpa caches antigos para forçar reload do novo contrato com `cores` na listagem.
+if (typeof localStorage !== "undefined") {
+  try {
+    LEGACY_CACHE_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* cache opcional */
+  }
+}
 
 const CACHE_TTL = {
   config: 5 * 60 * 1000,
