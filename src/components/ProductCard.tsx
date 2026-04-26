@@ -44,13 +44,42 @@ interface ProductCardProps {
 
 export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps) => {
   const publicBadge = getPublicProductBadge(produto);
-  // Obter a primeira cor disponível para pré-seleção
-  const primeiraCorDisponivel = useMemo(() => {
-    const variantDisponivel = produto.variants.find(v => v.disponibilidade > 0);
-    return variantDisponivel?.cor || "";
-  }, [produto.variants]);
+
+  // Lista unificada de cores: prioriza produto.cores (novo contrato) e descarta "Única"
+  // quando há cores reais. Faz fallback para variants legado quando ausente.
+  const coresList = useMemo(() => {
+    if (produto.cores && produto.cores.length > 0) {
+      return produto.cores
+        .filter((c) => c.tamanhos.some((t) => t.disponibilidade > 0))
+        .map((c) => ({
+          produto_cor_id: c.produto_cor_id,
+          cor: c.cor,
+          tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
+          imagem_full: c.imagem_full,
+          imagem_thumb: c.imagem_thumb,
+        }));
+    }
+    const map: Record<string, string[]> = {};
+    produto.variants
+      .filter((v) => v.disponibilidade > 0)
+      .forEach((v) => {
+        if (!map[v.cor]) map[v.cor] = [];
+        if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
+      });
+    return Object.entries(map).map(([cor, tamanhos]) => ({
+      produto_cor_id: cor,
+      cor,
+      tamanhos,
+      imagem_full: null as string | null,
+      imagem_thumb: null as string | null,
+    }));
+  }, [produto.cores, produto.variants]);
+
+  const primeiraCorDisponivel = coresList[0]?.cor || "";
+  const primeiraCorIdDisponivel = coresList[0]?.produto_cor_id || "";
 
   const [corSelecionada, setCorSelecionada] = useState(primeiraCorDisponivel);
+  const [corSelecionadaId, setCorSelecionadaId] = useState(primeiraCorIdDisponivel);
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
@@ -59,46 +88,34 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
   
   const whatsappNumber = "5583986567915";
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
-  
-  // Obter cores disponíveis (não depende de tamanho)
-  const coresDisponiveis = useMemo(() => {
-    const cores = new Set<string>();
-    produto.variants
-      .filter(v => v.disponibilidade > 0)
-      .forEach(v => cores.add(v.cor));
-    return Array.from(cores);
-  }, [produto.variants]);
 
-  // Obter tamanhos disponíveis (depende da cor selecionada)
-  const tamanhosDisponiveis = useMemo(() => {
-    if (!corSelecionada) return [];
-    const tamanhos = new Set<string>();
-    produto.variants
-      .filter(v => v.disponibilidade > 0 && v.cor === corSelecionada)
-      .forEach(v => tamanhos.add(v.tamanho));
-    return Array.from(tamanhos);
-  }, [produto.variants, corSelecionada]);
+  const corSelecionadaObj = useMemo(
+    () => coresList.find((c) => c.produto_cor_id === corSelecionadaId) || coresList.find((c) => c.cor === corSelecionada),
+    [coresList, corSelecionadaId, corSelecionada],
+  );
 
-  // Mapa de cores para tamanhos disponíveis (para exibição resumida)
+  const coresDisponiveis = useMemo(() => coresList.map((c) => c.cor), [coresList]);
+  const tamanhosDisponiveis = corSelecionadaObj?.tamanhos ?? [];
   const coresTamanhosMap = useMemo(() => {
     const map: Record<string, string[]> = {};
-    produto.variants
-      .filter(v => v.disponibilidade > 0)
-      .forEach(v => {
-        if (!map[v.cor]) map[v.cor] = [];
-        if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
-      });
+    coresList.forEach((c) => { map[c.cor] = c.tamanhos; });
     return map;
-  }, [produto.variants]);
+  }, [coresList]);
 
-  // Obter imagem da cor selecionada ou do índice atual
+  // Obter imagem da cor selecionada (prioriza imagem_full → imagem_thumb do contrato novo).
+  // Fallback: imagem do índice atual / primeira imagem do produto.
   const imagemAtual = useMemo(() => {
-    if (corSelecionada) {
-      const varianteIndex = produto.variants.findIndex(v => v.cor === corSelecionada);
-      return produto.imagens[varianteIndex >= 0 ? varianteIndex : 0] || produto.imagens[0] || produtoGenerico;
+    if (corSelecionadaObj) {
+      const imgCor = corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb;
+      if (imgCor) return imgCor;
+      // Legado: tentar localizar no array de imagens via variants
+      if (corSelecionada) {
+        const varianteIndex = produto.variants.findIndex((v) => v.cor === corSelecionada);
+        if (varianteIndex >= 0) return produto.imagens[varianteIndex] || produto.imagens[0] || produtoGenerico;
+      }
     }
     return produto.imagens[currentImageIndex] || produto.imagens[0] || produtoGenerico;
-  }, [produto, corSelecionada, currentImageIndex]);
+  }, [produto, corSelecionada, corSelecionadaObj, currentImageIndex]);
 
   // Sincronizar cor com imagem
   const corDaImagemAtual = useMemo(() => {
@@ -135,12 +152,14 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
   };
 
   const handleSelectColor = (cor: string) => {
+    const corItem = coresList.find((c) => c.cor === cor);
     const varianteIndex = produto.variants.findIndex(v => v.cor === cor);
     if (varianteIndex >= 0 && varianteIndex < produto.imagens.length) {
       setSlideDirection(varianteIndex > currentImageIndex ? 'left' : 'right');
       setCurrentImageIndex(varianteIndex);
     }
     setCorSelecionada(cor);
+    setCorSelecionadaId(corItem?.produto_cor_id || cor);
     setTamanhoSelecionado("");
   };
 
