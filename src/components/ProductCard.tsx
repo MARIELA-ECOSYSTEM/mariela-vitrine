@@ -506,6 +506,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                 alt={altImagem}
                 className="transition-transform duration-700 group-hover:scale-110"
                 slideDirection={slideDirection}
+                images={imagensValidas}
+                currentIndex={currentImageIndex}
               />
               {/* Navigation Arrows */}
               {imagensValidas.length > 1 && (
@@ -686,6 +688,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
             alt={altImagem}
             className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
             slideDirection={slideDirection}
+            images={imagensValidas}
+            currentIndex={currentImageIndex}
           />
           {/* Navigation Arrows - sempre visíveis em mobile */}
           {imagensValidas.length > 1 && (
