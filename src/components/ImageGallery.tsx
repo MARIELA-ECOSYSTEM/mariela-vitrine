@@ -33,7 +33,6 @@ export const ImageGallery = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [hoveredThumbnail, setHoveredThumbnail] = useState<number | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   
   // Memoiza para não recriar array a cada render (mantém referências estáveis
@@ -361,12 +360,7 @@ export const ImageGallery = ({
       {temMultiplasImagens && (
         <div className="hidden md:grid grid-cols-5 gap-2 animate-fade-in">
           {imagensValidas.map((img, index) => (
-            <div
-              key={index}
-              className="relative"
-              onMouseEnter={() => setHoveredThumbnail(index)}
-              onMouseLeave={() => setHoveredThumbnail(null)}
-            >
+            <div key={index} className="relative">
               <button
                 onClick={() => handleThumbnailClick(index)}
                 className={`aspect-square rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow,transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-105 w-full ${
@@ -382,20 +376,6 @@ export const ImageGallery = ({
                   className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
                 />
               </button>
-              
-              {/* Preview Ampliado no Hover */}
-              {hoveredThumbnail === index && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-fade-in pointer-events-none">
-                  <div className="relative">
-                    <img
-                      src={img}
-                      alt={`${productName} preview ${index + 1}`}
-                      className="w-48 h-48 object-cover rounded-lg shadow-2xl border-2 border-primary"
-                    />
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rotate-45 border-r-2 border-b-2 border-primary" />
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
