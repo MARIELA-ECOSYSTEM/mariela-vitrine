@@ -32,14 +32,20 @@ export function getProductImageByColor(
   const alt = cor ? `${nome} — cor ${cor}` : nome;
 
   // 1. Contrato novo: cores[] com imagem própria
-  if (cor && produto.cores && produto.cores.length > 0) {
-    const corMatch = produto.cores.find((c) => c.cor === cor);
-    const fromCor =
-      corMatch?.imagem_full ||
-      corMatch?.imagem_thumb ||
-      corMatch?.imagens?.[0]?.url_full ||
-      corMatch?.imagens?.[0]?.url_thumb ||
-      null;
+  // Tratamento defensivo: cores pode existir mas estar vazia, ou ter
+  // entradas com campos ausentes / strings em branco. Sempre caímos
+  // graciosamente em imagens[0] → placeholder.
+  if (cor && Array.isArray(produto.cores) && produto.cores.length > 0) {
+    const corMatch = produto.cores.find((c) => c?.cor === cor);
+    const candidates = [
+      corMatch?.imagem_full,
+      corMatch?.imagem_thumb,
+      corMatch?.imagens?.[0]?.url_full,
+      corMatch?.imagens?.[0]?.url_thumb,
+    ];
+    const fromCor = candidates
+      .map((value) => (typeof value === "string" ? value.trim() : ""))
+      .find((value) => value.length > 0);
     if (fromCor) return { src: fromCor, alt };
   }
 

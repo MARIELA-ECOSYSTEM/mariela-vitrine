@@ -148,15 +148,6 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     [corSelecionada, coresTamanhosMap],
   );
 
-  // União de TODOS os tamanhos do produto (em qualquer cor), ordenada.
-  // Usada para renderizar chips desabilitados de tamanhos indisponíveis
-  // na cor atual — sem inventar dados, apenas espelhando a oferta real.
-  const todosTamanhos = useMemo(() => {
-    const set = new Set<string>();
-    coresList.forEach((c) => c.tamanhos.forEach((t) => set.add(t)));
-    return sortSizes(Array.from(set));
-  }, [coresList]);
-
   // Filtra apenas URLs de imagem não vazias/válidas (string não-vazia).
   // Evita índices "fantasmas" no carrossel quando a API envia entradas vazias.
   const imagensValidas = useMemo(
@@ -479,27 +470,21 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                       >
                         <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
                         <div className="flex flex-wrap gap-1">
-                          {todosTamanhos.map((tamanho) => {
-                            const disponivel = tamanhosDisponiveis.includes(tamanho);
-                            return (
-                              <Button
-                                key={tamanho}
-                                data-size-option
-                                variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
-                                disabled={!disponivel}
-                                aria-disabled={!disponivel}
-                                title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
-                                className={cn(
-                                  "text-xs h-7",
-                                  !disponivel && "line-through opacity-50 cursor-not-allowed",
-                                )}
-                              >
-                                {tamanho}
-                              </Button>
-                            );
-                          })}
+                          {/* Renderizamos apenas os tamanhos disponíveis para a cor atual.
+                              Tamanhos indisponíveis são omitidos (sem chip riscado). */}
+                          {tamanhosDisponiveis.map((tamanho) => (
+                            <Button
+                              key={tamanho}
+                              data-size-option
+                              variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setTamanhoSelecionado(tamanho)}
+                              title={tamanho}
+                              className="text-xs h-7"
+                            >
+                              {tamanho}
+                            </Button>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -679,29 +664,24 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                   "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300"
                 )}
               >
-                {todosTamanhos.map((tamanho) => {
-                  const disponivel = tamanhosDisponiveis.includes(tamanho);
-                  return (
-                    <button
-                      key={tamanho}
-                      type="button"
-                      data-size-option
-                      onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
-                      disabled={!disponivel}
-                      aria-disabled={!disponivel}
-                      title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
-                      className={cn(
-                        "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
-                        tamanhoSelecionado === tamanho
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary border border-border text-foreground",
-                        !disponivel && "line-through opacity-50 cursor-not-allowed",
-                      )}
-                    >
-                      {tamanho}
-                    </button>
-                  );
-                })}
+                {/* Apenas tamanhos com disponibilidade na cor atual. */}
+                {tamanhosDisponiveis.map((tamanho) => (
+                  <button
+                    key={tamanho}
+                    type="button"
+                    data-size-option
+                    onClick={() => setTamanhoSelecionado(tamanho)}
+                    title={tamanho}
+                    className={cn(
+                      "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
+                      tamanhoSelecionado === tamanho
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary border border-border text-foreground",
+                    )}
+                  >
+                    {tamanho}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -762,27 +742,20 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                   >
                     <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
                     <div className="flex flex-wrap gap-1">
-                      {todosTamanhos.map((tamanho) => {
-                        const disponivel = tamanhosDisponiveis.includes(tamanho);
-                        return (
-                          <Button
-                            key={tamanho}
-                            data-size-option
-                            variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
-                            disabled={!disponivel}
-                            aria-disabled={!disponivel}
-                            title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
-                            className={cn(
-                              "text-xs h-7 px-2.5",
-                              !disponivel && "line-through opacity-50 cursor-not-allowed",
-                            )}
-                          >
-                            {tamanho}
-                          </Button>
-                        );
-                      })}
+                      {/* Apenas tamanhos disponíveis para a cor selecionada. */}
+                      {tamanhosDisponiveis.map((tamanho) => (
+                        <Button
+                          key={tamanho}
+                          data-size-option
+                          variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setTamanhoSelecionado(tamanho)}
+                          title={tamanho}
+                          className="text-xs h-7 px-2.5"
+                        >
+                          {tamanho}
+                        </Button>
+                      ))}
                     </div>
                   </div>
                 )}

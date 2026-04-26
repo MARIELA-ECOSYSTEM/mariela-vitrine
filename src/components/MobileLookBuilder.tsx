@@ -27,6 +27,13 @@ import {
   handleProductImageError,
   PRODUCT_IMAGE_PLACEHOLDER,
 } from "@/lib/productImage";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // Ícone oficial do WhatsApp (inline SVG) — deixa explícito o canal de envio.
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -221,6 +228,10 @@ export const MobileLookBuilder = () => {
     vestido: "",
     conjunto: "",
   });
+
+  // Categoria atualmente aberta no dialog rápido de seleção de tamanho
+  // (acionado tocando num item da prévia que ainda não tem tamanho).
+  const [pendingSizeCategory, setPendingSizeCategory] = useState<CategoryKey | null>(null);
 
   // Filtrar produtos por categoria
   const productsByCategory = useMemo(() => ({
@@ -459,6 +470,7 @@ export const MobileLookBuilder = () => {
             onWhatsApp={handleWhatsApp}
             getImageForColor={getImageForColor}
             missingSize={missingSize}
+            onPickSize={(cat) => setPendingSizeCategory(cat)}
           />
           {/* aria-live region (desktop) — anuncia falta de tamanho ao tentar enviar. */}
           <p aria-live="polite" aria-atomic="true" className="sr-only">
@@ -675,12 +687,33 @@ export const MobileLookBuilder = () => {
                 getImageForColor={getImageForColor}
                 missingSize={missingSize}
                 isMobile
+                onPickSize={(cat) => {
+                  // Fecha a prévia mobile e abre o dialog de seleção rápida.
+                  closePreview();
+                  setPendingSizeCategory(cat);
+                }}
               />
             </div>
           </div>
         </div>,
         document.body
       )}
+
+      {/* Dialog rápido de seleção de tamanho — disparado ao tocar num item
+          incompleto na prévia. Não altera fluxo do WhatsApp; apenas grava
+          o tamanho escolhido na categoria correspondente. */}
+      <QuickSizeDialog
+        category={pendingSizeCategory}
+        product={pendingSizeCategory ? selectedProducts[pendingSizeCategory] : null}
+        selectedColor={pendingSizeCategory ? selectedColors[pendingSizeCategory] : ""}
+        selectedSize={pendingSizeCategory ? selectedSizes[pendingSizeCategory] : ""}
+        onClose={() => setPendingSizeCategory(null)}
+        onSelectSize={(size) => {
+          if (!pendingSizeCategory) return;
+          setSelectedSizes({ ...selectedSizes, [pendingSizeCategory]: size });
+          setPendingSizeCategory(null);
+        }}
+      />
     </div>
   );
 };
@@ -926,6 +959,10 @@ interface PreviewPanelProps {
   getImageForColor: (produto: Produto | null, cor: string) => string;
   isMobile?: boolean;
   missingSize?: boolean;
+  /** Categorias que exigem tamanho. Usado para destacar items sem tamanho na prévia. */
+  sizedCategories?: CategoryKey[];
+  /** Acionado quando o usuário toca num item incompleto na prévia. */
+  onPickSize?: (category: CategoryKey) => void;
 }
 
 const PreviewPanel = ({
@@ -939,6 +976,8 @@ const PreviewPanel = ({
   getImageForColor,
   isMobile = false,
   missingSize = false,
+  sizedCategories = ["blusa", "bottom", "vestido", "conjunto"],
+  onPickSize,
 }: PreviewPanelProps) => {
   const isFullOutfit = selectedProducts.vestido || selectedProducts.conjunto;
   
@@ -1049,12 +1088,31 @@ const PreviewPanel = ({
           <div className="space-y-1.5 sm:space-y-2 text-sm">
             {Object.entries(selectedProducts).map(([key, product]) => {
               if (!product) return null;
-              const color = selectedColors[key as CategoryKey];
-              const size = selectedSizes[key as CategoryKey];
+              const cat = key as CategoryKey;
+              const color = selectedColors[cat];
+              const size = selectedSizes[cat];
               const price = product.precoPromocional || product.precoVenda;
+              const requiresSize = sizedCategories.includes(cat);
+              const isIncomplete = requiresSize && !size;
+              const Wrapper: "button" | "div" = isIncomplete && onPickSize ? "button" : "div";
               
               return (
-                <div key={key} className="flex items-center justify-between bg-secondary/30 rounded-lg p-2 animate-pop-in">
+                <Wrapper
+                  key={key}
+                  type={Wrapper === "button" ? "button" : undefined}
+                  onClick={isIncomplete && onPickSize ? () => onPickSize(cat) : undefined}
+                  aria-label={
+                    isIncomplete
+                      ? `Selecionar tamanho para ${product.nome}`
+                      : undefined
+                  }
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-lg p-2 animate-pop-in text-left transition-all",
+                    isIncomplete
+                      ? "bg-destructive/10 border border-destructive/40 ring-1 ring-destructive/30 hover:bg-destructive/15 active:scale-[0.99] cursor-pointer"
+                      : "bg-secondary/30",
+                  )}
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <img
                       key={`${product.id}-${color || "default"}`}
@@ -1064,15 +1122,21 @@ const PreviewPanel = ({
                     />
                     <div className="min-w-0">
                       <p className="font-medium truncate text-xs sm:text-sm">{product.nome}</p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">
-                        {color && `${color}`}{color && size && " • "}{size && `Tam. ${size}`}
-                      </p>
+                      {isIncomplete ? (
+                        <p className="text-[10px] sm:text-xs font-medium text-destructive">
+                          {color ? `${color} • ` : ""}Toque para escolher o tamanho
+                        </p>
+                      ) : (
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">
+                          {color && `${color}`}{color && size && " • "}{size && `Tam. ${size}`}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <span className="font-medium text-primary shrink-0 text-xs sm:text-sm">
                     {formatBRL(price)}
                   </span>
-                </div>
+                </Wrapper>
               );
             })}
           </div>
@@ -1103,5 +1167,75 @@ const PreviewPanel = ({
         </div>
       )}
     </div>
+  );
+};
+// Dialog rápido para escolher tamanho de um item da prévia.
+// Renderiza apenas tamanhos disponíveis para a cor selecionada (sem chips riscados).
+interface QuickSizeDialogProps {
+  category: CategoryKey | null;
+  product: Produto | null;
+  selectedColor: string;
+  selectedSize: string;
+  onClose: () => void;
+  onSelectSize: (size: string) => void;
+}
+
+const QuickSizeDialog = ({
+  category,
+  product,
+  selectedColor,
+  selectedSize,
+  onClose,
+  onSelectSize,
+}: QuickSizeDialogProps) => {
+  const open = !!category && !!product;
+  const tamanhos = product && selectedColor
+    ? [...new Set(
+        product.variants
+          .filter((v) => v.cor === selectedColor && v.disponibilidade > 0)
+          .map((v) => v.tamanho),
+      )]
+    : product
+      ? [...new Set(product.variants.filter((v) => v.disponibilidade > 0).map((v) => v.tamanho))]
+      : [];
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            Escolha o tamanho
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {product?.nome}
+            {selectedColor ? ` — ${selectedColor}` : ""}
+          </DialogDescription>
+        </DialogHeader>
+
+        {tamanhos.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            Nenhum tamanho disponível para esta cor.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2 py-2">
+            {tamanhos.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onSelectSize(t)}
+                className={cn(
+                  "min-w-[48px] h-11 px-3 rounded-lg text-sm font-semibold transition-all touch-feedback",
+                  selectedSize === t
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary border border-border hover:border-primary/50",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
