@@ -286,7 +286,16 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
       navigate(getProductPathWithSearch(produto));
       return false;
     }
-    sizeGuide.guide();
+    // Re-resolve o container visível NO MOMENTO do clique (lista vs. grade vs. mobile/desktop)
+    // — evita race entre callbacks de ref de containers ocultos.
+    const visibleSection = resolveVisibleSection();
+    if (visibleSection) {
+      sizeGuide.sectionRef.current = visibleSection;
+      sizeGuide.guide();
+    } else {
+      // Sem nenhum seletor visível inline → navega para o detalhe.
+      navigate(getProductPathWithSearch(produto));
+    }
     return false;
   };
 
