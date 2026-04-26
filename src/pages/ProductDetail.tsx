@@ -180,7 +180,9 @@ const ProductDetail = () => {
   // Galeria efetiva exibida no <ImageGallery>:
   // 1) Se a cor selecionada tem `imagens[]` (detalhe completo), usa só elas.
   // 2) Senão, usa imagem_full/imagem_thumb da cor + restante do produto.imagens.
-  // 3) Fallback final: produto.imagens.
+  // 3) Senão, usa produto.imagens.
+  // 4) Fallback final (imagem é a ÚNICA exceção permitida): placeholder genérico,
+  //    para evitar layout vazio sem inventar dados de produto.
   const imagensParaMostrar = useMemo(() => {
     if (!produto) return [] as string[];
     if (corSelecionadaObj && corSelecionadaObj.imagens.length > 0) {
@@ -192,7 +194,8 @@ const ProductDetail = () => {
       const restantes = produto.imagens.filter((img) => img !== principal);
       return [principal, ...restantes];
     }
-    return produto.imagens;
+    if (produto.imagens.length > 0) return produto.imagens;
+    return [produtoGenerico];
   }, [produto, corSelecionadaObj]);
 
   // Ao trocar cor, volta para a primeira imagem (que agora corresponde à cor selecionada).
