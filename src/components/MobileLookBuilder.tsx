@@ -353,18 +353,24 @@ export const MobileLookBuilder = () => {
 
   const handleWhatsApp = () => {
     const whatsappNumber = "5583986567915";
-    
-    const validateSizes = () => {
-      if (selectedProducts.blusa && !selectedSizes.blusa) return "Selecione o tamanho da blusa";
-      if (selectedProducts.bottom && !selectedSizes.bottom) return "Selecione o tamanho da peça inferior";
-      if (selectedProducts.vestido && !selectedSizes.vestido) return "Selecione o tamanho do vestido";
-      if (selectedProducts.conjunto && !selectedSizes.conjunto) return "Selecione o tamanho do conjunto";
-      return null;
-    };
 
-    const error = validateSizes();
-    if (error) {
-      alert(error);
+    // Identifica a primeira categoria com produto selecionado mas sem tamanho.
+    // Bolsa não tem tamanho — é ignorada na validação.
+    const categoriasComTamanho: CategoryKey[] = ["blusa", "bottom", "vestido", "conjunto"];
+    const categoriaFaltante = categoriasComTamanho.find(
+      (k) => selectedProducts[k] && !selectedSizes[k],
+    );
+    if (categoriaFaltante) {
+      // Expande a categoria para garantir que o seletor de tamanho fique visível,
+      // depois localiza o nó pelo data-attribute e dispara o guia (scroll + destaque + foco).
+      setExpandedCategory(categoriaFaltante);
+      // Aguarda um frame para a expansão renderizar antes de medir/rolar.
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(
+          `[data-category="${categoriaFaltante}"]`,
+        );
+        sizeGuide.guideElement(el);
+      });
       return;
     }
     
