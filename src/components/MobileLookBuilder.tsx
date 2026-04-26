@@ -693,7 +693,10 @@ const CategorySection = ({
       "bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300",
       isDisabled && "opacity-50 pointer-events-none",
       selectedProduct && "border-primary/40 bg-primary/5 shadow-sm"
-    )}>
+    )}
+    data-category={category.key}
+    tabIndex={-1}
+    >
       {/* Header */}
       <button
         onClick={onToggle}
