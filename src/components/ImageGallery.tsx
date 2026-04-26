@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Ha
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ProductImageSkeleton } from "@/components/ProductImageSkeleton";
+import { ProductImageSkeleton, preloadImage } from "@/components/ProductImageSkeleton";
 import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 
 interface ImageGalleryProps {
