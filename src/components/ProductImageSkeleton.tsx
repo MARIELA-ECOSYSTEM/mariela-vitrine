@@ -339,6 +339,117 @@ export const ProductImageSkeleton = ({
   );
 };
 
+// =====================================================================
+// ImageTrack — trilho horizontal (Posthaus/Swiper)
+// ---------------------------------------------------------------------
+// Renderiza 3 slots lado-a-lado (prev/cur/next) e desliza com
+// `transform: translateX(-100%)` + cubic-bezier ~420ms. Os slots vizinhos
+// são montados ANTES da animação iniciar, então a navegação é
+// instantânea e fluida (sem troca de `src` durante o slide).
+//
+// Detalhes técnicos:
+// - Detecta a direção pela diferença `currentIndex - prevIndex` (lida
+//   com wrap "último→primeiro" e "primeiro→último" como o slide curto
+//   visualmente esperado).
+// - Após a transição (transitionend), reposiciona o trilho sem animação
+//   ao slot central — assim a próxima navegação parte de um estado
+//   neutro e o vizinho oposto reaparece.
+// - Tamanho/posição absolutos garantem CLS=0.
+// =====================================================================
+
+interface ImageTrackProps {
+  images: string[];
+  currentIndex: number;
+  alt: string;
+  className?: string;
+  priority?: boolean;
+  enableBlurUp?: boolean;
+}
+
+const TRACK_EASING = "cubic-bezier(0.22, 1, 0.36, 1)"; // mesma curva da Posthaus
+const TRACK_DURATION_MS = 420;
+
+const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlurUp }: ImageTrackProps) => {
+  const len = images.length;
+  const prevIndexRef = useRef<number>(currentIndex);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  // Slots: [esquerdo, centro, direito]. Centro é sempre o currentIndex.
+  // Esquerdo/direito derivam ciclicamente.
+  const leftIdx = (currentIndex - 1 + len) % len;
+  const rightIdx = (currentIndex + 1) % len;
+
+  // Direção do slide a aplicar — calculada quando currentIndex muda.
+  // 'next' empurra o trilho para a esquerda (translateX -200%),
+  // 'prev' empurra para a direita (translateX 0%).
+  const [direction, setDirection] = useState<"next" | "prev" | null>(null);
+  const [animating, setAnimating] = useState(false);
+
+  useEffect(() => {
+    const prev = prevIndexRef.current;
+    if (prev === currentIndex) return;
+    // Heurística direção: caminho mais curto no ciclo.
+    const forward = (currentIndex - prev + len) % len;
+    const backward = (prev - currentIndex + len) % len;
+    const dir: "next" | "prev" = forward <= backward ? "next" : "prev";
+    prevIndexRef.current = currentIndex;
+    setDirection(dir);
+    setAnimating(true);
+    const t = window.setTimeout(() => {
+      setAnimating(false);
+      setDirection(null);
+    }, TRACK_DURATION_MS + 30);
+    return () => window.clearTimeout(t);
+  }, [currentIndex, len]);
+
+  // Translate alvo durante a animação. Em estado neutro (sem direção),
+  // mantemos o slot CENTRO visível (translateX -100%).
+  let translate = "-100%";
+  if (animating && direction === "next") translate = "-200%";
+  if (animating && direction === "prev") translate = "0%";
+
+  return (
+    <div className={cn("relative w-full h-full overflow-hidden", className)}>
+      <div
+        ref={trackRef}
+        className="absolute inset-0 flex h-full will-change-transform"
+        style={{
+          width: "300%",
+          transform: `translateX(${translate})`,
+          transition: animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
+        }}
+      >
+        {/* Slot esquerdo */}
+        <div className="relative h-full" style={{ width: "33.3333%" }}>
+          <LegacyImageDisplay
+            src={images[leftIdx]}
+            alt={alt}
+            priority={false}
+            enableBlurUp={false}
+          />
+        </div>
+        {/* Slot central (atual) */}
+        <div className="relative h-full" style={{ width: "33.3333%" }}>
+          <LegacyImageDisplay
+            src={images[currentIndex]}
+            alt={alt}
+            priority={priority}
+            enableBlurUp={enableBlurUp}
+          />
+        </div>
+        {/* Slot direito */}
+        <div className="relative h-full" style={{ width: "33.3333%" }}>
+          <LegacyImageDisplay
+            src={images[rightIdx]}
+            alt={alt}
+            priority={false}
+            enableBlurUp={false}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /**
  * Implementação clássica (cross-fade do `src`). Mantida como fallback
  * e usada para troca de cor cujo URL não corresponde necessariamente
