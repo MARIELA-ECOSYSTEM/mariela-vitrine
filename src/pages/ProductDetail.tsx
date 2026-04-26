@@ -503,11 +503,8 @@ const ProductDetail = () => {
     const corValida = !isAcessorio && !!corSelecionada
       && coresList.some((c) => c.cor === corSelecionada);
     if (!isAcessorio && !corValida) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: rola até a seção de variantes e destaca, sem toast agressivo.
+      focarSelecaoTamanho();
       return;
     }
 
@@ -516,11 +513,8 @@ const ProductDetail = () => {
       isAcessorio || tamanhosDisponiveis.includes(tamanhoParaUsar)
     );
     if (!tamanhoValido) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: rola até a seleção de tamanhos e destaca a área.
+      focarSelecaoTamanho();
       return;
     }
     
