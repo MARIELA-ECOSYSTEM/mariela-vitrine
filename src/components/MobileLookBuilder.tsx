@@ -466,6 +466,7 @@ export const MobileLookBuilder = () => {
             onClear={clearAllSelections}
             onWhatsApp={handleWhatsApp}
             getImageForColor={getImageForColor}
+            missingSize={missingSize}
           />
           {/* aria-live region (desktop) — anuncia falta de tamanho ao tentar enviar. */}
           <p aria-live="polite" aria-atomic="true" className="sr-only">
@@ -685,6 +686,7 @@ export const MobileLookBuilder = () => {
                 onClear={clearAllSelections}
                 onWhatsApp={handleWhatsApp}
                 getImageForColor={getImageForColor}
+                missingSize={missingSize}
                 isMobile
               />
             </div>
