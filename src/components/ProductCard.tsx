@@ -438,6 +438,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
               onMouseEnter={preloadNeighbors}
               onPointerEnter={preloadNeighbors}
               onFocus={preloadNeighbors}
+              onMouseLeave={cancelPreloadNeighbors}
+              onPointerLeave={cancelPreloadNeighbors}
+              onBlur={cancelPreloadNeighbors}
             >
               <ProductImageSkeleton 
                 src={imagemAtual} 
@@ -450,12 +453,20 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 <>
                   <button
                     onClick={handlePrevImage}
+                    onMouseEnter={() => preloadOnArrowHover("prev")}
+                    onPointerEnter={() => preloadOnArrowHover("prev")}
+                    onTouchStart={() => preloadOnArrowHover("prev")}
+                    onFocus={() => preloadOnArrowHover("prev")}
                     className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
                     onClick={handleNextImage}
+                    onMouseEnter={() => preloadOnArrowHover("next")}
+                    onPointerEnter={() => preloadOnArrowHover("next")}
+                    onTouchStart={() => preloadOnArrowHover("next")}
+                    onFocus={() => preloadOnArrowHover("next")}
                     className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
                   >
                     <ChevronRight className="h-4 w-4" />
