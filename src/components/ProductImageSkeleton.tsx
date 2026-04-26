@@ -121,6 +121,9 @@ export function preloadImage(src: string, priority: PreloadPriority = "low"): Pr
     if (rankPriority(priority) > rankPriority(existing.priority)) {
       existing.priority = priority;
       applyPriorityHints(existing.img, priority);
+      if (!SUPPORTS_FETCH_PRIORITY && priority === "high") {
+        injectPreloadLink(existing.realSrc, priority);
+      }
     }
     return existing.promise;
   }
