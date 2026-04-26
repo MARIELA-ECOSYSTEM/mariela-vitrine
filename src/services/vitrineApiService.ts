@@ -736,21 +736,21 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       .map((tam) => {
         const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
         const disponivel = readBoolean(tam, ["disponivel", "available", "ativo"], quantidade > 0);
+        const tamanho = readString(tam, ["tamanho", "size", "nome"], "");
+        if (!tamanho) return null;
         return {
-          tamanho: readString(tam, ["tamanho", "size", "nome"], "U"),
+          tamanho,
           disponibilidade: quantidade > 0 ? quantidade : disponivel ? 1 : 0,
         };
       })
-      .filter((t) => t.disponibilidade > 0);
+      .filter((t): t is { tamanho: string; disponibilidade: number } => !!t && t.disponibilidade > 0);
 
-    // Listagem (`/vitrine-api/produtos`) não envia `tamanhos` por cor — apenas
-    // `disponivel`. Nesse caso, mantemos a cor com tamanho placeholder "U" para
-    // não filtrá-la no card. O detalhe (`/produto/{id}`) traz tamanhos reais.
-    if (tamanhosArray.length === 0 && corDisponivel) {
-      tamanhos.push({ tamanho: "U", disponibilidade: 1 });
-    }
-
-    if (tamanhos.length === 0) return;
+    // Listagem (`/vitrine-api/produtos`) pode não enviar `tamanhos` por cor.
+    // Nesse caso, NÃO inventamos tamanho ("U") — mantemos a cor com `tamanhos`
+    // vazio. A grade real só aparece no detalhe (`/produto/{id}`); a UI de card
+    // não exige tamanho para listar a cor. Se a cor não estiver disponível e
+    // não houver grade, descartamos.
+    if (tamanhos.length === 0 && !corDisponivel) return;
 
     cores.push({
       produto_cor_id: produtoCorId,
