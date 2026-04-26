@@ -507,11 +507,8 @@ const ProductDetail = () => {
     const corValida = !isAcessorio && !!corParaAdicionar
       && coresList.some((c) => c.cor === corParaAdicionar);
     if (!isAcessorio && !corValida) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
+      focarSelecaoTamanho();
       return;
     }
 
@@ -520,11 +517,8 @@ const ProductDetail = () => {
       isAcessorio || tamanhosDisponiveis.includes(tamanhoParaAdicionar)
     );
     if (!tamanhoValido) {
-      toast({
-        title: "Selecione cor e tamanho",
-        description: "Selecione cor e tamanho para continuar.",
-        variant: "destructive",
-      });
+      // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
+      focarSelecaoTamanho();
       return;
     }
     
@@ -822,7 +816,9 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  Adicionar ao Carrinho
+                  {!isAcessorio && !tamanhoSelecionado
+                    ? "Selecione o tamanho"
+                    : "Adicionar ao Carrinho"}
                 </Button>
                 <Button
                   size="lg"
