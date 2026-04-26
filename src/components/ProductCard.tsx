@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { memo, useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
@@ -44,10 +44,54 @@ interface ProductCardProps {
   layoutMode?: "grade" | "lista";
 }
 
-export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: ProductCardProps) => {
+/**
+ * Hash leve baseado nos campos que realmente afetam o render do card.
+ * Quando a `ProductsContext` faz refresh em background, a lista chega com
+ * novas referências de objetos/arrays mas, em geral, com conteúdo idêntico.
+ * Esse hash + `useMemo` mantém a referência anterior estável, evitando
+ * que TODOS os `useMemo` internos (cores, mapas, imagens) recalculem e
+ * que componentes filhos memoizados re-renderizem à toa.
+ */
+function getProdutoSignature(p: Produto): string {
+  const cores = p.cores
+    ? p.cores
+        .map(
+          (c) =>
+            `${c.produto_cor_id}|${c.cor}|${c.imagem_thumb ?? ""}|${c.imagem_full ?? ""}|` +
+            (c.tamanhos?.map((t) => `${t.tamanho}:${t.disponibilidade}`).join(",") ?? ""),
+        )
+        .join(";")
+    : "";
+  const imgs = (p.imagens ?? []).join("|");
+  return [
+    p.id,
+    p.produtoId ?? "",
+    p.nome,
+    p.precoVenda,
+    p.precoPromocional ?? "",
+    p.emPromocao ? 1 : 0,
+    p.publicBadge ?? p.badgePublico ?? "",
+    imgs,
+    cores,
+  ].join("§");
+}
+
+const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: ProductCardProps) => {
   // Cards usam EXCLUSIVAMENTE os dados vindos da listagem `/vitrine-api/produtos`.
   // Não há fallback por `/produto/{id}` — isso evita N+1 requests.
-  const produto = produtoProp;
+  //
+  // Estabilização: mantém a MESMA referência de `produto` enquanto o conteúdo
+  // observável (assinatura) for igual. Isso impede que refreshs em background
+  // (mesmo conteúdo, nova ref) invalidem todos os `useMemo` abaixo.
+  const stableRef = useRef<{ signature: string; produto: Produto }>({
+    signature: getProdutoSignature(produtoProp),
+    produto: produtoProp,
+  });
+  const nextSignature = getProdutoSignature(produtoProp);
+  if (nextSignature !== stableRef.current.signature) {
+    stableRef.current = { signature: nextSignature, produto: produtoProp };
+  }
+  const produto = stableRef.current.produto;
 
   const publicBadge = getPublicProductBadge(produto);
 
