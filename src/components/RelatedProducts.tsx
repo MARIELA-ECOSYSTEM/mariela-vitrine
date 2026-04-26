@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import type { Produto } from "@/data/products";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getDisplayPrice } from "@/lib/formatters";
 
 interface RelatedProductsProps {
   currentProduct: Produto;
@@ -42,16 +43,21 @@ export const RelatedProducts = ({
         return temEstoque;
       });
 
-    // Ordenação leve: promoção → novidade → demais (estável).
+    // Ordenação comercial: promoção → novidade → menor preço → nome (determinístico).
     const score = (p: Produto) => {
       if (p.emPromocao) return 0;
       if (p.isNovidade) return 1;
       return 2;
     };
     return filtrados
-      .map((p, idx) => ({ p, idx, s: score(p) }))
-      .sort((a, b) => a.s - b.s || a.idx - b.idx)
-      .map((x) => x.p)
+      .slice()
+      .sort((a, b) => {
+        const ds = score(a) - score(b);
+        if (ds !== 0) return ds;
+        const dp = getDisplayPrice(a) - getDisplayPrice(b);
+        if (dp !== 0) return dp;
+        return a.nome.localeCompare(b.nome, "pt-BR");
+      })
       .slice(0, limite);
   }, [currentProduct, allProducts, limite]);
 
