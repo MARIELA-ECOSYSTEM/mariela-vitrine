@@ -2,13 +2,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
 import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER } from "@/lib/productImage";
-import { ProductImageSkeleton, preloadImagesPrioritized } from "./ProductImageSkeleton";
+import { ProductImageSkeleton, preloadImage, preloadImagesPrioritized } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
@@ -196,6 +196,10 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   // rapidamente sobre vários cards.
   // ============================================================
   const lastPreloadAtRef = useRef<number>(0);
+  // Handle do último preload em curso — permite cancelar download em
+  // background quando o usuário sai do card antes da imagem chegar.
+  const lastPreloadHandleRef = useRef<{ cancel: () => void } | null>(null);
+
   const preloadNeighbors = useCallback(() => {
     const now = Date.now();
     if (now - lastPreloadAtRef.current < 500) return;
@@ -218,9 +222,39 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
       if (url) targets.push(url);
     }
     if (targets.length === 0) return;
-    // Carrega as 2 primeiras imediatamente; o resto fica no idle.
-    preloadImagesPrioritized(targets, 2);
+    // Cancela qualquer preload anterior ainda em curso (rate-limit já
+    // impede flood, mas cobertura adicional não custa nada).
+    lastPreloadHandleRef.current?.cancel();
+    lastPreloadHandleRef.current = preloadImagesPrioritized(targets, 2);
   }, [imagensValidas, currentImageIndex, coresList, corSelecionada]);
+
+  /**
+   * Cancela preloads em background quando o usuário sai do card antes
+   * que as imagens cheguem. Economiza banda em listas longas onde o
+   * mouse passa rapidamente por vários cards.
+   */
+  const cancelPreloadNeighbors = useCallback(() => {
+    lastPreloadHandleRef.current?.cancel();
+    lastPreloadHandleRef.current = null;
+  }, []);
+
+  /**
+   * Preload focado em UMA direção: dispara somente a imagem na direção
+   * provável do clique (next ou prev). Usado em hover/touchstart das
+   * setas do card para reduzir delay perceptível ao trocar rapidamente.
+   */
+  const preloadOnArrowHover = useCallback((direction: "next" | "prev") => {
+    if (imagensValidas.length <= 1) return;
+    const targetIdx = direction === "next"
+      ? (currentImageIndex + 1) % imagensValidas.length
+      : (currentImageIndex - 1 + imagensValidas.length) % imagensValidas.length;
+    const url = imagensValidas[targetIdx];
+    if (!url) return;
+    preloadImage(url).catch(() => {});
+  }, [imagensValidas, currentImageIndex]);
+
+  // Garante limpeza ao desmontar o card (ex.: filtro reordenando lista).
+  useEffect(() => () => { lastPreloadHandleRef.current?.cancel(); }, []);
 
   // Imagem atual: índice do carrossel é a fonte primária (setas sempre funcionam).
   // Fallback: imagem da cor selecionada → primeira imagem válida → genérico.
@@ -404,6 +438,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
               onMouseEnter={preloadNeighbors}
               onPointerEnter={preloadNeighbors}
               onFocus={preloadNeighbors}
+              onMouseLeave={cancelPreloadNeighbors}
+              onPointerLeave={cancelPreloadNeighbors}
+              onBlur={cancelPreloadNeighbors}
             >
               <ProductImageSkeleton 
                 src={imagemAtual} 
@@ -416,12 +453,20 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 <>
                   <button
                     onClick={handlePrevImage}
+                    onMouseEnter={() => preloadOnArrowHover("prev")}
+                    onPointerEnter={() => preloadOnArrowHover("prev")}
+                    onTouchStart={() => preloadOnArrowHover("prev")}
+                    onFocus={() => preloadOnArrowHover("prev")}
                     className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
                     onClick={handleNextImage}
+                    onMouseEnter={() => preloadOnArrowHover("next")}
+                    onPointerEnter={() => preloadOnArrowHover("next")}
+                    onTouchStart={() => preloadOnArrowHover("next")}
+                    onFocus={() => preloadOnArrowHover("next")}
                     className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -573,6 +618,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
           onMouseEnter={preloadNeighbors}
           onPointerEnter={preloadNeighbors}
           onFocus={preloadNeighbors}
+          onMouseLeave={cancelPreloadNeighbors}
+          onPointerLeave={cancelPreloadNeighbors}
+          onBlur={cancelPreloadNeighbors}
         >
           <ProductImageSkeleton 
             src={imagemAtual} 
@@ -585,12 +633,20 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             <>
               <button
                 onClick={handlePrevImage}
+                onMouseEnter={() => preloadOnArrowHover("prev")}
+                onPointerEnter={() => preloadOnArrowHover("prev")}
+                onTouchStart={() => preloadOnArrowHover("prev")}
+                onFocus={() => preloadOnArrowHover("prev")}
                 className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/80 flex items-center justify-center opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-background active:scale-95"
               >
                 <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </button>
               <button
                 onClick={handleNextImage}
+                onMouseEnter={() => preloadOnArrowHover("next")}
+                onPointerEnter={() => preloadOnArrowHover("next")}
+                onTouchStart={() => preloadOnArrowHover("next")}
+                onFocus={() => preloadOnArrowHover("next")}
                 className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-10 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-background/80 flex items-center justify-center opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-background active:scale-95"
               >
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
