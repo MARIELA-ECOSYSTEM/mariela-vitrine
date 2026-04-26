@@ -1,11 +1,13 @@
 import { Instagram, Menu, ShoppingCart, MessageCircle, RefreshCw, Check, Download, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/hooks/useTheme";
+import { useHeaderOverlay } from "@/contexts/HeaderOverlayContext";
+import { useBannerLuminance } from "@/hooks/useBannerLuminance";
 import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -18,34 +20,80 @@ export const Header = () => {
   const [refreshState, setRefreshState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0); // 0 (topo) → 1 (totalmente opaco)
   const { items } = useCart();
   const { refreshProducts } = useProducts();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const { theme, toggleTheme } = useTheme();
+  const { bannerImage, activeSection, setActiveSection } = useHeaderOverlay();
+  const bannerTone = useBannerLuminance(bannerImage); // 'light' = texto branco, 'dark' = texto escuro
 
   // Header transparente apenas na Home, onde existe um banner full-bleed atrás do header.
   const isHome = location.pathname === "/";
-  // Modo "sobreposto ao banner": só na Home e antes de rolar a página.
-  const isOverlay = isHome && !isScrolled && !isMobileMenuOpen;
+  // Modo "sobreposto ao banner": progresso < 1 e não está com menu mobile aberto.
+  // Mobile menu aberto força fundo opaco para garantir legibilidade dos links.
+  const isOverlay = isHome && scrollProgress < 0.98 && !isMobileMenuOpen;
+  // Tom do conteúdo overlay: deriva da luminância do banner (auto-contraste).
+  const overlayTextLight = bannerTone === "light"; // banner escuro → texto branco
 
   useEffect(() => {
+    const FADE_DISTANCE = 160; // px ao longo dos quais a transição acontece
+    let frame = 0;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 24);
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        const progress = Math.min(1, Math.max(0, y / FADE_DISTANCE));
+        setScrollProgress(progress);
+      });
     };
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
-  // Ao trocar de rota, reavalia o estado de rolagem para evitar header transparente
-  // numa página sem banner.
+  // Ao trocar de rota, reavalia o estado de rolagem e fecha menu mobile.
   useEffect(() => {
-    setIsScrolled(window.scrollY > 24);
+    const y = window.scrollY;
+    setScrollProgress(Math.min(1, Math.max(0, y / 160)));
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Scroll-spy: destaca a seção visível na Home (home / products / contact).
+  useEffect(() => {
+    if (!isHome) {
+      setActiveSection(null);
+      return;
+    }
+    const ids = ["home", "products", "contact"];
+    const elements = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => Boolean(el));
+    if (elements.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Escolhe a seção com maior interseção visível.
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveSection(visible.target.id);
+      },
+      {
+        // "Foco" no terço superior da viewport (logo abaixo do header).
+        rootMargin: "-20% 0px -55% 0px",
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+      },
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [isHome, setActiveSection]);
 
   useEffect(() => {
     if (refreshState === 'success') {
@@ -112,11 +160,32 @@ export const Header = () => {
   };
 
   const navLinks = [
-    { path: '/', label: 'Início', scrollTo: 'home' },
-    { path: '/products', label: 'Produtos' },
-    { path: '/monte-seu-look', label: 'Monte Seu Look' },
-    { path: '/', label: 'Contato', scrollTo: 'contact' },
+    { path: '/', label: 'Início', scrollTo: 'home', section: 'home' },
+    { path: '/products', label: 'Produtos', scrollTo: undefined as string | undefined, section: 'products' },
+    { path: '/monte-seu-look', label: 'Monte Seu Look', scrollTo: undefined as string | undefined, section: undefined as string | undefined },
+    { path: '/', label: 'Contato', scrollTo: 'contact', section: 'contact' },
   ];
+
+  // Helper para definir se um link do menu está "ativo" considerando rota + scroll-spy.
+  const isLinkActive = (link: { path: string; scrollTo?: string; section?: string }) => {
+    if (isHome && link.section) return activeSection === link.section;
+    if (!link.scrollTo) return isActive(link.path);
+    return false;
+  };
+
+  // Estilo inline para opacidade progressiva do fundo do header.
+  // Usamos hsl(var(--background)) para respeitar o tema (claro/escuro).
+  const headerBgStyle = useMemo(() => {
+    if (!isHome) return undefined;
+    const alpha = isMobileMenuOpen ? 1 : scrollProgress;
+    return {
+      backgroundColor: `hsl(var(--background) / ${alpha})`,
+      borderBottomColor: `hsl(var(--border) / ${alpha * 0.5})`,
+      // backdrop-blur cresce junto com a opacidade para um efeito "glass" intermediário.
+      backdropFilter: alpha > 0.05 && alpha < 0.95 ? `blur(${Math.round(alpha * 12)}px)` : undefined,
+      WebkitBackdropFilter: alpha > 0.05 && alpha < 0.95 ? `blur(${Math.round(alpha * 12)}px)` : undefined,
+    } as React.CSSProperties;
+  }, [isHome, isMobileMenuOpen, scrollProgress]);
 
   return (
     <>
@@ -146,12 +215,18 @@ export const Header = () => {
       )}
       
       <header
+        style={headerBgStyle}
         className={cn(
-          "fixed left-0 right-0 z-50 animate-fade-in-down transition-colors duration-300",
+          "fixed left-0 right-0 z-50 animate-fade-in-down transition-colors duration-300 border-b",
           showInstallBanner && isMobile ? "top-10" : "top-0",
-          isOverlay
-            ? "bg-transparent border-b border-transparent text-white"
-            : "bg-background border-b border-border/50 text-foreground",
+          // Fora da Home: sempre opaco com tokens semânticos.
+          !isHome && "bg-background border-border/50 text-foreground",
+          // Na Home: cor do texto controlada pelo modo overlay + tom do banner.
+          isHome && (isOverlay
+            ? overlayTextLight ? "text-white" : "text-foreground"
+            : "text-foreground"),
+          isHome && !isOverlay && "border-border/50",
+          isHome && isOverlay && "border-transparent",
         )}
       >
         <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3">
