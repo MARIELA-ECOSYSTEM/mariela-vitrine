@@ -803,6 +803,7 @@ const CategorySection = ({
                   {availableSizes.map((tamanho) => (
                     <button
                       key={tamanho}
+                      data-size-option
                       onClick={() => {
                         if ('vibrate' in navigator) navigator.vibrate(10);
                         onSizeChange(tamanho);
