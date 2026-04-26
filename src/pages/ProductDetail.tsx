@@ -694,10 +694,10 @@ const ProductDetail = () => {
                   {/* Seletor de Tamanho */}
                   {corSelecionada && (
                     <div
-                      ref={tamanhosSectionRef}
+                      ref={sizeGuide.sectionRef}
                       tabIndex={-1}
                       className={`space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300 ${
-                        tamanhosHighlight
+                        sizeGuide.highlight
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)] p-3 -m-3 animate-pulse"
                           : ""
                       }`}
@@ -742,7 +742,7 @@ const ProductDetail = () => {
                   aria-atomic="true"
                   className="sr-only"
                 >
-                  {tamanhosAnnounce ? "Selecione um tamanho para continuar." : ""}
+                  {sizeGuide.announceMessage}
                 </p>
                 {produtoIndisponivel && (
                   <p
