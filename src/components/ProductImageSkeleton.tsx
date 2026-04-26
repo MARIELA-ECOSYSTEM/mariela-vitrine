@@ -239,6 +239,11 @@ export function isImagePreloaded(src: string | null | undefined): boolean {
   return loadedImageCache.has(normalizeImageKey(src));
 }
 
+function markImagePreloaded(src: string | null | undefined): void {
+  if (!src) return;
+  loadedImageCache.add(normalizeImageKey(src));
+}
+
 /**
  * Preload em background com priorização. As primeiras URLs são carregadas
  * imediatamente; o restante aguarda `requestIdleCallback` (com fallback a
@@ -475,42 +480,63 @@ const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, prio
           transition: trackState.animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
         }}
       >
-        {/* Slot esquerdo — priority=true para evitar lazy-load durante o slide. */}
+        {/* Slot esquerdo — <img> direto evita remount com skeleton/fade no settle. */}
         <div style={slotStyle}>
-          <LegacyImageDisplay
+          <TrackImageSlot
             key={`left-${images[leftIdx]}`}
             src={images[leftIdx]}
-            alt={alt}
+            alt=""
             priority
-            enableBlurUp={false}
-            silentError
+            ariaHidden
           />
         </div>
         {/* Slot central (atual) */}
         <div style={slotStyle}>
-          <LegacyImageDisplay
+          <TrackImageSlot
             key={`center-${images[centerIdx]}`}
             src={images[centerIdx]}
             alt={alt}
             priority={priority}
-            enableBlurUp={enableBlurUp}
           />
         </div>
         {/* Slot direito */}
         <div style={slotStyle}>
-          <LegacyImageDisplay
+          <TrackImageSlot
             key={`right-${images[rightIdx]}`}
             src={images[rightIdx]}
-            alt={alt}
+            alt=""
             priority
-            enableBlurUp={false}
-            silentError
+            ariaHidden
           />
         </div>
       </div>
     </div>
   );
 };
+
+const TrackImageSlot = ({
+  src,
+  alt,
+  priority = false,
+  ariaHidden = false,
+}: {
+  src: string;
+  alt: string;
+  priority?: boolean;
+  ariaHidden?: boolean;
+}) => (
+  <img
+    src={src}
+    alt={alt}
+    aria-hidden={ariaHidden || undefined}
+    loading={priority ? "eager" : "lazy"}
+    decoding="async"
+    {...({ fetchpriority: priority ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
+    className="absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none"
+    draggable={false}
+    onLoad={() => markImagePreloaded(src)}
+  />
+);
 
 /**
  * Implementação clássica (cross-fade do `src`). Mantida como fallback
