@@ -357,7 +357,7 @@ const ProductDetail = () => {
             "@type": "Product",
             name: produto.nome,
             image: absoluteUrl(imagemPrincipal),
-            description: descricao,
+            description: produto.descricao || seoDescription,
             brand: {
               "@type": "Brand",
               name: config.nomeLoja,
