@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { 
-  MessageCircle, 
   ShoppingBag, 
   X, 
   RefreshCw, 
@@ -24,6 +23,18 @@ import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 import { toast } from "@/hooks/use-toast";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
+
+// Ícone oficial do WhatsApp (inline SVG) — deixa explícito o canal de envio.
+const WhatsAppIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M20.52 3.48A11.93 11.93 0 0 0 12.04 0C5.5 0 .2 5.3.2 11.84c0 2.09.55 4.12 1.6 5.92L0 24l6.4-1.68a11.86 11.86 0 0 0 5.64 1.43h.01c6.54 0 11.84-5.3 11.84-11.84 0-3.16-1.23-6.13-3.37-8.43ZM12.05 21.3h-.01a9.43 9.43 0 0 1-4.81-1.32l-.34-.2-3.8 1 1.02-3.7-.22-.38a9.42 9.42 0 0 1-1.45-5.04c0-5.21 4.24-9.45 9.46-9.45 2.52 0 4.9.99 6.68 2.77a9.39 9.39 0 0 1 2.77 6.69c0 5.22-4.24 9.45-9.45 9.45Zm5.18-7.07c-.28-.14-1.68-.83-1.94-.92-.26-.1-.45-.14-.64.14-.19.28-.74.92-.9 1.11-.17.19-.33.21-.61.07-.28-.14-1.2-.44-2.28-1.41-.84-.75-1.41-1.67-1.58-1.95-.16-.28-.02-.43.13-.57.13-.13.28-.33.42-.5.14-.17.19-.28.28-.47.09-.19.05-.35-.02-.5-.07-.14-.64-1.54-.88-2.11-.23-.55-.47-.48-.64-.49l-.55-.01c-.19 0-.5.07-.76.35-.26.28-1 .98-1 2.39s1.02 2.77 1.16 2.96c.14.19 2 3.05 4.85 4.28.68.29 1.2.46 1.61.59.68.22 1.29.19 1.78.12.54-.08 1.68-.69 1.91-1.35.24-.66.24-1.22.17-1.34-.07-.12-.26-.19-.54-.33Z" />
+  </svg>
+);
 
 interface SelectedItems {
   blusa: number | null;
@@ -338,6 +349,17 @@ export const MobileLookBuilder = () => {
 
   const getImageForColor = (produto: Produto | null, cor: string) => {
     if (!produto) return produtoGenerico;
+    // Contrato novo: cores[] traz a imagem própria por cor (mais confiável).
+    if (cor && produto.cores && produto.cores.length > 0) {
+      const corMatch = produto.cores.find((c) => c.cor === cor);
+      const fromCor =
+        corMatch?.imagem_full ||
+        corMatch?.imagem_thumb ||
+        corMatch?.imagens?.[0]?.url_full ||
+        corMatch?.imagens?.[0]?.url_thumb ||
+        null;
+      if (fromCor) return fromCor;
+    }
     if (!produto.imagens || produto.imagens.length === 0) return produtoGenerico;
     if (!cor) return produto.imagens[0] || produtoGenerico;
     
