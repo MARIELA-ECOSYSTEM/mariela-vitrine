@@ -1,5 +1,6 @@
 import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
+import { isValidSize } from "@/lib/sizeUtils";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
@@ -743,8 +744,10 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       .map((tam) => {
         const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
         const disponivel = readBoolean(tam, ["disponivel", "available", "ativo"], quantidade > 0);
-        const tamanho = readString(tam, ["tamanho", "size", "nome"], "");
-        if (!tamanho) return null;
+        const tamanhoRaw = readString(tam, ["tamanho", "size", "nome"], "");
+        // Normaliza (trim) e descarta legados ("U", "Único", "Unica") e strings vazias.
+        const tamanho = tamanhoRaw.trim();
+        if (!isValidSize(tamanho)) return null;
         return {
           tamanho,
           disponibilidade: quantidade > 0 ? quantidade : disponivel ? 1 : 0,
