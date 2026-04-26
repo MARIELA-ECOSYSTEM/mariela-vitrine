@@ -405,38 +405,52 @@ const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, prio
   // browser antes do `<img>` ser pintado, eliminando frames vazios na
   // troca por seta/cor. Respeita o cache global — sem fetch duplicado.
   useEffect(() => {
-    const targets = [images[currentIndex], images[leftIdx], images[rightIdx]]
+    const targets = [images[centerIdx], images[targetIdx], images[leftIdx], images[rightIdx]]
       .filter((u): u is string => typeof u === "string" && u.length > 0);
     targets.forEach((u) => preloadImage(u, "high").catch(() => {}));
     return () => {
       // Não cancela: as 3 imagens visíveis devem permanecer "quentes"
       // até o próximo ciclo, que substitui pelo novo conjunto.
     };
-  }, [images, currentIndex, leftIdx, rightIdx]);
+  }, [images, centerIdx, targetIdx, leftIdx, rightIdx]);
 
-  useEffect(() => {
-    const prev = prevIndexRef.current;
-    if (prev === currentIndex) return;
-    // Heurística direção: caminho mais curto no ciclo.
-    const forward = (currentIndex - prev + len) % len;
-    const backward = (prev - currentIndex + len) % len;
-    const dir: "next" | "prev" = forward <= backward ? "next" : "prev";
-    prevIndexRef.current = currentIndex;
-    setDirection(dir);
-    setAnimating(true);
-    const t = window.setTimeout(() => {
-      setAnimating(false);
-      setDirection(null);
+  useLayoutEffect(() => {
+    const previous = trackStateRef.current.animating
+      ? trackStateRef.current.targetIndex
+      : trackStateRef.current.centerIndex;
+    if (previous === currentIndex) return;
+
+    if (frameRef.current != null) window.cancelAnimationFrame(frameRef.current);
+    if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
+
+    const forward = (currentIndex - previous + len) % len;
+    const backward = (previous - currentIndex + len) % len;
+    const dir: "next" | "prev" = slideDirection === "right"
+      ? "prev"
+      : slideDirection === "left"
+      ? "next"
+      : forward <= backward
+      ? "next"
+      : "prev";
+
+    setTrackState({ centerIndex: previous, targetIndex: currentIndex, direction: dir, animating: true });
+    settleTimerRef.current = window.setTimeout(() => {
+      setTrackState({ centerIndex: currentIndex, targetIndex: currentIndex, direction: null, animating: false });
+      settleTimerRef.current = null;
     }, TRACK_DURATION_MS + 30);
-    return () => window.clearTimeout(t);
-  }, [currentIndex, len]);
+
+    return () => {
+      if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
+      if (frameRef.current != null) window.cancelAnimationFrame(frameRef.current);
+    };
+  }, [currentIndex, len, slideDirection]);
 
   // Translate alvo durante a animação. Trilho tem `width: 300%`, então
   // cada slot equivale a 33.3333% do próprio trilho. Estado neutro =
   // slot central visível (-33.3333%).
   let translate = "-33.3333%";
-  if (animating && direction === "next") translate = "-66.6667%";
-  if (animating && direction === "prev") translate = "0%";
+  if (trackState.animating && trackState.direction === "next") translate = "-66.6667%";
+  if (trackState.animating && trackState.direction === "prev") translate = "0%";
 
   // Cada slot ocupa 1/3 do trilho. Usamos `flex: 0 0 33.3333%` em vez
   // de `width` inline para impedir que `flex` recalcule e colapse os
@@ -458,7 +472,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, prio
           width: "300%",
           height: "100%",
           transform: `translateX(${translate})`,
-          transition: animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
+          transition: trackState.animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
         }}
       >
         {/* Slot esquerdo — priority=true para evitar lazy-load durante o slide. */}
@@ -474,7 +488,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, prio
         {/* Slot central (atual) */}
         <div style={slotStyle}>
           <LegacyImageDisplay
-            src={images[currentIndex]}
+            src={images[centerIdx]}
             alt={alt}
             priority={priority}
             enableBlurUp={enableBlurUp}
