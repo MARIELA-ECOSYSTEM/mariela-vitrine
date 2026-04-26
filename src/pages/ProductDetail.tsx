@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -286,10 +286,12 @@ const ProductDetail = () => {
     };
   }, [imagensParaMostrar]);
 
-  // Função para lidar com seleção de imagem do carrossel
-  const handleImageSelect = (index: number) => {
+  // Função para lidar com seleção de imagem do carrossel.
+  // Memoizada para evitar re-render desnecessário do ImageGallery quando
+  // outros estados (cor, tamanho) mudarem.
+  const handleImageSelect = useCallback((index: number) => {
     setImagemSelecionadaIndex(index);
-  };
+  }, []);
 
   useEffect(() => {
     if (!produto) return;
