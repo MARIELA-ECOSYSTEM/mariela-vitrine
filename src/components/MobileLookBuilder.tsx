@@ -438,6 +438,10 @@ export const MobileLookBuilder = () => {
             onWhatsApp={handleWhatsApp}
             getImageForColor={getImageForColor}
           />
+          {/* aria-live region (desktop) — anuncia falta de tamanho ao tentar enviar. */}
+          <p aria-live="polite" aria-atomic="true" className="sr-only">
+            {sizeGuide.announceMessage}
+          </p>
         </div>
 
         {/* Selection Side */}
