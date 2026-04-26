@@ -127,6 +127,7 @@ export const ImageGallery = ({
             alt={`${productName} - imagem ${indiceAtual + 1}`}
             className="w-full h-full transition-transform duration-500 group-hover:scale-105"
             priority={indiceAtual === 0}
+            enableBlurUp
           />
           
           {/* Overlay com botão de zoom */}
