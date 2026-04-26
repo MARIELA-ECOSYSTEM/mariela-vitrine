@@ -4,6 +4,15 @@ import { MemoryRouter } from "react-router-dom";
 import { ProductCard, getProdutoSignature } from "./ProductCard";
 import type { Produto } from "@/data/products";
 
+// jsdom não traz IntersectionObserver — polyfill mínimo p/ ProductImageSkeleton.
+class IOStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() { return []; }
+}
+(globalThis as unknown as { IntersectionObserver: typeof IOStub }).IntersectionObserver = IOStub;
+
 // Mocks mínimos — isolam a verificação da memoização do ProductCard.
 vi.mock("@/contexts/CartContext", () => ({
   useCart: () => ({ addToCart: vi.fn() }),
