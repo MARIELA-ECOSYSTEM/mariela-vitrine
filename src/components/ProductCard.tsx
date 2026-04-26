@@ -615,13 +615,22 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             
             {/* Mobile: tamanhos maiores */}
             {corSelecionada && (
-              <div className="flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in">
+              <div
+                ref={sizeGuide.sectionRef}
+                tabIndex={-1}
+                className={cn(
+                  "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300",
+                  sizeGuide.highlight &&
+                    "ring-2 ring-primary ring-offset-2 ring-offset-background p-1.5 -m-1.5 animate-pulse"
+                )}
+              >
                 {todosTamanhos.map((tamanho) => {
                   const disponivel = tamanhosDisponiveis.includes(tamanho);
                   return (
                     <button
                       key={tamanho}
                       type="button"
+                      data-size-option
                       onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
                       disabled={!disponivel}
                       aria-disabled={!disponivel}
