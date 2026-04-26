@@ -644,7 +644,9 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       ["produto_cor_id", "produtoCorId", "id", "cor_id", "corId"],
       `${nome}-${index}`,
     );
-    const tamanhos = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade)
+    const corDisponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], true);
+    const tamanhosArray = asArray(corRec.tamanhos ?? corRec.sizes ?? corRec.grade);
+    const tamanhos = tamanhosArray
       .map(asRecord)
       .map((tam) => {
         const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
@@ -655,6 +657,15 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
         };
       })
       .filter((t) => t.disponibilidade > 0);
+
+    // Listagem (`/vitrine-api/produtos`) não envia `tamanhos` por cor — apenas
+    // `disponivel`. Nesse caso, mantemos a cor com tamanho placeholder "U" para
+    // não filtrá-la no card. O detalhe (`/produto/{id}`) traz tamanhos reais.
+    if (tamanhosArray.length === 0 && corDisponivel) {
+      tamanhos.push({ tamanho: "U", disponibilidade: 1 });
+    }
+
+    if (tamanhos.length === 0) return;
 
     cores.push({
       produto_cor_id: produtoCorId,
