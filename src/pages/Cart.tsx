@@ -128,7 +128,7 @@ const Cart = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>
