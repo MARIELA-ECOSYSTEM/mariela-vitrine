@@ -418,27 +418,49 @@ const ProductDetail = () => {
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
   const publicBadge = getPublicProductBadge(produto);
 
+  // Estado seguro: produto sem variações reais (sem cores válidas para roupas
+  // ou sem nenhum tamanho disponível) é tratado como indisponível.
+  const produtoIndisponivel = !isAcessorio && (
+    coresList.length === 0 ||
+    coresList.every((c) => c.tamanhos.length === 0)
+  );
+
   const promo = getPromoInfo(produto);
   const precoFormatado = formatBRL(getDisplayPrice(produto));
   const precoOriginalFormatado = promo.isPromo ? formatBRL(promo.precoVenda) : undefined;
 
   const handleAdicionarCarrinho = () => {
-    const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
-    const corParaAdicionar = corSelecionada;
-
-    if (!isAcessorio && !corParaAdicionar) {
+    if (produtoIndisponivel) {
       toast({
-        title: "Selecione uma cor",
-        description: "Por favor, escolha a cor antes de adicionar ao carrinho.",
+        title: "Produto indisponível",
+        description: "Este produto não está disponível no momento.",
         variant: "destructive",
       });
       return;
     }
-    
-    if (!tamanhoParaAdicionar) {
+    const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
+    const corParaAdicionar = corSelecionada;
+
+    // Valida cor real (precisa existir na lista atual de cores).
+    const corValida = !isAcessorio && !!corParaAdicionar
+      && coresList.some((c) => c.cor === corParaAdicionar);
+    if (!isAcessorio && !corValida) {
       toast({
-        title: "Selecione um tamanho",
-        description: "Por favor, escolha o tamanho antes de adicionar ao carrinho.",
+        title: "Selecione cor e tamanho",
+        description: "Selecione cor e tamanho para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Valida tamanho real (precisa existir nos tamanhos da cor selecionada).
+    const tamanhoValido = !!tamanhoParaAdicionar && (
+      isAcessorio || tamanhosDisponiveis.includes(tamanhoParaAdicionar)
+    );
+    if (!tamanhoValido) {
+      toast({
+        title: "Selecione cor e tamanho",
+        description: "Selecione cor e tamanho para continuar.",
         variant: "destructive",
       });
       return;
@@ -452,21 +474,36 @@ const ProductDetail = () => {
   };
 
   const handleWhatsApp = () => {
-    const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
-
-    if (!isAcessorio && !corSelecionada) {
+    if (produtoIndisponivel) {
       toast({
-        title: "Selecione uma cor",
-        description: "Por favor, escolha a cor antes de enviar pelo WhatsApp.",
+        title: "Produto indisponível",
+        description: "Este produto não está disponível no momento.",
         variant: "destructive",
       });
       return;
     }
-    
-    if (!tamanhoParaUsar) {
+    const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
+
+    // Valida cor real (precisa existir na lista atual).
+    const corValida = !isAcessorio && !!corSelecionada
+      && coresList.some((c) => c.cor === corSelecionada);
+    if (!isAcessorio && !corValida) {
       toast({
-        title: "Selecione um tamanho",
-        description: "Por favor, escolha o tamanho antes de enviar pelo WhatsApp.",
+        title: "Selecione cor e tamanho",
+        description: "Selecione cor e tamanho para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Valida tamanho real para roupas; acessórios usam "U" interno.
+    const tamanhoValido = !!tamanhoParaUsar && (
+      isAcessorio || tamanhosDisponiveis.includes(tamanhoParaUsar)
+    );
+    if (!tamanhoValido) {
+      toast({
+        title: "Selecione cor e tamanho",
+        description: "Selecione cor e tamanho para continuar.",
         variant: "destructive",
       });
       return;
