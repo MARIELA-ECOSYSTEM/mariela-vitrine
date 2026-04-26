@@ -560,10 +560,13 @@ const LegacyImageDisplay = ({
     if (!isInView || !src) return;
     if (isFirstSrcRef.current) {
       isFirstSrcRef.current = false;
-      setDisplaySrc(src);
-      setLoadState('loading');
-      setBlurDataUrl(null);
       latestRequestedSrcRef.current = src;
+      // NÃO resetamos `loadState` aqui. Em produtos cacheados pelo
+      // browser, o `<img onLoad>` pode disparar ANTES deste effect
+      // rodar — sobrescrever o estado para 'loading' deixaria a
+      // imagem invisível para sempre (opacity-0). Como `displaySrc`
+      // já é inicializado com `src` no `useState`, não há nada a
+      // fazer aqui na primeira execução.
       return;
     }
     if (src === displaySrc) return;
