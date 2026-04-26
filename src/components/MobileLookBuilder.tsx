@@ -439,7 +439,7 @@ export const MobileLookBuilder = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowPreview(true)}
+                onClick={(e) => openPreview(e)}
                 className="shrink-0 h-8 gap-1 text-xs text-primary"
               >
                 <Eye className="h-3.5 w-3.5" />
@@ -490,7 +490,7 @@ export const MobileLookBuilder = () => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setShowPreview(true)}
+                onClick={(e) => openPreview(e)}
                 className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 touch-feedback"
               >
                 <Eye className="h-5 w-5" />
