@@ -772,6 +772,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 <span className="hidden xs:inline">WhatsApp</span>
               </Button>
             </div>
+            <p aria-live="polite" aria-atomic="true" className="sr-only">
+              {sizeGuide.announceMessage}
+            </p>
           </div>
         </div>
       </CardContent>
