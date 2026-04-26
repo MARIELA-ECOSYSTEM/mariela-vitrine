@@ -682,9 +682,10 @@ export const MobileLookBuilder = () => {
                 missingSize={missingSize}
                 isMobile
                 onPickSize={(cat) => {
-                  // Fecha a prévia mobile e abre o dialog de seleção rápida.
+                  // Fecha a prévia mobile e leva o usuário até o card da
+                  // categoria correspondente para escolher o tamanho lá.
                   closePreview();
-                  setPendingSizeCategory(cat);
+                  goToCategorySize(cat);
                 }}
               />
             </div>
@@ -692,22 +693,6 @@ export const MobileLookBuilder = () => {
         </div>,
         document.body
       )}
-
-      {/* Dialog rápido de seleção de tamanho — disparado ao tocar num item
-          incompleto na prévia. Não altera fluxo do WhatsApp; apenas grava
-          o tamanho escolhido na categoria correspondente. */}
-      <QuickSizeDialog
-        category={pendingSizeCategory}
-        product={pendingSizeCategory ? selectedProducts[pendingSizeCategory] : null}
-        selectedColor={pendingSizeCategory ? selectedColors[pendingSizeCategory] : ""}
-        selectedSize={pendingSizeCategory ? selectedSizes[pendingSizeCategory] : ""}
-        onClose={() => setPendingSizeCategory(null)}
-        onSelectSize={(size) => {
-          if (!pendingSizeCategory) return;
-          setSelectedSizes({ ...selectedSizes, [pendingSizeCategory]: size });
-          setPendingSizeCategory(null);
-        }}
-      />
     </div>
   );
 };
