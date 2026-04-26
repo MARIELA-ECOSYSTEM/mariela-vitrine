@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Hand } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -36,7 +36,12 @@ export const ImageGallery = ({
   const [hoveredThumbnail, setHoveredThumbnail] = useState<number | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   
-  const imagensValidas = images.length > 0 ? images : [produtoGenerico];
+  // Memoiza para não recriar array a cada render (mantém referências estáveis
+  // para filhos memoizados e evita work extra durante a troca de cor).
+  const imagensValidas = useMemo(
+    () => (images.length > 0 ? images : [produtoGenerico]),
+    [images],
+  );
   const temMultiplasImagens = imagensValidas.length > 1;
 
   // Show swipe hint on first visit
@@ -86,22 +91,22 @@ export const ImageGallery = ({
     }
   };
 
-  const handleAnterior = () => {
+  const handleAnterior = useCallback(() => {
     const newIndex = indiceAtual === 0 ? imagensValidas.length - 1 : indiceAtual - 1;
     setIndiceAtual(newIndex);
     onImageSelect?.(newIndex);
-  };
+  }, [indiceAtual, imagensValidas.length, onImageSelect]);
 
-  const handleProxima = () => {
+  const handleProxima = useCallback(() => {
     const newIndex = indiceAtual === imagensValidas.length - 1 ? 0 : indiceAtual + 1;
     setIndiceAtual(newIndex);
     onImageSelect?.(newIndex);
-  };
+  }, [indiceAtual, imagensValidas.length, onImageSelect]);
 
-  const handleThumbnailClick = (index: number) => {
+  const handleThumbnailClick = useCallback((index: number) => {
     setIndiceAtual(index);
     onImageSelect?.(index);
-  };
+  }, [onImageSelect]);
 
   return (
     <div className="space-y-3 md:space-y-4">
