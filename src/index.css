@@ -295,6 +295,28 @@ All colors MUST be HSL.
   animation: bottom-sheet 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+@keyframes bottom-sheet-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.animate-bottom-sheet-out {
+  animation: bottom-sheet-out 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes backdrop-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.animate-backdrop-out {
+  animation: backdrop-fade-out 0.25s ease-out forwards;
+}
+
 /* Mobile header condensed */
 @media (max-width: 768px) {
   .mobile-header-condensed {
