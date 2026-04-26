@@ -152,6 +152,8 @@ export const ImageGallery = ({
             className="w-full h-full transition-transform duration-500 group-hover:scale-105"
             priority={indiceAtual === 0}
             enableBlurUp
+            images={imagensValidas}
+            currentIndex={indiceAtual}
           />
           
           {/* Overlay com botão de zoom */}
