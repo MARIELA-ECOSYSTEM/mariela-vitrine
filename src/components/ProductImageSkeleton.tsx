@@ -266,9 +266,9 @@ export const ProductImageSkeleton = ({
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
               loadState === 'loading' && "opacity-0 scale-[1.02] transition-all duration-700 ease-out",
               loadState !== 'loading' && !isSwapping && "opacity-100 scale-100 transition-all duration-700 ease-out",
-              // Troca de cor: cross-fade curto (~200ms) sem zoom, ease-out
+              // Troca de cor: cross-fade curto (~180ms) sem zoom, ease-out
               // consistente entre desktop e mobile.
-              isSwapping && "opacity-0 transition-opacity duration-200 ease-out animate-[fade-in_200ms_ease-out_forwards]",
+              isSwapping && "opacity-0 transition-opacity duration-200 ease-out animate-[fade-in_180ms_ease-out_forwards]",
               slideDirection === 'left' && "animate-slide-left",
               slideDirection === 'right' && "animate-slide-right"
             )}
