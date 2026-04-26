@@ -196,6 +196,10 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   // rapidamente sobre vários cards.
   // ============================================================
   const lastPreloadAtRef = useRef<number>(0);
+  // Handle do último preload em curso — permite cancelar download em
+  // background quando o usuário sai do card antes da imagem chegar.
+  const lastPreloadHandleRef = useRef<{ cancel: () => void } | null>(null);
+
   const preloadNeighbors = useCallback(() => {
     const now = Date.now();
     if (now - lastPreloadAtRef.current < 500) return;
@@ -218,9 +222,39 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
       if (url) targets.push(url);
     }
     if (targets.length === 0) return;
-    // Carrega as 2 primeiras imediatamente; o resto fica no idle.
-    preloadImagesPrioritized(targets, 2);
+    // Cancela qualquer preload anterior ainda em curso (rate-limit já
+    // impede flood, mas cobertura adicional não custa nada).
+    lastPreloadHandleRef.current?.cancel();
+    lastPreloadHandleRef.current = preloadImagesPrioritized(targets, 2);
   }, [imagensValidas, currentImageIndex, coresList, corSelecionada]);
+
+  /**
+   * Cancela preloads em background quando o usuário sai do card antes
+   * que as imagens cheguem. Economiza banda em listas longas onde o
+   * mouse passa rapidamente por vários cards.
+   */
+  const cancelPreloadNeighbors = useCallback(() => {
+    lastPreloadHandleRef.current?.cancel();
+    lastPreloadHandleRef.current = null;
+  }, []);
+
+  /**
+   * Preload focado em UMA direção: dispara somente a imagem na direção
+   * provável do clique (next ou prev). Usado em hover/touchstart das
+   * setas do card para reduzir delay perceptível ao trocar rapidamente.
+   */
+  const preloadOnArrowHover = useCallback((direction: "next" | "prev") => {
+    if (imagensValidas.length <= 1) return;
+    const targetIdx = direction === "next"
+      ? (currentImageIndex + 1) % imagensValidas.length
+      : (currentImageIndex - 1 + imagensValidas.length) % imagensValidas.length;
+    const url = imagensValidas[targetIdx];
+    if (!url) return;
+    preloadImage(url).catch(() => {});
+  }, [imagensValidas, currentImageIndex]);
+
+  // Garante limpeza ao desmontar o card (ex.: filtro reordenando lista).
+  useEffect(() => () => { lastPreloadHandleRef.current?.cancel(); }, []);
 
   // Imagem atual: índice do carrossel é a fonte primária (setas sempre funcionam).
   // Fallback: imagem da cor selecionada → primeira imagem válida → genérico.
