@@ -6,7 +6,7 @@ import { useState, useMemo } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import produtoGenerico from "@/assets/produto-generico.png";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
