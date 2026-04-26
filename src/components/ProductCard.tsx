@@ -414,7 +414,15 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                     </div>
                     
                     {corSelecionada && (
-                      <div>
+                      <div
+                        ref={sizeGuide.sectionRef}
+                        tabIndex={-1}
+                        className={cn(
+                          "scroll-mt-24 rounded-md transition-all duration-300",
+                          sizeGuide.highlight &&
+                            "ring-2 ring-primary ring-offset-2 ring-offset-background p-2 -m-2 animate-pulse"
+                        )}
+                      >
                         <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
                         <div className="flex flex-wrap gap-1">
                           {todosTamanhos.map((tamanho) => {
@@ -422,6 +430,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                             return (
                               <Button
                                 key={tamanho}
+                                data-size-option
                                 variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
