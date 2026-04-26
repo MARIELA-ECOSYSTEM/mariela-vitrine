@@ -104,12 +104,19 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   );
 
   const coresDisponiveis = useMemo(() => coresList.map((c) => c.cor), [coresList]);
-  const tamanhosDisponiveis = corSelecionadaObj?.tamanhos ?? [];
+  // Mapa canônico cor → tamanhos disponíveis. Fonte única de verdade para
+  // garantir que os tamanhos exibidos sempre correspondem à cor selecionada.
   const coresTamanhosMap = useMemo(() => {
     const map: Record<string, string[]> = {};
     coresList.forEach((c) => { map[c.cor] = c.tamanhos; });
     return map;
   }, [coresList]);
+  // Tamanhos disponíveis derivados estritamente da cor selecionada via mapa.
+  // Evita qualquer divergência entre `corSelecionadaObj` e o conjunto canônico.
+  const tamanhosDisponiveis = useMemo(
+    () => (corSelecionada && coresTamanhosMap[corSelecionada]) || [],
+    [corSelecionada, coresTamanhosMap],
+  );
 
   // Filtra apenas URLs de imagem não vazias/válidas (string não-vazia).
   // Evita índices "fantasmas" no carrossel quando a API envia entradas vazias.
