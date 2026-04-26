@@ -74,15 +74,20 @@ export const MobileLookBuilder = () => {
   // Refs para gerenciar foco — devolver foco ao botão "Ver" ao fechar.
   const lastTriggerRef = useRef<HTMLElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
+  // Ref do timer da animação de saída — evita race em abrir/fechar rápido.
+  const closeTimerRef = useRef<number | null>(null);
 
   // Fechamento animado: dispara animação de saída e desmonta após o término.
   const closePreview = () => {
     if (isClosingPreview) return;
     setIsClosingPreview(true);
-    window.setTimeout(() => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = window.setTimeout(() => {
+      closeTimerRef.current = null;
       setShowPreview(false);
       setIsClosingPreview(false);
-      // Devolve o foco ao gatilho original.
       if (lastTriggerRef.current && typeof lastTriggerRef.current.focus === "function") {
         lastTriggerRef.current.focus();
       }
@@ -91,37 +96,80 @@ export const MobileLookBuilder = () => {
 
   // Helper para abrir o preview registrando o gatilho que recebeu foco.
   const openPreview = (e?: React.MouseEvent<HTMLElement>) => {
+    // Cancela qualquer fechamento pendente — abrir/fechar rápido nunca trava estado.
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsClosingPreview(false);
     lastTriggerRef.current = (e?.currentTarget as HTMLElement) || null;
     setShowPreview(true);
   };
 
-  // Trava scroll do body enquanto o modal de pré-visualização estiver aberto.
-  // Restaura o overflow original ao fechar/desmontar — evita "body travado".
+  // Cleanup global: garante que timer e scroll lock sumam ao desmontar.
   useEffect(() => {
-    if (!showPreview) return;
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = original;
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
     };
-  }, [showPreview]);
+  }, []);
 
-  // ESC fecha o modal (acessibilidade desktop) + foco inicial no sheet.
+  // Trava o scroll do body via hook reutilizável (cleanup garantido).
+  useScrollLock(showPreview);
+
+  // ESC + foco inicial + trap de foco enquanto o modal estiver aberto.
   useEffect(() => {
     if (!showPreview) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closePreview();
+    const sheet = sheetRef.current;
+
+    const getFocusable = (): HTMLElement[] => {
+      if (!sheet) return [];
+      return Array.from(
+        sheet.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => !el.hasAttribute("aria-hidden"));
     };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closePreview();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      // Focus trap: confina Tab/Shift+Tab dentro do sheet.
+      const focusables = getFocusable();
+      if (focusables.length === 0) {
+        e.preventDefault();
+        sheet?.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey) {
+        if (active === first || !sheet?.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
     window.addEventListener("keydown", onKey);
-    // Foca no sheet ao abrir (próximo tick para garantir mount).
-    const t = window.setTimeout(() => {
-      sheetRef.current?.focus();
-    }, 50);
+    // Foco inicial no sheet (próximo tick para garantir mount).
+    const focusTimer = window.setTimeout(() => sheetRef.current?.focus(), 50);
     return () => {
       window.removeEventListener("keydown", onKey);
-      window.clearTimeout(t);
+      window.clearTimeout(focusTimer);
     };
-    // closePreview é estável o suficiente neste escopo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPreview]);
   
