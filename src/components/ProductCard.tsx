@@ -431,9 +431,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                         ref={setSizeSectionRef}
                         tabIndex={-1}
                         className={cn(
-                          "scroll-mt-24 rounded-md transition-all duration-300",
-                          sizeGuide.highlight &&
-                            "ring-2 ring-primary ring-offset-2 ring-offset-background p-2 -m-2 animate-pulse"
+                          "scroll-mt-24 rounded-md transition-all duration-300"
                         )}
                       >
                         <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
@@ -635,9 +633,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 ref={setSizeSectionRef}
                 tabIndex={-1}
                 className={cn(
-                  "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300",
-                  sizeGuide.highlight &&
-                    "ring-2 ring-primary ring-offset-2 ring-offset-background p-1.5 -m-1.5 animate-pulse"
+                  "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300"
                 )}
               >
                 {todosTamanhos.map((tamanho) => {
@@ -718,9 +714,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                     ref={setSizeSectionRef}
                     tabIndex={-1}
                     className={cn(
-                      "mt-2 scroll-mt-24 rounded-md transition-all duration-300",
-                      sizeGuide.highlight &&
-                        "ring-2 ring-primary ring-offset-2 ring-offset-background p-2 -m-2 animate-pulse"
+                      "mt-2 scroll-mt-24 rounded-md transition-all duration-300"
                     )}
                   >
                     <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
