@@ -448,7 +448,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                     
                     {corSelecionada && (
                       <div
-                        ref={setSizeSectionRef}
+                        data-size-section
                         tabIndex={-1}
                         className={cn(
                           "scroll-mt-24 rounded-md transition-all duration-300"
@@ -650,7 +650,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             {/* Mobile: tamanhos maiores */}
             {corSelecionada && (
               <div
-                ref={setSizeSectionRef}
+                data-size-section
                 tabIndex={-1}
                 className={cn(
                   "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300"
@@ -731,7 +731,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 
                 {corSelecionada && (
                   <div
-                    ref={setSizeSectionRef}
+                    data-size-section
                     tabIndex={-1}
                     className={cn(
                       "mt-2 scroll-mt-24 rounded-md transition-all duration-300"
