@@ -100,6 +100,19 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   // Hook compartilhado para guiar o usuário até o seletor de tamanho do card
   // (mesma UX do ProductDetail e Monte seu Look). Sem toast agressivo.
   const sizeGuide = useSizeSelectionGuide();
+
+  /**
+   * O card pode renderizar até 3 containers de tamanho no DOM (lista, grade
+   * mobile, grade desktop) — apenas um é visível por vez via Tailwind.
+   * Este callback ref escolhe o container atualmente visível para o hook.
+   */
+  const setSizeSectionRef = (el: HTMLDivElement | null) => {
+    if (!el) return;
+    // `offsetParent === null` indica que o elemento está oculto (display:none).
+    if (el.offsetParent !== null) {
+      sizeGuide.sectionRef.current = el;
+    }
+  };
   
   const whatsappNumber = "5583986567915";
   const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
