@@ -15,7 +15,7 @@ interface ProductImageSkeletonProps {
 const loadedImageCache = new Set<string>();
 const inflightLoaders = new Map<string, Promise<void>>();
 
-function preloadImage(src: string): Promise<void> {
+export function preloadImage(src: string): Promise<void> {
   if (loadedImageCache.has(src)) return Promise.resolve();
   const existing = inflightLoaders.get(src);
   if (existing) return existing;
@@ -34,6 +34,44 @@ function preloadImage(src: string): Promise<void> {
   });
   inflightLoaders.set(src, promise);
   return promise;
+}
+
+/**
+ * Preload em background com priorização. As primeiras URLs são carregadas
+ * imediatamente; o restante aguarda `requestIdleCallback` (com fallback a
+ * setTimeout) para não competir com a renderização inicial. Respeita o cache
+ * existente — nunca dispara fetch duplicado para a mesma URL.
+ */
+export function preloadImagesPrioritized(
+  urls: Array<string | null | undefined>,
+  immediateCount = 2,
+) {
+  const unique = Array.from(
+    new Set(
+      urls
+        .map((u) => (typeof u === "string" ? u.trim() : ""))
+        .filter((u) => u.length > 0),
+    ),
+  );
+  const immediate = unique.slice(0, immediateCount);
+  const deferred = unique.slice(immediateCount);
+  immediate.forEach((u) => {
+    preloadImage(u).catch(() => {});
+  });
+  if (deferred.length === 0) return;
+  const runDeferred = () => {
+    deferred.forEach((u) => {
+      preloadImage(u).catch(() => {});
+    });
+  };
+  const w = window as unknown as {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+  };
+  if (typeof w.requestIdleCallback === "function") {
+    w.requestIdleCallback(runDeferred, { timeout: 1500 });
+  } else {
+    window.setTimeout(runDeferred, 250);
+  }
 }
 
 // Gerar uma cor dominante baseada no hash da URL (placeholder colorido)
@@ -160,7 +198,7 @@ export const ProductImageSkeleton = ({
         setIsSwapping(false);
         setPreviousSrc(null);
         fadeTimerRef.current = null;
-      }, 200);
+      }, 180);
     };
     preloadImage(src).then(swap).catch(() => {
       if (cancelled) return;
