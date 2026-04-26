@@ -1,7 +1,20 @@
 import { Produto } from "@/data/products";
 
-const CACHE_KEY = "mariela_products_cache_v4";
-const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v4";
+const CACHE_KEY = "mariela_products_cache_v5";
+const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v5";
+const LEGACY_KEYS = [
+  "mariela_products_cache_v4",
+  "mariela_products_cache_timestamp_v4",
+  "mariela_products_cache_v3",
+  "mariela_products_cache_timestamp_v3",
+];
+
+// Limpa entradas antigas para evitar consumir listagens sem `cores` reais.
+try {
+  LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
+} catch {
+  // ignore
+}
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 interface CacheData {
