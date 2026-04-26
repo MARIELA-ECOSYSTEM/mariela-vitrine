@@ -309,7 +309,35 @@ export const ProductImageSkeleton = ({
   slideDirection,
   priority = false,
   enableBlurUp = false,
+  images,
+  currentIndex,
 }: ProductImageSkeletonProps) => {
+  // ---------------------------------------------------------------
+  // Modo "trilho horizontal" (estilo Posthaus/Swiper)
+  // ---------------------------------------------------------------
+  // Ativado quando o pai passa `images` + `currentIndex`. Renderiza
+  // 3 slots (prev | curr | next) lado a lado e usa `translateX` +
+  // cubic-bezier para deslizar. As imagens vizinhas já ficam no DOM,
+  // então a navegação por setas/swipe é instantânea e fluida — sem
+  // troca de `src` durante a animação, sem flicker.
+  const useTrack =
+    Array.isArray(images) &&
+    images.length > 0 &&
+    typeof currentIndex === "number";
+
+  if (useTrack) {
+    return (
+      <ImageTrack
+        images={images!}
+        currentIndex={currentIndex!}
+        alt={alt}
+        className={className}
+        priority={priority}
+        enableBlurUp={enableBlurUp}
+      />
+    );
+  }
+
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [isInView, setIsInView] = useState(priority); // Priority images load immediately
   const imgRef = useRef<HTMLDivElement>(null);
