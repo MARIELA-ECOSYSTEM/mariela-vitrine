@@ -395,7 +395,21 @@ const TRACK_DURATION_MS = 420;
 //   última intenção é enfileirada via `pendingSrcRef`).
 // =====================================================================
 
-const CROSSFADE_MS = 160;
+// Crossfade adaptativo: a duração é escolhida com base no tempo real
+// de carregamento da nova imagem. Imagens já em cache trocam quase
+// instantaneamente; downloads mais lentos ganham um fade levemente
+// mais suave para mascarar a latência. Nunca passa de `CROSSFADE_MAX_MS`.
+const CROSSFADE_FAST_MS = 120;   // cache hit / load < 80ms
+const CROSSFADE_MID_MS = 150;    // load entre 80ms e 250ms
+const CROSSFADE_SLOW_MS = 180;   // load > 250ms
+const CROSSFADE_MAX_MS = 180;
+
+function pickCrossfadeDuration(loadMs: number): number {
+  if (loadMs <= 0) return CROSSFADE_FAST_MS;            // cache puro
+  if (loadMs < 80) return CROSSFADE_FAST_MS;
+  if (loadMs < 250) return CROSSFADE_MID_MS;
+  return CROSSFADE_SLOW_MS;
+}
 
 const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTrackProps) => {
   const len = images.length;
@@ -406,6 +420,9 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
   const [layerA, setLayerA] = useState<string>(targetSrc);
   const [layerB, setLayerB] = useState<string>("");
   const [activeLayer, setActiveLayer] = useState<"A" | "B">("A");
+  // Duração efetiva do crossfade — atualizada por swap com base no
+  // tempo real medido entre início do preload e onload da nova imagem.
+  const [fadeMs, setFadeMs] = useState<number>(CROSSFADE_FAST_MS);
 
   const isAnimatingRef = useRef(false);
   const pendingSrcRef = useRef<string | null>(null);
@@ -431,7 +448,9 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
     }
     isAnimatingRef.current = true;
 
-    const finishSwap = () => {
+    const finishSwap = (loadMs: number) => {
+      const duration = pickCrossfadeDuration(loadMs);
+      setFadeMs(duration);
       // Coloca a nova imagem na camada inativa, então flipa.
       const incomingLayer: "A" | "B" = activeLayerRef.current === "A" ? "B" : "A";
       if (incomingLayer === "A") setLayerA(nextSrc);
@@ -455,7 +474,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
             const pending = pendingSrcRef.current;
             pendingSrcRef.current = null;
             if (pending && pending !== currentSrcRef.current) runSwap(pending);
-          }, CROSSFADE_MS + 20);
+          }, duration + 20);
         });
       });
     };
@@ -463,10 +482,15 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
     // Prefetch antes do swap visual — se já estiver em cache, resolve
     // imediatamente (sem request duplicada).
     if (isImagePreloaded(nextSrc)) {
-      finishSwap();
+      finishSwap(0);
     } else {
-      preloadImage(nextSrc, "high").then(finishSwap).catch(() => {
+      const startedAt = (typeof performance !== "undefined" ? performance.now() : Date.now());
+      preloadImage(nextSrc, "high").then(() => {
+        const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
+        finishSwap(now - startedAt);
+      }).catch(() => {
         // Falha silenciosa: descarta swap e mantém imagem atual.
+        // Edge case: NÃO executa crossfade — mantém imagem anterior intacta.
         isAnimatingRef.current = false;
         pendingSrcRef.current = null;
       });
@@ -504,7 +528,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
             "transition-opacity ease-out",
             activeLayer === "A" ? "opacity-100" : "opacity-0",
           )}
-          style={{ transitionDuration: `${CROSSFADE_MS}ms` }}
+          style={{ transitionDuration: `${fadeMs}ms` }}
           onLoad={() => markImagePreloaded(layerA)}
         />
       )}
@@ -522,7 +546,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
             "transition-opacity ease-out",
             activeLayer === "B" ? "opacity-100" : "opacity-0",
           )}
-          style={{ transitionDuration: `${CROSSFADE_MS}ms` }}
+          style={{ transitionDuration: `${fadeMs}ms` }}
           onLoad={() => markImagePreloaded(layerB)}
         />
       )}
