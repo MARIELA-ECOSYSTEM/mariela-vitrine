@@ -14,6 +14,7 @@ import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl 
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackWhatsappClick } from "@/services/vitrineTrackingService";
+import { sortSizes, isValidSize } from "@/lib/sizeUtils";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -56,7 +57,13 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     return produto.cores.map((c) => ({
       produto_cor_id: c.produto_cor_id,
       cor: c.cor,
-      tamanhos: c.tamanhos.map((t) => t.tamanho).filter((t) => t && t !== "U"),
+      // Ordenar tamanhos naturalmente (PP, P, M, G, GG, XG... → numéricos)
+      // e descartar legados ("U", "Única") que nunca devem aparecer no card.
+      tamanhos: sortSizes(
+        c.tamanhos
+          .filter((t) => t.disponibilidade > 0 && isValidSize(t.tamanho))
+          .map((t) => t.tamanho),
+      ),
       imagem_full: c.imagem_full,
       imagem_thumb: c.imagem_thumb,
     }));
