@@ -312,24 +312,14 @@ export const ProductImageSkeleton = ({
   images,
   currentIndex,
 }: ProductImageSkeletonProps) => {
-  // ---------------------------------------------------------------
-  // Modo "trilho horizontal" (estilo Posthaus/Swiper)
-  // ---------------------------------------------------------------
-  // Ativado quando o pai passa `images` + `currentIndex`. Renderiza
-  // 3 slots (prev | curr | next) lado a lado e usa `translateX` +
-  // cubic-bezier para deslizar. As imagens vizinhas já ficam no DOM,
-  // então a navegação por setas/swipe é instantânea e fluida — sem
-  // troca de `src` durante a animação, sem flicker.
-  const useTrack =
-    Array.isArray(images) &&
-    images.length > 0 &&
-    typeof currentIndex === "number";
-
-  if (useTrack) {
+  // Dispatcher: trilho (Posthaus/Swiper) quando o pai gerencia índice
+  // sobre uma lista de imagens; cross-fade legado caso contrário (usado
+  // em troca de cor cujo destino não é necessariamente vizinho).
+  if (Array.isArray(images) && images.length > 0 && typeof currentIndex === "number") {
     return (
       <ImageTrack
-        images={images!}
-        currentIndex={currentIndex!}
+        images={images}
+        currentIndex={currentIndex}
         alt={alt}
         className={className}
         priority={priority}
@@ -337,7 +327,31 @@ export const ProductImageSkeleton = ({
       />
     );
   }
+  return (
+    <LegacyImageDisplay
+      src={src}
+      alt={alt}
+      className={className}
+      slideDirection={slideDirection}
+      priority={priority}
+      enableBlurUp={enableBlurUp}
+    />
+  );
+};
 
+/**
+ * Implementação clássica (cross-fade do `src`). Mantida como fallback
+ * e usada para troca de cor cujo URL não corresponde necessariamente
+ * ao próximo/anterior slide do trilho.
+ */
+const LegacyImageDisplay = ({
+  src,
+  alt,
+  className,
+  slideDirection,
+  priority = false,
+  enableBlurUp = false,
+}: Omit<ProductImageSkeletonProps, "images" | "currentIndex">) => {
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [isInView, setIsInView] = useState(priority); // Priority images load immediately
   const imgRef = useRef<HTMLDivElement>(null);
