@@ -764,7 +764,7 @@ function extractCorImagens(corRec: ApiRecord): ProdutoCorImagem[] | undefined {
 
   const mapped: ProdutoCorImagem[] = arr
     .map(asRecord)
-    .map((rec, idx) => {
+    .map((rec, idx): ProdutoCorImagem | null => {
       const urlFull = readString(rec, ["url_full", "imagem_full", "full", "url", "src"]) || null;
       const urlThumb = readString(rec, ["url_thumb", "imagem_thumb", "thumb", "thumbnail"]) || urlFull;
       if (!urlFull && !urlThumb) return null;
@@ -774,7 +774,7 @@ function extractCorImagens(corRec: ApiRecord): ProdutoCorImagem[] | undefined {
         url_full: urlFull && isValidImageUrl(urlFull) ? urlFull : (urlThumb && isValidImageUrl(urlThumb) ? urlThumb : null),
         principal: readBoolean(rec, ["principal", "main", "primary"], false),
         ordem: readNumber(rec, ["ordem", "order", "posicao", "position"], idx),
-      } satisfies ProdutoCorImagem;
+      };
     })
     .filter((img): img is ProdutoCorImagem => !!img && (!!img.url_full || !!img.url_thumb));
 
