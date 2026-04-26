@@ -181,14 +181,13 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     return (url && corPorImagem[url]) || "";
   }, [imagensValidas, currentImageIndex, corPorImagem]);
 
-  // Helper: preserva o tamanho selecionado se ele ainda existir para a nova cor.
-  // Caso contrário, limpa para evitar combinação inválida (cor X tamanho).
+  // Helper: ao trocar de cor, mantém o tamanho se ainda for válido para a
+  // nova cor; caso contrário, seleciona automaticamente o primeiro tamanho
+  // válido daquela cor (ou limpa, se a cor não tiver tamanhos).
   const reconcileSizeForColor = (cor: string) => {
-    if (!tamanhoSelecionado) return;
     const tamanhosDaCor = coresTamanhosMap[cor] || [];
-    if (!tamanhosDaCor.includes(tamanhoSelecionado)) {
-      setTamanhoSelecionado("");
-    }
+    if (tamanhoSelecionado && tamanhosDaCor.includes(tamanhoSelecionado)) return;
+    setTamanhoSelecionado(tamanhosDaCor[0] || "");
   };
 
   // Helper: ao trocar imagem via setas, sincroniza a cor selecionada
