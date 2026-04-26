@@ -15,6 +15,7 @@ import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { sortSizes, isValidSize } from "@/lib/sizeUtils";
+import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
