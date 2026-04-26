@@ -111,20 +111,20 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     return map;
   }, [coresList]);
 
-  // Obter imagem da cor selecionada (prioriza imagem_full → imagem_thumb do contrato novo).
-  // Fallback: imagem do índice atual / primeira imagem do produto.
+  // Obter imagem do card.
+  // Regra: o índice (`currentImageIndex`) é a fonte primária — clicar nas setas
+  // SEMPRE muda a imagem. A imagem por cor (`imagem_full`/`thumb`) só entra como
+  // fallback quando o índice atual não corresponde à variante da cor selecionada.
   const imagemAtual = useMemo(() => {
+    const imgIndice = produto.imagens[currentImageIndex];
+    if (imgIndice) return imgIndice;
+    // Sem imagem no índice — tenta imagem da cor selecionada.
     if (corSelecionadaObj) {
       const imgCor = corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb;
       if (imgCor) return imgCor;
-      // Legado: tentar localizar no array de imagens via variants
-      if (corSelecionada) {
-        const varianteIndex = produto.variants.findIndex((v) => v.cor === corSelecionada);
-        if (varianteIndex >= 0) return produto.imagens[varianteIndex] || produto.imagens[0] || produtoGenerico;
-      }
     }
-    return produto.imagens[currentImageIndex] || produto.imagens[0] || produtoGenerico;
-  }, [produto, corSelecionada, corSelecionadaObj, currentImageIndex]);
+    return produto.imagens[0] || produtoGenerico;
+  }, [produto.imagens, currentImageIndex, corSelecionadaObj]);
 
   // Sincronizar cor com imagem
   const corDaImagemAtual = useMemo(() => {
