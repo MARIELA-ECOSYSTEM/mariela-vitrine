@@ -689,7 +689,7 @@ export const MobileLookBuilder = () => {
                 isMobile
                 onPickSize={(cat) => {
                   // Fecha a prévia mobile e abre o dialog de seleção rápida.
-                  setIsPreviewOpen(false);
+                  closePreview();
                   setPendingSizeCategory(cat);
                 }}
               />
