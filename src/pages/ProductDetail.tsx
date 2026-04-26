@@ -68,7 +68,7 @@ const ProductDetail = () => {
   // produto. Não dispara navegação — apenas grava no storage e restaura no
   // mount. A URL continua sendo a fonte canônica para sharing.
   const STORAGE_PREFIX = "mariela_pdp_selection";
-  const storageKeyForProduct = (pid: string) => `${STORAGE_PREFIX}:${pid}`;
+  const storageKeyForProduct = (pid: string | number) => `${STORAGE_PREFIX}:${String(pid)}`;
   // Inicializa a partir da query string para suportar share/bookmark
   const initialQuery = useMemo(() => new URLSearchParams(location.search), []);
   const [corSelecionadaId, setCorSelecionadaId] = useState<string>("");
@@ -539,7 +539,7 @@ const ProductDetail = () => {
   // (chaves primitivas) — não a cada render por causa de arrays/objetos
   // recriados. Isso evita reescrever <title>, meta tags e <script type="ld+json">
   // a cada interação, o que causava trabalho desnecessário no document head.
-  const seoProdutoId = produto?.produtoId || produto?.id || "";
+  const seoProdutoId = String(produto?.produtoId || produto?.id || "");
   const seoImagemPrincipal = useMemo(() => {
     if (!produto) return "";
     return (
