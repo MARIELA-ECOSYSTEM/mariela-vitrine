@@ -758,7 +758,7 @@ const Products = () => {
                 </div>
               )}
             </div>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>
