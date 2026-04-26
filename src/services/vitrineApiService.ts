@@ -564,9 +564,10 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
           }
         });
       } else {
-        // Cor sem grade — assumir tamanho único disponível
+        // Cor sem grade (típico da listagem `/vitrine-api/produtos`).
+        // Default `disponivel = true` quando o campo não existe, para não filtrar a cor.
         const quantidade = readNumber(corRec, ["quantidade", "disponibilidade", "estoque"], 0);
-        const disponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], quantidade > 0);
+        const disponivel = readBoolean(corRec, ["disponivel", "available", "ativo"], true);
         if (quantidade > 0 || disponivel) {
           variants.push({
             tamanho: readString(corRec, ["tamanho", "size"], "U"),
