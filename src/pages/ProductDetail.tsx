@@ -21,6 +21,7 @@ import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import type { Produto } from "@/data/products";
+import produtoGenerico from "@/assets/produto-generico.png";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
