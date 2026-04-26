@@ -99,15 +99,62 @@ const ProductDetail = () => {
   // por scroll suave + destaque temporário (UX guiada).
   const tamanhosSectionRef = useRef<HTMLDivElement | null>(null);
   const [tamanhosHighlight, setTamanhosHighlight] = useState(false);
+  // Mensagem para leitor de tela (aria-live). Usa um nonce para reanunciar
+  // mesmo quando o texto é igual ao anterior (clicar várias vezes seguidas).
+  const [tamanhosAnnounce, setTamanhosAnnounce] = useState<string>("");
+  const highlightTimerRef = useRef<number | null>(null);
 
   const focarSelecaoTamanho = () => {
     const el = tamanhosSectionRef.current;
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Calcula posição considerando header fixo (~68px desktop / 60px mobile)
+      // + um respiro extra. Usa window.scrollTo para controle preciso do offset.
+      const headerOffset = window.innerWidth >= 640 ? 84 : 76;
+      const rect = el.getBoundingClientRect();
+      const targetY = window.scrollY + rect.top - headerOffset;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
     }
-    setTamanhosHighlight(true);
-    window.setTimeout(() => setTamanhosHighlight(false), 1600);
+    // Reinicia a animação de destaque a cada clique:
+    // desliga primeiro, força reflow no próximo frame e religa.
+    if (highlightTimerRef.current) {
+      window.clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = null;
+    }
+    setTamanhosHighlight(false);
+    requestAnimationFrame(() => {
+      setTamanhosHighlight(true);
+      highlightTimerRef.current = window.setTimeout(() => {
+        setTamanhosHighlight(false);
+        highlightTimerRef.current = null;
+      }, 1600);
+    });
+
+    // Anúncio acessível (aria-live). Nonce garante reanúncio em cliques repetidos.
+    setTamanhosAnnounce(`Selecione um tamanho para continuar. \u200B`.repeat(1) + Date.now());
+
+    // Foco programático no primeiro tamanho disponível (ou na própria seção),
+    // após o scroll começar — melhora navegação por teclado/leitor de tela.
+    window.setTimeout(() => {
+      const firstSizeBtn = el?.querySelector<HTMLButtonElement>(
+        "button[data-size-option]"
+      );
+      if (firstSizeBtn) {
+        firstSizeBtn.focus({ preventScroll: true });
+      } else if (el) {
+        el.focus({ preventScroll: true });
+      }
+    }, 350);
   };
+
+  // Limpa timer de destaque se o componente desmontar no meio da animação.
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        window.clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!produto || !id) return;
@@ -711,6 +758,7 @@ const ProductDetail = () => {
                   {corSelecionada && (
                     <div
                       ref={tamanhosSectionRef}
+                      tabIndex={-1}
                       className={`space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300 ${
                         tamanhosHighlight
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)] p-3 -m-3 animate-pulse"
@@ -731,6 +779,7 @@ const ProductDetail = () => {
                         {tamanhosDisponiveis.map((tamanho) => (
                           <button
                             key={tamanho}
+                            data-size-option
                             onClick={() => setTamanhoSelecionado(tamanho)}
                             className={`min-w-[48px] h-12 px-4 rounded-lg border-2 font-semibold transition-all active:scale-95 ${
                               tamanhoSelecionado === tamanho
@@ -749,6 +798,15 @@ const ProductDetail = () => {
 
               {/* Botões de Ação */}
               <div className="space-y-3 pt-4">
+                {/* Região acessível para anunciar a necessidade de selecionar
+                    um tamanho a leitores de tela. Visualmente oculta. */}
+                <p
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="sr-only"
+                >
+                  {tamanhosAnnounce ? "Selecione um tamanho para continuar." : ""}
+                </p>
                 {produtoIndisponivel && (
                   <p
                     role="status"
