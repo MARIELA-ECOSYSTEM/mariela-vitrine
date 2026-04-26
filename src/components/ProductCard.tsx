@@ -942,3 +942,15 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     </Card>
   );
 };
+
+/**
+ * Comparador para `React.memo`: pula re-render quando a assinatura
+ * observável do produto e o `layoutMode` não mudaram. Refreshs em
+ * background da lista (mesmo conteúdo, nova ref) ficam transparentes.
+ */
+export const ProductCard = memo(ProductCardComponent, (prev, next) => {
+  if (prev.layoutMode !== next.layoutMode) return false;
+  if (prev.produto === next.produto) return true;
+  return getProdutoSignature(prev.produto) === getProdutoSignature(next.produto);
+});
+ProductCard.displayName = "ProductCard";
