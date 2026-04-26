@@ -517,7 +517,15 @@ const ProductDetail = () => {
     });
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     try {
-      trackWhatsappClick(produto.produtoId || produto.id, "detalhe");
+      const utm = getUtm();
+      trackWhatsappClick(produto.produtoId || produto.id, "detalhe", {
+        cor: corSelecionada || undefined,
+        tamanho: tamanhoParaUsar || undefined,
+        utm_source: utm.utm_source ?? "whatsapp",
+        utm_medium: utm.utm_medium ?? "product_cta",
+        utm_campaign: utm.utm_campaign ?? "vitrine",
+        utm_content: utm.utm_content ?? String(produto.id),
+      });
     } catch {
       /* nunca bloquear o clique */
     }
