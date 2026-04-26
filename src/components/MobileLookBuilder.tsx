@@ -67,7 +67,32 @@ export const MobileLookBuilder = () => {
   const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [isClosingPreview, setIsClosingPreview] = useState(false);
   const [animatingItem, setAnimatingItem] = useState<string | null>(null);
+
+  // Refs para gerenciar foco — devolver foco ao botão "Ver" ao fechar.
+  const lastTriggerRef = useRef<HTMLElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+
+  // Fechamento animado: dispara animação de saída e desmonta após o término.
+  const closePreview = () => {
+    if (isClosingPreview) return;
+    setIsClosingPreview(true);
+    window.setTimeout(() => {
+      setShowPreview(false);
+      setIsClosingPreview(false);
+      // Devolve o foco ao gatilho original.
+      if (lastTriggerRef.current && typeof lastTriggerRef.current.focus === "function") {
+        lastTriggerRef.current.focus();
+      }
+    }, 230);
+  };
+
+  // Helper para abrir o preview registrando o gatilho que recebeu foco.
+  const openPreview = (e?: React.MouseEvent<HTMLElement>) => {
+    lastTriggerRef.current = (e?.currentTarget as HTMLElement) || null;
+    setShowPreview(true);
+  };
 
   // Trava scroll do body enquanto o modal de pré-visualização estiver aberto.
   // Restaura o overflow original ao fechar/desmontar — evita "body travado".
@@ -78,6 +103,25 @@ export const MobileLookBuilder = () => {
     return () => {
       document.body.style.overflow = original;
     };
+  }, [showPreview]);
+
+  // ESC fecha o modal (acessibilidade desktop) + foco inicial no sheet.
+  useEffect(() => {
+    if (!showPreview) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePreview();
+    };
+    window.addEventListener("keydown", onKey);
+    // Foca no sheet ao abrir (próximo tick para garantir mount).
+    const t = window.setTimeout(() => {
+      sheetRef.current?.focus();
+    }, 50);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.clearTimeout(t);
+    };
+    // closePreview é estável o suficiente neste escopo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPreview]);
   
   const [selectedItems, setSelectedItems] = useState<SelectedItems>({
@@ -395,7 +439,7 @@ export const MobileLookBuilder = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowPreview(true)}
+                onClick={(e) => openPreview(e)}
                 className="shrink-0 h-8 gap-1 text-xs text-primary"
               >
                 <Eye className="h-3.5 w-3.5" />
@@ -446,7 +490,7 @@ export const MobileLookBuilder = () => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setShowPreview(true)}
+                onClick={(e) => openPreview(e)}
                 className="shrink-0 h-10 w-10 sm:h-11 sm:w-11 touch-feedback"
               >
                 <Eye className="h-5 w-5" />
@@ -477,13 +521,21 @@ export const MobileLookBuilder = () => {
           <button
             type="button"
             aria-label="Fechar pré-visualização"
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in cursor-default"
-            onClick={() => setShowPreview(false)}
+            className={cn(
+              "absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default",
+              isClosingPreview ? "animate-backdrop-out" : "animate-fade-in",
+            )}
+            onClick={closePreview}
           />
           
           {/* Bottom Sheet */}
           <div
-            className="mt-auto bg-background rounded-t-3xl max-h-[90vh] overflow-hidden animate-bottom-sheet relative"
+            ref={sheetRef}
+            tabIndex={-1}
+            className={cn(
+              "mt-auto bg-background rounded-t-3xl max-h-[90vh] overflow-hidden relative outline-none",
+              isClosingPreview ? "animate-bottom-sheet-out" : "animate-bottom-sheet",
+            )}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}
@@ -494,7 +546,13 @@ export const MobileLookBuilder = () => {
             {/* Header */}
             <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
               <h3 className="text-lg font-serif font-bold">Pré-Visualização</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)} className="touch-feedback">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closePreview}
+                aria-label="Fechar pré-visualização"
+                className="touch-feedback"
+              >
                 <X className="h-5 w-5" />
               </Button>
             </div>
