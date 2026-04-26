@@ -433,7 +433,7 @@ const ProductDetail = () => {
   const restoredFromStorageRef = useRef<string | null>(null);
   useEffect(() => {
     if (!produto) return;
-    const pid = produto.produtoId || produto.id;
+    const pid = String(produto.produtoId || produto.id);
     if (restoredFromStorageRef.current === pid) return;
     if (coresList.length === 0) return;
     restoredFromStorageRef.current = pid;
