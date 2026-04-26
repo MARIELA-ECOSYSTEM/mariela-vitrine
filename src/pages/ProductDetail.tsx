@@ -758,6 +758,7 @@ const ProductDetail = () => {
                   {corSelecionada && (
                     <div
                       ref={tamanhosSectionRef}
+                      tabIndex={-1}
                       className={`space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300 ${
                         tamanhosHighlight
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)] p-3 -m-3 animate-pulse"
@@ -778,6 +779,7 @@ const ProductDetail = () => {
                         {tamanhosDisponiveis.map((tamanho) => (
                           <button
                             key={tamanho}
+                            data-size-option
                             onClick={() => setTamanhoSelecionado(tamanho)}
                             className={`min-w-[48px] h-12 px-4 rounded-lg border-2 font-semibold transition-all active:scale-95 ${
                               tamanhoSelecionado === tamanho
