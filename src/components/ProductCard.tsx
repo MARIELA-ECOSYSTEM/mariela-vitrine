@@ -262,7 +262,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   // Layout em lista (horizontal)
   if (layoutMode === "lista") {
     return (
-      <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
+      <Card ref={cardRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row">
             <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
@@ -413,7 +413,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
 
   // Layout em grade (vertical - padrão)
   return (
-    <Card className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
+    <Card ref={cardRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
       <CardContent className="p-0 flex flex-col flex-1">
         <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
           <ProductImageSkeleton 
