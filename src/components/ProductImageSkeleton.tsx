@@ -716,8 +716,8 @@ const LegacyImageDisplay = ({
         </>
       )}
       
-      {/* Error state */}
-      {loadState === 'error' && (
+      {/* Error state — silenciado nos slots laterais do trilho */}
+      {loadState === 'error' && !silentError && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted/80 backdrop-blur-sm">
           <div className="text-center p-4">
             <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-muted-foreground/20 flex items-center justify-center">
