@@ -18,12 +18,34 @@ export const Header = () => {
   const [refreshState, setRefreshState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { items } = useCart();
   const { refreshProducts } = useProducts();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const { theme, toggleTheme } = useTheme();
+
+  // Header transparente apenas na Home, onde existe um banner full-bleed atrás do header.
+  const isHome = location.pathname === "/";
+  // Modo "sobreposto ao banner": só na Home e antes de rolar a página.
+  const isOverlay = isHome && !isScrolled && !isMobileMenuOpen;
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 24);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Ao trocar de rota, reavalia o estado de rolagem para evitar header transparente
+  // numa página sem banner.
+  useEffect(() => {
+    setIsScrolled(window.scrollY > 24);
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (refreshState === 'success') {
@@ -123,7 +145,15 @@ export const Header = () => {
         </div>
       )}
       
-      <header className={`fixed left-0 right-0 z-50 bg-background border-b border-border/50 animate-fade-in-down ${showInstallBanner && isMobile ? 'top-10' : 'top-0'}`}>
+      <header
+        className={cn(
+          "fixed left-0 right-0 z-50 animate-fade-in-down transition-colors duration-300",
+          showInstallBanner && isMobile ? "top-10" : "top-0",
+          isOverlay
+            ? "bg-transparent border-b border-transparent text-white"
+            : "bg-background border-b border-border/50 text-foreground",
+        )}
+      >
         <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3">
         <div className="flex items-center justify-between">
           {/* Logo Text - Following Reference Pattern */}
@@ -133,21 +163,31 @@ export const Header = () => {
             aria-label="Atualizar produtos e ir para o início"
           >
             <div className="flex flex-col items-start">
-              <span className="font-serif text-xl sm:text-2xl font-bold text-primary leading-tight">
+              <span
+                className={cn(
+                  "font-serif text-xl sm:text-2xl font-bold leading-tight transition-colors",
+                  isOverlay ? "text-white drop-shadow-md" : "text-primary",
+                )}
+              >
                 Mariela
               </span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-medium tracking-wide">
+              <span
+                className={cn(
+                  "text-[10px] sm:text-xs font-medium tracking-wide transition-colors",
+                  isOverlay ? "text-white/85 drop-shadow" : "text-muted-foreground",
+                )}
+              >
                 Moda Feminina
               </span>
             </div>
             {refreshState === 'loading' && (
-              <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
+              <RefreshCw className={cn("h-4 w-4 animate-spin", isOverlay ? "text-white" : "text-muted-foreground")} />
             )}
             {refreshState === 'success' && (
               <Check className="h-4 w-4 text-green-500 animate-scale-in" />
             )}
             {refreshState === 'idle' && (
-              <RefreshCw className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all" />
+              <RefreshCw className={cn("h-4 w-4 opacity-0 group-hover:opacity-100 transition-all", isOverlay ? "text-white" : "text-muted-foreground")} />
             )}
           </button>
 
@@ -166,9 +206,14 @@ export const Header = () => {
                 }}
                 className={cn(
                   "text-sm font-medium transition-colors relative py-1",
-                  isActive(link.path) && !link.scrollTo
-                    ? "text-primary nav-link-active"
-                    : "text-foreground hover:text-primary"
+                  isOverlay
+                    ? cn(
+                        "text-white drop-shadow hover:text-white/80",
+                        isActive(link.path) && !link.scrollTo && "nav-link-active",
+                      )
+                    : isActive(link.path) && !link.scrollTo
+                      ? "text-primary nav-link-active"
+                      : "text-foreground hover:text-primary",
                 )}
               >
                 {link.label}
@@ -183,7 +228,9 @@ export const Header = () => {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="hover:bg-primary/10"
+              className={cn(
+                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+              )}
               aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -193,7 +240,10 @@ export const Header = () => {
               asChild
               variant="ghost"
               size="icon"
-              className="hover:bg-primary/10 relative"
+              className={cn(
+                "relative",
+                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+              )}
               aria-label="Carrinho de compras"
             >
               <Link to="/cart">
@@ -211,7 +261,9 @@ export const Header = () => {
               asChild
               variant="ghost"
               size="icon"
-              className="hover:bg-primary/10"
+              className={cn(
+                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+              )}
               aria-label="WhatsApp da Mariela"
             >
               <a
@@ -228,7 +280,9 @@ export const Header = () => {
               asChild
               variant="ghost"
               size="icon"
-              className="hover:bg-primary/10"
+              className={cn(
+                isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+              )}
               aria-label="Instagram da Mariela"
             >
               <a
@@ -247,6 +301,9 @@ export const Header = () => {
                 size="icon"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Abrir menu"
+                className={cn(
+                  isOverlay ? "text-white hover:bg-white/15 hover:text-white" : "hover:bg-primary/10",
+                )}
               >
                 <Menu className="h-6 w-6" />
               </Button>

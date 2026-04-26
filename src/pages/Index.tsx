@@ -87,7 +87,7 @@ const Index = () => {
   }, [produtos]);
 
   return (
-    <div className="min-h-screen bg-background pt-[60px] sm:pt-[68px]">
+    <div className="min-h-screen bg-background">
       {loading && <LoadingOverlay />}
       <WelcomeDialog />
       <Header />
