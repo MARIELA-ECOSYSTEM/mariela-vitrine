@@ -482,6 +482,9 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                   <MessageCircle className="h-4 w-4" />
                   WhatsApp
                 </Button>
+                <p aria-live="polite" aria-atomic="true" className="sr-only">
+                  {sizeGuide.announceMessage}
+                </p>
               </div>
             </div>
           </div>
