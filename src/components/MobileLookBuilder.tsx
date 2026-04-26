@@ -395,16 +395,8 @@ export const MobileLookBuilder = () => {
       (k) => selectedProducts[k] && !selectedSizes[k],
     );
     if (categoriaFaltante) {
-      // Expande a categoria para garantir que o seletor de tamanho fique visível,
-      // depois localiza o nó pelo data-attribute e dispara o guia (scroll + destaque + foco).
-      setExpandedCategory(categoriaFaltante);
-      // Aguarda um frame para a expansão renderizar antes de medir/rolar.
-      requestAnimationFrame(() => {
-        const el = document.querySelector<HTMLElement>(
-          `[data-category="${categoriaFaltante}"]`,
-        );
-        sizeGuide.guideElement(el);
-      });
+      // Leva o usuário direto ao card da categoria para escolher o tamanho lá.
+      goToCategorySize(categoriaFaltante);
       return;
     }
     
