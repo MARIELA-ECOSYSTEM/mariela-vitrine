@@ -479,27 +479,21 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                       >
                         <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
                         <div className="flex flex-wrap gap-1">
-                          {todosTamanhos.map((tamanho) => {
-                            const disponivel = tamanhosDisponiveis.includes(tamanho);
-                            return (
-                              <Button
-                                key={tamanho}
-                                data-size-option
-                                variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
-                                disabled={!disponivel}
-                                aria-disabled={!disponivel}
-                                title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
-                                className={cn(
-                                  "text-xs h-7",
-                                  !disponivel && "line-through opacity-50 cursor-not-allowed",
-                                )}
-                              >
-                                {tamanho}
-                              </Button>
-                            );
-                          })}
+                          {/* Renderizamos apenas os tamanhos disponíveis para a cor atual.
+                              Tamanhos indisponíveis são omitidos (sem chip riscado). */}
+                          {tamanhosDisponiveis.map((tamanho) => (
+                            <Button
+                              key={tamanho}
+                              data-size-option
+                              variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setTamanhoSelecionado(tamanho)}
+                              title={tamanho}
+                              className="text-xs h-7"
+                            >
+                              {tamanho}
+                            </Button>
+                          ))}
                         </div>
                       </div>
                     )}
