@@ -608,20 +608,28 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
             {/* Mobile: tamanhos maiores */}
             {corSelecionada && (
               <div className="flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in">
-                {tamanhosDisponiveis.map((tamanho) => (
-                  <button
-                    key={tamanho}
-                    onClick={() => setTamanhoSelecionado(tamanho)}
-                    className={cn(
-                      "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
-                      tamanhoSelecionado === tamanho
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary border border-border text-foreground"
-                    )}
-                  >
-                    {tamanho}
-                  </button>
-                ))}
+                {todosTamanhos.map((tamanho) => {
+                  const disponivel = tamanhosDisponiveis.includes(tamanho);
+                  return (
+                    <button
+                      key={tamanho}
+                      type="button"
+                      onClick={() => disponivel && setTamanhoSelecionado(tamanho)}
+                      disabled={!disponivel}
+                      aria-disabled={!disponivel}
+                      title={disponivel ? tamanho : `${tamanho} indisponível nesta cor`}
+                      className={cn(
+                        "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
+                        tamanhoSelecionado === tamanho
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary border border-border text-foreground",
+                        !disponivel && "line-through opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      {tamanho}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
