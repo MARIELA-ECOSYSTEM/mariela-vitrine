@@ -45,7 +45,9 @@ type CatalogFilterOption = FilterOption & { apiValue?: string };
 const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) => ({
   value: categoria.value,
   label: categoria.label,
-  apiValue: categoria.label,
+  // A API espera o nome canônico singular do banco (ex.: "Blusa"),
+  // não o label plural exibido na UI (ex.: "Blusas").
+  apiValue: categoria.dbValue ?? categoria.label,
 }));
 
 const produtosPorPagina = 12;
@@ -73,7 +75,13 @@ function normalizeCategoriaOption(option: FilterOption): CatalogFilterOption | n
     return candidates.includes(normalized);
   });
 
-  return match ? { value: match.value, label: match.label, apiValue: match.label } : null;
+  // Mantemos o label PT-BR plural na UI, mas enviamos o nome canônico
+  // do banco para a API (singular). Quando vier uma categoria
+  // desconhecida, preservamos o label original como apiValue.
+  if (match) {
+    return { value: match.value, label: match.label, apiValue: match.dbValue ?? match.label };
+  }
+  return { value: option.value, label: option.label, apiValue: option.label };
 }
 
 function normalizeSearchValue(value: string): string {
