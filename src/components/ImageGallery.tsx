@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Hand } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -114,9 +114,19 @@ export const ImageGallery = ({
    * idêntica nos dois pontos. Prioridade conforme o trigger:
    * - hover/focus = `low`  (intenção, não compete com a principal)
    * - touchstart  = `high` (clique iminente em mobile)
+   *
+   * Throttle de 250ms para `low` (hover/focus): movimentos rápidos do
+   * mouse sobre as setas não disparam preload em rajada. `high`
+   * (touchstart) ignora o throttle — clique iminente precisa antecipar.
    */
+  const lastHoverPreloadAtRef = useRef<number>(0);
   const preloadDirection = useCallback(
     (direction: "next" | "prev", priority: PreloadPriority = "low") => {
+      if (priority !== "high") {
+        const now = Date.now();
+        if (now - lastHoverPreloadAtRef.current < 250) return;
+        lastHoverPreloadAtRef.current = now;
+      }
       preloadAdjacentImage(imagensValidas, indiceAtual, direction, priority);
     },
     [imagensValidas, indiceAtual],

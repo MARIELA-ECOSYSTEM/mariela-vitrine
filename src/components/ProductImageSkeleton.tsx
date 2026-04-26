@@ -52,9 +52,47 @@ type LoaderEntry = {
 
 export type PreloadPriority = "low" | "auto" | "high";
 
+// Detecta se o navegador suporta `fetchPriority` em <img>. Detecção
+// barata, executada UMA vez. Em browsers sem suporte (Safari < 17.2,
+// Firefox antigo), aplicamos um fallback via <link rel="preload"> para
+// pedidos "high" — assim mantemos a intenção de prioridade mesmo quando
+// o atributo direto é ignorado. "low" sem suporte fica apenas com
+// `decoding=async` (já não compete por padrão).
+const SUPPORTS_FETCH_PRIORITY: boolean = (() => {
+  if (typeof window === "undefined") return false;
+  try {
+    const probe = document.createElement("img");
+    return "fetchPriority" in probe || "fetchpriority" in probe;
+  } catch {
+    return false;
+  }
+})();
+
+/**
+ * Fallback: injeta um `<link rel="preload" as="image">` no <head> com
+ * `fetchpriority="high"`. O navegador inicia o download da imagem antes
+ * do `<img>` real ser usado, dando-lhe prioridade alta na fila de rede.
+ * Idempotente: nunca insere duplicado para a mesma URL.
+ */
+function injectPreloadLink(url: string, priority: PreloadPriority): void {
+  if (typeof document === "undefined") return;
+  if (priority !== "high") return; // só compensa o esforço para high
+  const selector = `link[data-preload-img="${CSS.escape(url)}"]`;
+  if (document.head.querySelector(selector)) return;
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "image";
+  link.href = url;
+  link.setAttribute("fetchpriority", "high");
+  link.dataset.preloadImg = url;
+  document.head.appendChild(link);
+}
+
 function applyPriorityHints(img: HTMLImageElement, priority: PreloadPriority): void {
   try {
-    (img as unknown as { fetchPriority?: string }).fetchPriority = priority;
+    if (SUPPORTS_FETCH_PRIORITY) {
+      (img as unknown as { fetchPriority?: string }).fetchPriority = priority;
+    }
     img.decoding = "async";
   } catch { /* navegadores antigos */ }
 }
@@ -83,6 +121,9 @@ export function preloadImage(src: string, priority: PreloadPriority = "low"): Pr
     if (rankPriority(priority) > rankPriority(existing.priority)) {
       existing.priority = priority;
       applyPriorityHints(existing.img, priority);
+      if (!SUPPORTS_FETCH_PRIORITY && priority === "high") {
+        injectPreloadLink(existing.realSrc, priority);
+      }
     }
     return existing.promise;
   }
@@ -92,6 +133,11 @@ export function preloadImage(src: string, priority: PreloadPriority = "low"): Pr
   // imagem principal acima do fold. Quem pede prioridade maior (ex.:
   // touchstart na seta) sobe explicitamente.
   applyPriorityHints(img, priority);
+  // Fallback para navegadores sem `fetchPriority`: usa <link rel=preload>
+  // para sinalizar prioridade alta ao stack de rede.
+  if (!SUPPORTS_FETCH_PRIORITY && priority === "high") {
+    injectPreloadLink(src, priority);
+  }
 
   const promise = new Promise<void>((resolve, reject) => {
     img.onload = () => {
@@ -358,6 +404,10 @@ export const ProductImageSkeleton = ({
     if (src === displaySrc) return;
     latestRequestedSrcRef.current = src;
     let cancelled = false;
+    // Registra interesse — pareado com cancelPreload no cleanup para
+    // abortar o download quando o usuário troca de cor ANTES desta
+    // imagem chegar. Sem isto, downloads obsoletos competem por banda.
+    const inflightSrc = src;
     const swap = () => {
       if (cancelled) return;
       // Descarta se uma nova troca já foi solicitada nesse meio tempo.
@@ -374,7 +424,7 @@ export const ProductImageSkeleton = ({
         fadeTimerRef.current = null;
       }, 280);
     };
-    preloadImage(src).then(swap).catch(() => {
+    preloadImage(inflightSrc, "high").then(swap).catch(() => {
       if (cancelled) return;
       // Fallback seguro: se a nova imagem falhou, NÃO trocamos o src nem
       // aplicamos fade — mantemos a imagem anterior visível para evitar
@@ -382,6 +432,10 @@ export const ProductImageSkeleton = ({
     });
     return () => {
       cancelled = true;
+      // Decrementa o refcount do preload que iniciamos. Se ninguém
+      // mais quiser essa imagem (ex.: usuário trocou de cor de novo),
+      // o cancelPreload aborta o download em curso (img.src = "").
+      cancelPreload(inflightSrc);
     };
   }, [src, isInView, displaySrc]);
 
