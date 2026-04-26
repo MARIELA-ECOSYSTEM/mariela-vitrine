@@ -7,7 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
-import produtoGenerico from "@/assets/produto-generico.png";
+import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER } from "@/lib/productImage";
 import { ProductImageSkeleton } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
@@ -218,15 +218,15 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
         origem: "placeholder",
       });
     }
-    return imagensValidas[0] || produtoGenerico;
+    return imagensValidas[0] || PRODUCT_IMAGE_PLACEHOLDER;
   }, [imagensValidas, currentImageIndex, corSelecionadaObj, corSelecionada, produto.nome]);
 
-  // Alt dinâmico: nome do produto + cor (quando disponível). Padrão acessível.
-  const altImagem = useMemo(() => {
-    return corSelecionada
-      ? `${produto.nome} — cor ${corSelecionada}`
-      : produto.nome;
-  }, [produto.nome, corSelecionada]);
+  // Alt dinâmico via utilitário central — garante padronização entre
+  // ProductCard, ProductDetail e Monte seu Look.
+  const altImagem = useMemo(
+    () => getProductImageByColor(produto, corSelecionada).alt,
+    [produto, corSelecionada],
+  );
 
   // Cor vinculada à imagem atual (via mapa cor↔imagem).
   const corDaImagemAtual = useMemo(() => {

@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductImageSkeleton } from "@/components/ProductImageSkeleton";
-import produtoGenerico from "@/assets/produto-generico.png";
+import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 
 interface ImageGalleryProps {
   images: string[];

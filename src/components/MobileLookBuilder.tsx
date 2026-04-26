@@ -17,12 +17,16 @@ import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 import { useProducts } from "@/hooks/useProducts";
 import { Produto } from "@/data/products";
 import confetti from "canvas-confetti";
-import produtoGenerico from "@/assets/produto-generico.png";
 import { cn } from "@/lib/utils";
 import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 import { toast } from "@/hooks/use-toast";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
+import {
+  getProductImageByColor,
+  handleProductImageError,
+  PRODUCT_IMAGE_PLACEHOLDER,
+} from "@/lib/productImage";
 
 // Ícone oficial do WhatsApp (inline SVG) — deixa explícito o canal de envio.
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -363,56 +367,10 @@ export const MobileLookBuilder = () => {
     setSelectedSizes({ ...selectedSizes, [category]: "" });
   };
 
-  const getImageForColor = (produto: Produto | null, cor: string) => {
-    if (!produto) return produtoGenerico;
-    // Contrato novo: cores[] traz a imagem própria por cor (mais confiável).
-    if (cor && produto.cores && produto.cores.length > 0) {
-      const corMatch = produto.cores.find((c) => c.cor === cor);
-      const fromCor =
-        corMatch?.imagem_full ||
-        corMatch?.imagem_thumb ||
-        corMatch?.imagens?.[0]?.url_full ||
-        corMatch?.imagens?.[0]?.url_thumb ||
-        null;
-      if (fromCor) return fromCor;
-    }
-    if (!produto.imagens || produto.imagens.length === 0) {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.warn("[MonteSeuLook] Sem imagens — usando placeholder.", {
-          produto: produto.nome,
-          cor,
-          origem: "placeholder",
-        });
-      }
-      return produtoGenerico;
-    }
-    if (!cor) return produto.imagens[0] || produtoGenerico;
-    
-    const coresUnicas = [...new Set(produto.variants.map(v => v.cor))];
-    const corIndex = coresUnicas.findIndex(c => c === cor);
-    
-    if (corIndex >= 0 && produto.imagens[corIndex]) {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.debug("[MonteSeuLook] Imagem por cor via fallback de índice.", {
-          produto: produto.nome,
-          cor,
-          origem: "imagens[index]",
-        });
-      }
-      return produto.imagens[corIndex];
-    }
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.warn("[MonteSeuLook] Imagem para a cor não encontrada — usando primeira disponível.", {
-        produto: produto.nome,
-        cor,
-        origem: "imagens[0]",
-      });
-    }
-    return produto.imagens[0] || produtoGenerico;
-  };
+  // Wrapper fino sobre o utilitário central — mantém a assinatura usada
+  // pelos componentes filhos (que esperam apenas a URL).
+  const getImageForColor = (produto: Produto | null, cor: string) =>
+    getProductImageByColor(produto, cor).src;
 
   const handleWhatsApp = () => {
     const whatsappNumber = "5583986567915";
@@ -561,7 +519,7 @@ export const MobileLookBuilder = () => {
                     <img
                       key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
-                      alt={color ? `${product.nome} — cor ${color}` : product.nome}
+                      alt={getProductImageByColor(product, color).alt}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -802,11 +760,9 @@ const CategorySection = ({
               // garante swap visual imediato mesmo quando o browser reaproveitaria o nó.
               key={`${selectedProduct.id}-${selectedColor || "default"}`}
               src={getImageForColor(selectedProduct, selectedColor)}
-              alt={selectedColor ? `${selectedProduct.nome} — cor ${selectedColor}` : selectedProduct.nome}
+              alt={getProductImageByColor(selectedProduct, selectedColor).alt}
               className="w-full h-full object-cover animate-fade-in"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = produtoGenerico;
-              }}
+              onError={handleProductImageError}
             />
           </div>
         )}
@@ -932,12 +888,10 @@ const CategorySection = ({
                     )}
                   >
                     <img
-                      src={produto.imagens[0] || produtoGenerico}
-                      alt={produto.nome}
+                      src={produto.imagens[0] || PRODUCT_IMAGE_PLACEHOLDER}
+                      alt={getProductImageByColor(produto, null).alt}
                       className="w-full h-full object-cover transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = produtoGenerico;
-                      }}
+                      onError={handleProductImageError}
                     />
                     {selectedProduct?.id === produto.id && (
                       <div className="absolute inset-0 bg-primary/20 flex items-center justify-center animate-fade-in">
@@ -1009,12 +963,10 @@ const PreviewPanel = ({
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
                   )}
-                  alt={(() => {
-                    const p = selectedProducts.vestido || selectedProducts.conjunto;
-                    const c = selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto;
-                    if (!p) return "Look";
-                    return c ? `${p.nome} — cor ${c}` : p.nome;
-                  })()}
+                  alt={getProductImageByColor(
+                    selectedProducts.vestido || selectedProducts.conjunto,
+                    selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto,
+                  ).alt}
                   className="w-[85%] h-[85%] object-contain drop-shadow-2xl"
                 />
               </div>
@@ -1027,7 +979,7 @@ const PreviewPanel = ({
                     <img
                       key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
                       src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
-                      alt={selectedColors.blusa ? `${selectedProducts.blusa.nome} — cor ${selectedColors.blusa}` : selectedProducts.blusa.nome}
+                      alt={getProductImageByColor(selectedProducts.blusa, selectedColors.blusa).alt}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
@@ -1043,7 +995,7 @@ const PreviewPanel = ({
                     <img
                       key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
                       src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
-                      alt={selectedColors.bottom ? `${selectedProducts.bottom.nome} — cor ${selectedColors.bottom}` : selectedProducts.bottom.nome}
+                      alt={getProductImageByColor(selectedProducts.bottom, selectedColors.bottom).alt}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
@@ -1061,7 +1013,7 @@ const PreviewPanel = ({
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
-                  alt={selectedColors.bolsa ? `${selectedProducts.bolsa.nome} — cor ${selectedColors.bolsa}` : selectedProducts.bolsa.nome}
+                  alt={getProductImageByColor(selectedProducts.bolsa, selectedColors.bolsa).alt}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -1107,7 +1059,7 @@ const PreviewPanel = ({
                     <img
                       key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
-                      alt={color ? `${product.nome} — cor ${color}` : product.nome}
+                      alt={getProductImageByColor(product, color).alt}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
                     />
                     <div className="min-w-0">

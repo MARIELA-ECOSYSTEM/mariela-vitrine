@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import produtoGenerico from "@/assets/produto-generico.png";
+import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 
 const Cart = () => {

@@ -1,7 +1,7 @@
 import { Produto } from "@/data/products";
-import produtoGenerico from "@/assets/produto-generico.png";
 import { Badge } from "@/components/ui/badge";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { getProductImageByColor } from "@/lib/productImage";
 
 interface Mannequin3DProps {
   selectedBlusa: Produto | null;
@@ -33,25 +33,9 @@ export const Mannequin3D = ({
 }: Mannequin3DProps) => {
   const isFullOutfit = selectedVestido || selectedConjunto;
 
-  const getImageForColor = (produto: Produto | null, cor: string) => {
-    if (!produto) return produtoGenerico;
-    if (!produto.imagens || produto.imagens.length === 0) return produtoGenerico;
-    
-    // Se não há cor selecionada, retorna a primeira imagem
-    if (!cor) return produto.imagens[0] || produtoGenerico;
-    
-    // Buscar o índice da variante pela cor
-    const coresUnicas = [...new Set(produto.variants.map(v => v.cor))];
-    const corIndex = coresUnicas.findIndex(c => c === cor);
-    
-    // Se encontrou a cor e há imagem correspondente, retorna ela
-    if (corIndex >= 0 && produto.imagens[corIndex]) {
-      return produto.imagens[corIndex];
-    }
-    
-    // Fallback: retorna a primeira imagem disponível
-    return produto.imagens[0] || produtoGenerico;
-  };
+  // Wrapper sobre o utilitário central — fonte única de verdade.
+  const getImageForColor = (produto: Produto | null, cor: string) =>
+    getProductImageByColor(produto, cor).src;
 
   const getAnimationClass = (category: string) => {
     if (!lastAction) return "animate-mannequin-idle";

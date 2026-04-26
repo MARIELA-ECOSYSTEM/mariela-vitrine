@@ -1,7 +1,7 @@
 import { Produto } from "@/data/products";
-import produtoGenerico from "@/assets/produto-generico.png";
 import mannequinBase from "@/assets/mannequin-base.png";
 import { Badge } from "@/components/ui/badge";
+import { getProductImageByColor } from "@/lib/productImage";
 
 interface MannequinDisplayProps {
   selectedBlusa: Produto | null;
@@ -28,20 +28,9 @@ export const MannequinDisplay = ({
 }: MannequinDisplayProps) => {
   const isFullOutfit = selectedVestido || selectedConjunto;
 
-  // Função para obter imagens baseadas na cor selecionada
-  const getImageForColor = (produto: Produto | null, cor: string) => {
-    if (!produto) return produtoGenerico;
-    if (!cor) return produto.imagens[0] || produtoGenerico;
-    
-    // Buscar variante com a cor selecionada e pegar suas imagens
-    const varianteComCor = produto.variants.find(v => v.cor === cor);
-    if (!varianteComCor) return produto.imagens[0] || produtoGenerico;
-    
-    // As imagens estão armazenadas junto com cada variante na nova estrutura da API
-    // Buscar a imagem da variante na estrutura original de produtos
-    const imagemIndex = produto.variants.findIndex(v => v.cor === cor);
-    return produto.imagens[imagemIndex >= 0 ? imagemIndex : 0] || produto.imagens[0] || produtoGenerico;
-  };
+  // Wrapper sobre o utilitário central — reusa fallback/log padronizados.
+  const getImageForColor = (produto: Produto | null, cor: string) =>
+    getProductImageByColor(produto, cor).src;
 
   return (
     <div className="relative w-full max-w-md mx-auto">
