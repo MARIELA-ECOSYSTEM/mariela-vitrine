@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface ProductImageSkeletonProps {
@@ -328,6 +328,7 @@ export const ProductImageSkeleton = ({
         currentIndex={currentIndex}
         alt={alt}
         className={className}
+        slideDirection={slideDirection}
         priority={priority}
         enableBlurUp={enableBlurUp}
       />
@@ -368,6 +369,7 @@ interface ImageTrackProps {
   currentIndex: number;
   alt: string;
   className?: string;
+  slideDirection?: 'left' | 'right' | null;
   priority?: boolean;
   enableBlurUp?: boolean;
 }
@@ -375,18 +377,28 @@ interface ImageTrackProps {
 const TRACK_EASING = "cubic-bezier(0.22, 1, 0.36, 1)"; // mesma curva da Posthaus
 const TRACK_DURATION_MS = 420;
 
-const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlurUp }: ImageTrackProps) => {
+const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, priority, enableBlurUp }: ImageTrackProps) => {
   const len = images.length;
-  const prevIndexRef = useRef<number>(currentIndex);
-  // Slots: [esquerdo, centro, direito]. Centro é sempre o currentIndex.
-  // Esquerdo/direito derivam ciclicamente para que a navegação next/prev
-  // sempre tenha vizinho montado e pré-carregado.
-  const leftIdx = (currentIndex - 1 + len) % len;
-  const rightIdx = (currentIndex + 1) % len;
+  const [trackState, setTrackState] = useState({
+    centerIndex: currentIndex,
+    targetIndex: currentIndex,
+    direction: null as "next" | "prev" | null,
+    animating: false,
+  });
+  const trackStateRef = useRef(trackState);
+  const frameRef = useRef<number | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
 
-  // Direção do slide aplicada quando currentIndex muda.
-  const [direction, setDirection] = useState<"next" | "prev" | null>(null);
-  const [animating, setAnimating] = useState(false);
+  useEffect(() => {
+    trackStateRef.current = trackState;
+  }, [trackState]);
+
+  const centerIdx = Math.min(trackState.centerIndex, len - 1);
+  const targetIdx = Math.min(trackState.targetIndex, len - 1);
+  let leftIdx = (centerIdx - 1 + len) % len;
+  let rightIdx = (centerIdx + 1) % len;
+  if (trackState.direction === "prev") leftIdx = targetIdx;
+  if (trackState.direction === "next") rightIdx = targetIdx;
 
   // Pré-carrega slot atual + vizinhos com PRIORIDADE ALTA assim que o
   // índice muda. Garante que a imagem do slot já esteja no cache do
