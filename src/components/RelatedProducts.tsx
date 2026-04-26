@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import type { Produto } from "@/data/products";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RelatedProductsProps {
   currentProduct: Produto;
@@ -20,13 +21,17 @@ export const RelatedProducts = ({
   title = "Combine com",
   max = 6,
 }: RelatedProductsProps) => {
+  const isMobile = useIsMobile();
+  // Mobile: 4, Desktop: até `max` (default 6).
+  const limite = isMobile ? 4 : max;
+
   const relacionados = useMemo(() => {
     const colecao = currentProduct.colecao?.trim();
     if (!colecao) return [];
 
     const currentKey = String(currentProduct.produtoId || currentProduct.id);
 
-    return allProducts
+    const filtrados = allProducts
       .filter((p) => {
         if (!p.colecao) return false;
         if (p.colecao.trim().toLowerCase() !== colecao.toLowerCase()) return false;
@@ -35,9 +40,20 @@ export const RelatedProducts = ({
         // Apenas disponíveis
         const temEstoque = (p.variants || []).some((v) => v.disponibilidade > 0);
         return temEstoque;
-      })
-      .slice(0, max);
-  }, [currentProduct, allProducts, max]);
+      });
+
+    // Ordenação leve: promoção → novidade → demais (estável).
+    const score = (p: Produto) => {
+      if (p.emPromocao) return 0;
+      if (p.isNovidade) return 1;
+      return 2;
+    };
+    return filtrados
+      .map((p, idx) => ({ p, idx, s: score(p) }))
+      .sort((a, b) => a.s - b.s || a.idx - b.idx)
+      .map((x) => x.p)
+      .slice(0, limite);
+  }, [currentProduct, allProducts, limite]);
 
   if (relacionados.length < 2) return null;
 
