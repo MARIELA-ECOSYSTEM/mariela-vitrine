@@ -47,7 +47,17 @@ type LoaderEntry = {
   refCount: number;
   done: boolean;
   realSrc: string; // URL real disparada (pode ter query strings)
+  priority: PreloadPriority;
 };
+
+export type PreloadPriority = "low" | "auto" | "high";
+
+function applyPriorityHints(img: HTMLImageElement, priority: PreloadPriority): void {
+  try {
+    (img as unknown as { fetchPriority?: string }).fetchPriority = priority;
+    img.decoding = "async";
+  } catch { /* navegadores antigos */ }
+}
 
 const loadedImageCache = new Set<string>(); // chaves NORMALIZADAS já carregadas
 const inflightLoaders = new Map<string, LoaderEntry>(); // chave normalizada → entry
@@ -58,7 +68,7 @@ const inflightLoaders = new Map<string, LoaderEntry>(); // chave normalizada →
  * Cada chamada incrementa o refcount; pareie com `cancelPreload` para
  * permitir cancelamento real se o usuário sair antes de carregar.
  */
-export function preloadImage(src: string): Promise<void> {
+export function preloadImage(src: string, priority: PreloadPriority = "low"): Promise<void> {
   if (!src) return Promise.resolve();
   const key = normalizeImageKey(src);
   if (loadedImageCache.has(key)) return Promise.resolve();
@@ -66,16 +76,22 @@ export function preloadImage(src: string): Promise<void> {
   const existing = inflightLoaders.get(key);
   if (existing) {
     existing.refCount += 1;
+    // Upgrade de prioridade quando uma nova chamada pede algo mais
+    // urgente (ex.: preload disparado em hover ganha boost ao usuário
+    // tocar a seta). Browser respeita o último hint para o mesmo
+    // request em curso.
+    if (rankPriority(priority) > rankPriority(existing.priority)) {
+      existing.priority = priority;
+      applyPriorityHints(existing.img, priority);
+    }
     return existing.promise;
   }
 
   const img = new Image();
-  // Hint para o navegador: preloads em background não devem competir
-  // com a renderização principal.
-  try {
-    (img as unknown as { fetchPriority?: string }).fetchPriority = "low";
-    img.decoding = "async";
-  } catch { /* navegadores antigos */ }
+  // Default `low`: preloads em background nunca devem competir com a
+  // imagem principal acima do fold. Quem pede prioridade maior (ex.:
+  // touchstart na seta) sobe explicitamente.
+  applyPriorityHints(img, priority);
 
   const promise = new Promise<void>((resolve, reject) => {
     img.onload = () => {
@@ -92,10 +108,39 @@ export function preloadImage(src: string): Promise<void> {
     img.src = src;
   });
 
-  inflightLoaders.set(key, { promise, img, refCount: 1, done: false, realSrc: src });
+  inflightLoaders.set(key, { promise, img, refCount: 1, done: false, realSrc: src, priority });
   // Engole rejection global pra não poluir console — chamadores tratam.
   promise.catch(() => {});
   return promise;
+}
+
+function rankPriority(p: PreloadPriority): number {
+  return p === "high" ? 2 : p === "auto" ? 1 : 0;
+}
+
+/**
+ * Helper unificado: pré-carrega a imagem na direção (next/prev) a
+ * partir do índice atual de uma lista. Centraliza a lógica de cálculo
+ * de vizinho usada no ProductCard e no ImageGallery — garante que a
+ * direção prevista seja idêntica nos dois pontos.
+ *
+ * @param priority - "low" para hover/focus (apenas hint de intenção),
+ *                   "high" para touchstart (clique iminente).
+ */
+export function preloadAdjacentImage(
+  images: readonly string[],
+  currentIndex: number,
+  direction: "next" | "prev",
+  priority: PreloadPriority = "low",
+): void {
+  if (!images || images.length <= 1) return;
+  const len = images.length;
+  const targetIdx = direction === "next"
+    ? (currentIndex + 1) % len
+    : (currentIndex - 1 + len) % len;
+  const url = images[targetIdx];
+  if (!url) return;
+  preloadImage(url, priority).catch(() => {});
 }
 
 /**
