@@ -56,6 +56,8 @@ const ProductDetail = () => {
   const produtoFromList = produtos.find(p => matchesProductSlug(p, productParam));
   const [produtoDetalhe, setProdutoDetalhe] = useState<Produto | null>(null);
   const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+  // Inicializa a partir da query string para suportar share/bookmark
+  const initialQuery = useMemo(() => new URLSearchParams(location.search), []);
   const [corSelecionadaId, setCorSelecionadaId] = useState<string>("");
 
   // Sempre busca o detalhe completo (com cores reais) ao abrir /products/{slug},
@@ -84,8 +86,8 @@ const ProductDetail = () => {
 
   // Produto efetivo: prioriza o detalhe completo (com cores reais) quando disponível.
   const produto = produtoDetalhe ?? produtoFromList;
-  const [corSelecionada, setCorSelecionada] = useState("");
-  const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
+  const [corSelecionada, setCorSelecionada] = useState<string>(initialQuery.get("cor") || "");
+  const [tamanhoSelecionado, setTamanhoSelecionado] = useState<string>(initialQuery.get("tamanho") || "");
   const [imagemSelecionadaIndex, setImagemSelecionadaIndex] = useState(0);
   
   const whatsappNumber = "5583986567915";
@@ -165,13 +167,68 @@ const ProductDetail = () => {
     setImagemSelecionadaIndex(0);
   }, [corSelecionadaObj?.produto_cor_id]);
 
-  // Auto-seleciona a primeira cor disponível ao carregar o produto.
+  // Auto-seleciona a cor com base na query string (?cor=...) ou na primeira disponível.
   useEffect(() => {
-    if (!corSelecionada && coresList.length > 0) {
-      setCorSelecionada(coresList[0].cor);
-      setCorSelecionadaId(coresList[0].produto_cor_id);
+    if (coresList.length === 0) return;
+    if (corSelecionadaId && coresList.some((c) => c.produto_cor_id === corSelecionadaId)) return;
+    const corNaUrl = initialQuery.get("cor");
+    const fromUrl = corNaUrl ? coresList.find((c) => c.cor.toLowerCase() === corNaUrl.toLowerCase()) : null;
+    const escolhida = fromUrl || coresList[0];
+    setCorSelecionada(escolhida.cor);
+    setCorSelecionadaId(escolhida.produto_cor_id);
+  }, [coresList, corSelecionadaId, initialQuery]);
+
+  // Valida o tamanho da query string contra a cor selecionada; remove se inválido.
+  useEffect(() => {
+    if (!tamanhoSelecionado) return;
+    if (tamanhosDisponiveis.length === 0) return;
+    if (!tamanhosDisponiveis.includes(tamanhoSelecionado)) {
+      setTamanhoSelecionado("");
     }
-  }, [coresList, corSelecionada]);
+  }, [tamanhosDisponiveis, tamanhoSelecionado]);
+
+  // Persiste cor/tamanho na URL (sem recarregar) para permitir share da seleção exata.
+  useEffect(() => {
+    if (!produto) return;
+    const params = new URLSearchParams(location.search);
+    if (corSelecionada) params.set("cor", corSelecionada);
+    else params.delete("cor");
+    if (tamanhoSelecionado) params.set("tamanho", tamanhoSelecionado);
+    else params.delete("tamanho");
+    const next = params.toString();
+    const target = `${location.pathname}${next ? `?${next}` : ""}`;
+    if (target !== `${location.pathname}${location.search}`) {
+      navigate(target, { replace: true });
+    }
+  }, [corSelecionada, tamanhoSelecionado, produto, location.pathname, location.search, navigate]);
+
+  // Pré-carregamento leve das imagens de cada cor (lazy + low priority) para evitar
+  // flash de troca ao alternar cores no mobile, sem pesar o carregamento inicial.
+  useEffect(() => {
+    if (coresList.length <= 1) return;
+    const links: HTMLLinkElement[] = [];
+    // Aguarda 1 frame ocioso para não competir com a imagem principal.
+    const schedule = (cb: () => void) => {
+      const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number };
+      if (typeof w.requestIdleCallback === "function") w.requestIdleCallback(cb);
+      else setTimeout(cb, 300);
+    };
+    schedule(() => {
+      coresList.forEach((c) => {
+        const url = c.imagem_full || c.imagem_thumb;
+        if (!url) return;
+        if (corSelecionadaObj && url === (corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb)) return;
+        const link = document.createElement("link");
+        link.rel = "prefetch";
+        link.as = "image";
+        link.href = url;
+        link.fetchPriority = "low";
+        document.head.appendChild(link);
+        links.push(link);
+      });
+    });
+    return () => { links.forEach((l) => l.parentNode?.removeChild(l)); };
+  }, [coresList, corSelecionadaObj]);
 
   // Função para lidar com seleção de imagem do carrossel
   const handleImageSelect = (index: number) => {
