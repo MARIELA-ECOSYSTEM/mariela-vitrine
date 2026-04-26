@@ -698,6 +698,22 @@ export const MobileLookBuilder = () => {
         </div>,
         document.body
       )}
+
+      {/* Dialog rápido de seleção de tamanho — disparado ao tocar num item
+          incompleto na prévia. Não altera fluxo do WhatsApp; apenas grava
+          o tamanho escolhido na categoria correspondente. */}
+      <QuickSizeDialog
+        category={pendingSizeCategory}
+        product={pendingSizeCategory ? selectedProducts[pendingSizeCategory] : null}
+        selectedColor={pendingSizeCategory ? selectedColors[pendingSizeCategory] : ""}
+        selectedSize={pendingSizeCategory ? selectedSizes[pendingSizeCategory] : ""}
+        onClose={() => setPendingSizeCategory(null)}
+        onSelectSize={(size) => {
+          if (!pendingSizeCategory) return;
+          setSelectedSizes({ ...selectedSizes, [pendingSizeCategory]: size });
+          setPendingSizeCategory(null);
+        }}
+      />
     </div>
   );
 };
