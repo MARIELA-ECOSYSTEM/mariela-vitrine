@@ -292,8 +292,8 @@ const ProductDetail = () => {
     vitrineApiService.getConfig().then((config) => {
       const preco = getDisplayPrice(produto);
       const precoFormatadoSeo = formatBRL(preco);
+      const promoSeo = getPromoInfo(produto);
       const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
-      const descricao = produto.descricao || `${produto.nome}${colecaoTexto}. Loja de moda feminina em Campina Grande - PB.`;
       // Para share/SEO prioriza imagem da cor selecionada (quando houver) → primeira da galeria
       // → fallback produto.imagens[0]. Garante OG/twitter cards alinhados com a vitrine.
       const imagemPrincipal =
@@ -302,12 +302,31 @@ const ProductDetail = () => {
         || corSelecionadaObj?.imagem_thumb
         || produto.imagens[0];
 
+      // Title dinâmico: inclui preço quando em promoção (maior CTR em SERPs).
+      const seoTitle = promoSeo.isPromo
+        ? `${produto.nome} por ${precoFormatadoSeo} | ${config.nomeLoja}`
+        : `${produto.nome} | ${config.nomeLoja}`;
+
+      // Description dinâmica orientada a CTR. Só inclui cores quando reais.
+      const coresReais = (produto.cores || [])
+        .map((c) => c.cor)
+        .filter((c): c is string => !!c && c.toLowerCase() !== "única" && c.toLowerCase() !== "unica");
+      const coresTexto = coresReais.length > 0
+        ? ` Disponível nas cores ${coresReais.slice(0, 4).join(", ")}${coresReais.length > 4 ? "…" : ""}.`
+        : "";
+
+      const seoDescription = promoSeo.isPromo
+        ? `🔥 ${produto.nome} em promoção por ${precoFormatadoSeo}${
+            promoSeo.precoVenda > 0 ? ` (antes ${formatBRL(promoSeo.precoVenda)})` : ""
+          }. Aproveite na ${config.nomeLoja}.`
+        : `Confira ${produto.nome}${colecaoTexto} na ${config.nomeLoja} por ${precoFormatadoSeo}.${coresTexto}`;
+
       updateSeo({
-        title: `${produto.nome} | ${config.nomeLoja}`,
-        description: produto.emPromocao
-          ? `${produto.nome} em promoção por ${precoFormatadoSeo} na ${config.nomeLoja}${colecaoTexto ? `, ${colecaoTexto.trim()}` : ""}.`
-          : `${produto.nome}${colecaoTexto}. Disponível na ${config.nomeLoja} por ${precoFormatadoSeo}.`,
+        title: seoTitle,
+        description: seoDescription,
         image: imagemPrincipal,
+        imageWidth: 1200,
+        imageHeight: 1200,
         url: `${window.location.origin}${getProductPath(produto)}`,
         type: "product",
         jsonLd: [
