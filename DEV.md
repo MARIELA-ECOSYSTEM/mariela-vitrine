@@ -111,3 +111,80 @@ padrão do conteúdo de toda página interna. Ele aplica:
 - [ ] Layout externo aplica `pt-[60px] sm:pt-[68px]` (exceto Home).
 - [ ] Não há `container mx-auto` manual com `py-*` redundante.
 - [ ] Breadcrumbs e cards alinham ao mesmo grid (mesmo `padX` que o restante do conteúdo).
+
+---
+
+## Exemplos de uso do `PageContainer`
+
+### ✅ Página interna padrão (Products, Cart, MonteSeuLook)
+
+```tsx
+import { PageContainer } from "@/components/PageContainer";
+
+<div className="min-h-screen pt-[60px] sm:pt-[68px]">
+  <Header />
+  <main>
+    <PageContainer>
+      <Breadcrumbs currentPage="…" />
+      {/* conteúdo */}
+    </PageContainer>
+  </main>
+  <Footer />
+</div>
+```
+
+### ✅ ProductDetail — sobrescreve apenas `padY`
+
+`<main>` já controla o `pb-8 md:pb-16`, então o wrapper só precisa do
+espaçamento superior.
+
+```tsx
+<main className="pb-8 md:pb-16">
+  <PageContainer padX="px-4 md:px-6" padY="pt-6 md:pt-8" className="animate-fade-in">
+    {/* galeria + grid lg:grid-cols-2 */}
+  </PageContainer>
+</main>
+```
+
+### ✅ Instalar — wrapper próprio (exceção)
+
+Hero com gradiente decorativo full-bleed + `max-w-2xl` interno.
+**Não** migrar para `PageContainer`.
+
+```tsx
+<section className="relative overflow-hidden …">
+  <div className="container mx-auto px-4 max-w-2xl relative z-10">…</div>
+</section>
+```
+
+### ✅ Index (Home) — exceção
+
+Header transparente em overlay sobre o banner; a hero precisa sangrar
+até o topo. **Não** usar `PageContainer` no nível da hero.
+Layout externo **não** aplica `pt-[60px]` para permitir o overlay.
+
+```tsx
+<div className="min-h-screen flex flex-col">
+  <Header />
+  <main>
+    <HeroBannerCarousel />        {/* full-bleed atrás do header */}
+    {/* seções subsequentes podem usar suas próprias <section className="container …"> */}
+  </main>
+  <Footer />
+</div>
+```
+
+---
+
+## Checklist final por PR
+
+- [ ] Nenhuma página interna nova usa `<div className="container mx-auto …">` manual.
+- [ ] Páginas internas aplicam `pt-[60px] sm:pt-[68px]` no layout externo
+      (não no `PageContainer`).
+- [ ] `Breadcrumbs` aparece sempre como **primeiro filho** do `PageContainer`,
+      herdando o mesmo `padX` que os cards.
+- [ ] Cards de produtos (`ProductCard`) ficam em grids dentro do
+      `PageContainer` — sem `px-*` extra que quebre o alinhamento.
+- [ ] Sobrescritas de `padX`/`padY` no `PageContainer` estão documentadas
+      acima na tabela de exceções.
+- [ ] `bunx tsc --noEmit` passa.

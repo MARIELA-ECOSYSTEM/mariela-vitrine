@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageContainer } from "@/components/PageContainer";
 import { ImageGallery } from "@/components/ImageGallery";
 import { SizeGuide } from "@/components/SizeGuide";
 import { RelatedProducts } from "@/components/RelatedProducts";
@@ -415,7 +416,7 @@ const ProductDetail = () => {
     <div className="min-h-screen bg-background pt-[60px] sm:pt-[68px]">
       <Header />
       <main className="pb-8 md:pb-16">
-        <div className="container mx-auto px-4 md:px-6 animate-fade-in">
+        <PageContainer padX="px-4 md:px-6" padY="pt-6 md:pt-8" className="animate-fade-in">
           {/* Breadcrumbs - Hidden on mobile for cleaner look */}
           <div className="hidden md:block mb-4">
             <Breadcrumbs 
@@ -640,7 +641,7 @@ const ProductDetail = () => {
               title="Complete o look"
             />
           </div>
-        </div>
+        </PageContainer>
       </main>
       <Footer />
     </div>
