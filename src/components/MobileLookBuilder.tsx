@@ -239,6 +239,13 @@ export const MobileLookBuilder = () => {
   const isFullOutfit = selectedProducts.vestido !== null || selectedProducts.conjunto !== null;
   const hasAnySelection = Object.values(selectedItems).some(v => v !== null);
 
+  // Indica se há produto selecionado em alguma categoria de roupa sem tamanho.
+  // Bolsa/acessório não exige tamanho.
+  const missingSize = useMemo(() => {
+    const cats: CategoryKey[] = ["blusa", "bottom", "vestido", "conjunto"];
+    return cats.some((k) => selectedProducts[k] && !selectedSizes[k]);
+  }, [selectedProducts, selectedSizes]);
+
   const getPreco = (produto: Produto | null) => {
     if (!produto) return 0;
     return produto.precoPromocional || produto.precoVenda;
