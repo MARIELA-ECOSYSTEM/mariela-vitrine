@@ -936,6 +936,7 @@ interface PreviewPanelProps {
   onWhatsApp: () => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
   isMobile?: boolean;
+  missingSize?: boolean;
 }
 
 const PreviewPanel = ({
@@ -948,6 +949,7 @@ const PreviewPanel = ({
   onWhatsApp,
   getImageForColor,
   isMobile = false,
+  missingSize = false,
 }: PreviewPanelProps) => {
   const isFullOutfit = selectedProducts.vestido || selectedProducts.conjunto;
   
@@ -1092,9 +1094,13 @@ const PreviewPanel = ({
               <RefreshCw className="h-4 w-4 mr-2" />
               Limpar
             </Button>
-            <Button onClick={onWhatsApp} className="flex-1 bg-green-600 hover:bg-green-700 text-white h-10 sm:h-11 touch-feedback">
-              <MessageCircle className="h-4 w-4 mr-2" />
-              WhatsApp
+            <Button
+              onClick={onWhatsApp}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white h-10 sm:h-11 touch-feedback gap-2"
+              aria-label={missingSize ? "Selecione o tamanho" : "Quero garantir meu look — enviar via WhatsApp"}
+            >
+              <WhatsAppIcon className="h-4 w-4" />
+              {missingSize ? "Selecione o tamanho" : "Quero garantir meu look 💜"}
             </Button>
           </div>
         </div>
