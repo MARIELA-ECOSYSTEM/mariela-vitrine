@@ -334,17 +334,17 @@ export const ImageGallery = ({
             >
               <button
                 onClick={() => handleThumbnailClick(index)}
-                className={`aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 w-full ${
+                className={`aspect-square rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow,transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-105 w-full ${
                   indiceAtual === index
-                    ? "border-primary ring-2 ring-primary/20 shadow-md"
-                    : "border-border hover:border-primary/50"
+                    ? "border-primary ring-2 ring-primary/20 shadow-md opacity-100"
+                    : "border-border hover:border-primary/50 opacity-80 hover:opacity-100"
                 }`}
                 aria-label={`Ver imagem ${index + 1}`}
               >
                 <img
                   src={img}
                   alt={`${productName} miniatura ${index + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
                 />
               </button>
               
@@ -373,10 +373,10 @@ export const ImageGallery = ({
             <button
               key={index}
               onClick={() => handleThumbnailClick(index)}
-              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 indiceAtual === index
-                  ? "border-primary ring-2 ring-primary/20 shadow-md"
-                  : "border-border"
+                  ? "border-primary ring-2 ring-primary/20 shadow-md opacity-100"
+                  : "border-border opacity-80"
               }`}
               aria-label={`Ver imagem ${index + 1}`}
             >

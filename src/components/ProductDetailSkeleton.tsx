@@ -24,12 +24,22 @@ export const ProductDetailSkeleton = () => {
           <Skeleton className="h-8 w-20 mb-4 md:mb-6" />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12 max-w-6xl mx-auto">
-            {/* Galeria principal + thumbs */}
-            <div className="space-y-3">
-              <Skeleton className="w-full aspect-[3/4] rounded-lg" />
-              <div className="flex gap-2 overflow-hidden">
+            {/* Galeria principal + thumbs — espelha exatamente o ImageGallery
+                real (aspect-square + thumbs mobile horizontais 16x16 +
+                grid 5 colunas no desktop) para evitar CLS quando os
+                dados chegam. */}
+            <div className="space-y-3 md:space-y-4">
+              <Skeleton className="w-full aspect-square rounded-xl md:rounded-2xl" />
+              {/* Thumbs mobile (scroll horizontal) */}
+              <div className="flex md:hidden gap-2 overflow-hidden pb-2">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-16 rounded-md flex-shrink-0" />
+                  <Skeleton key={i} className="h-16 w-16 rounded-lg flex-shrink-0" />
+                ))}
+              </div>
+              {/* Thumbs desktop (grid de 5) */}
+              <div className="hidden md:grid grid-cols-5 gap-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="aspect-square rounded-lg w-full" />
                 ))}
               </div>
             </div>

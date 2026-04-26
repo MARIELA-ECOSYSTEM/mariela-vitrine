@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
 import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER } from "@/lib/productImage";
-import { ProductImageSkeleton } from "./ProductImageSkeleton";
+import { ProductImageSkeleton, preloadImagesPrioritized } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
@@ -183,6 +183,44 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     });
     return map;
   }, [imagensValidas]);
+
+  // ============================================================
+  // Preload inteligente de vizinhos (next/prev + cor adjacente)
+  // ------------------------------------------------------------
+  // Em hover/focus do card pré-carregamos a próxima e a anterior
+  // imagem do carrossel + a imagem da próxima cor da lista. Isso
+  // torna a troca por seta ou por cor instantânea (cache do
+  // ProductImageSkeleton) sem provocar fetch massivo.
+  //
+  // Throttle por 500ms para evitar flood quando o ponteiro passa
+  // rapidamente sobre vários cards.
+  // ============================================================
+  const lastPreloadAtRef = useRef<number>(0);
+  const preloadNeighbors = useCallback(() => {
+    const now = Date.now();
+    if (now - lastPreloadAtRef.current < 500) return;
+    lastPreloadAtRef.current = now;
+
+    const targets: string[] = [];
+    if (imagensValidas.length > 1) {
+      const nextIdx = (currentImageIndex + 1) % imagensValidas.length;
+      const prevIdx = (currentImageIndex - 1 + imagensValidas.length) % imagensValidas.length;
+      const nextUrl = imagensValidas[nextIdx];
+      const prevUrl = imagensValidas[prevIdx];
+      if (nextUrl) targets.push(nextUrl);
+      if (prevUrl) targets.push(prevUrl);
+    }
+    // Próxima cor da lista (ciclo) — antecipa troca de variação.
+    if (coresList.length > 1) {
+      const corIdx = Math.max(0, coresList.findIndex((c) => c.cor === corSelecionada));
+      const nextCor = coresList[(corIdx + 1) % coresList.length];
+      const url = (nextCor?.imagem_full || nextCor?.imagem_thumb || "").trim();
+      if (url) targets.push(url);
+    }
+    if (targets.length === 0) return;
+    // Carrega as 2 primeiras imediatamente; o resto fica no idle.
+    preloadImagesPrioritized(targets, 2);
+  }, [imagensValidas, currentImageIndex, coresList, corSelecionada]);
 
   // Imagem atual: índice do carrossel é a fonte primária (setas sempre funcionam).
   // Fallback: imagem da cor selecionada → primeira imagem válida → genérico.
@@ -360,7 +398,13 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
       <Card ref={cardRootRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:shadow-hover hover:translate-x-1 bg-card animate-fade-in">
         <CardContent className="p-0">
           <div className="flex flex-col md:flex-row">
-            <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block">
+            <Link
+              to={getProductPathWithSearch(produto)}
+              className="relative overflow-hidden md:w-64 aspect-square md:aspect-auto bg-muted block"
+              onMouseEnter={preloadNeighbors}
+              onPointerEnter={preloadNeighbors}
+              onFocus={preloadNeighbors}
+            >
               <ProductImageSkeleton 
                 src={imagemAtual} 
                 alt={altImagem}
@@ -523,7 +567,13 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
   return (
     <Card ref={cardRootRef} className="card-shine group overflow-hidden border-border hover:border-primary/40 transition-all duration-500 hover:shadow-hover hover:-translate-y-1 sm:hover:-translate-y-2 bg-card flex flex-col animate-fade-in relative">
       <CardContent className="p-0 flex flex-col flex-1">
-        <Link to={getProductPathWithSearch(produto)} className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0">
+        <Link
+          to={getProductPathWithSearch(produto)}
+          className="relative overflow-hidden aspect-square bg-muted block flex-shrink-0"
+          onMouseEnter={preloadNeighbors}
+          onPointerEnter={preloadNeighbors}
+          onFocus={preloadNeighbors}
+        >
           <ProductImageSkeleton 
             src={imagemAtual} 
             alt={altImagem}
