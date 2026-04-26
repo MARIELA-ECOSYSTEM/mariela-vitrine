@@ -25,6 +25,8 @@ export interface TrackEventoInput {
   tipo_evento: TipoEvento;
   origem?: string;
   utm?: UtmData;
+  /** Contexto adicional opcional (ex: cor/tamanho selecionados). */
+  contexto?: Record<string, string | number | null | undefined>;
 }
 
 function safeStorageGet(key: string): string | null {
@@ -136,6 +138,7 @@ export function trackEvento(input: TrackEventoInput): void {
       origem: input.origem ?? "vitrine",
       session_id: getSessionId(),
       utm: input.utm ?? getUtm(),
+      contexto: input.contexto,
       url: typeof window !== "undefined" ? window.location.href : undefined,
       referrer: typeof document !== "undefined" ? document.referrer : undefined,
       timestamp: new Date().toISOString(),
@@ -195,11 +198,13 @@ export function trackProdutoVisualizadoOnce(
 export function trackWhatsappClick(
   produtoId: string | number,
   origem = "detalhe",
+  contexto?: Record<string, string | number | null | undefined>,
 ): void {
   trackEvento({
     produto_id: produtoId,
     tipo_evento: "whatsapp_click",
     origem,
+    contexto,
   });
 }
 
