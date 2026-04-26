@@ -455,7 +455,7 @@ export const MobileLookBuilder = () => {
       )}
 
       {/* Mobile Preview Modal - Full Screen Bottom Sheet */}
-      {showPreview && (
+      {showPreview && createPortal(
         <div className="lg:hidden fixed inset-0 z-[60] flex flex-col">
           {/* Backdrop */}
           <div 
@@ -493,7 +493,8 @@ export const MobileLookBuilder = () => {
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
