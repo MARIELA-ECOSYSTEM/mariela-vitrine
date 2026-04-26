@@ -23,6 +23,7 @@ import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/servi
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
 import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
+import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -202,6 +203,35 @@ const ProductDetail = () => {
     if (produto.imagens.length > 0) return produto.imagens;
     return [produtoGenerico];
   }, [produto, corSelecionadaObj]);
+
+  // Preload antecipado das imagens de TODAS as cores em background. A cor
+  // selecionada e a próxima da lista entram como prioridade imediata; o
+  // restante carrega em idle. Respeita o cache global do ProductImageSkeleton
+  // e nunca duplica fetch para a mesma URL.
+  useEffect(() => {
+    if (coresList.length === 0) return;
+    const selectedIndex = Math.max(
+      0,
+      coresList.findIndex((c) => c.produto_cor_id === corSelecionadaObj?.produto_cor_id),
+    );
+    const ordered = [
+      ...coresList.slice(selectedIndex),
+      ...coresList.slice(0, selectedIndex),
+    ];
+    const urls: string[] = [];
+    ordered.forEach((c) => {
+      if (c.imagens.length > 0) {
+        c.imagens.forEach((img) => urls.push(img.url_full));
+      } else if (c.imagem_full) {
+        urls.push(c.imagem_full);
+      } else if (c.imagem_thumb) {
+        urls.push(c.imagem_thumb);
+      }
+    });
+    // Imediato: principal da cor atual + principal da próxima cor.
+    const immediate = Math.min(2, urls.length);
+    preloadImagesPrioritized(urls, immediate);
+  }, [coresList, corSelecionadaObj?.produto_cor_id]);
 
   // Ao trocar cor, volta para a primeira imagem (que agora corresponde à cor selecionada).
   useEffect(() => {
