@@ -709,7 +709,14 @@ const ProductDetail = () => {
 
                   {/* Seletor de Tamanho */}
                   {corSelecionada && (
-                    <div className="space-y-3 animate-fade-in">
+                    <div
+                      ref={tamanhosSectionRef}
+                      className={`space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300 ${
+                        tamanhosHighlight
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_0_4px_hsl(var(--primary)/0.15)] p-3 -m-3 animate-pulse"
+                          : ""
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <p className="font-medium text-sm md:text-base">
                           Tamanho: <span className="text-primary font-semibold">{tamanhoSelecionado || "Selecione"}</span>
