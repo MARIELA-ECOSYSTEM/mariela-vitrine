@@ -414,7 +414,7 @@ export const Header = () => {
 
         {/* Menu mobile dropdown */}
         {isMobileMenuOpen && (
-          <div className="mt-4 flex flex-col gap-4 md:hidden animate-slide-down">
+          <div className="mt-4 flex flex-col gap-4 md:hidden animate-slide-down rounded-md bg-background/95 backdrop-blur-md border border-border/50 p-4 shadow-lg">
             <Link 
               to="/" 
               onClick={() => {
@@ -425,7 +425,7 @@ export const Header = () => {
               }}
               className={cn(
                 "text-sm font-medium",
-                isActive('/') ? "text-primary" : "text-foreground hover:text-primary"
+                isLinkActive({ path: '/', section: 'home', scrollTo: 'home' }) ? "text-primary" : "text-foreground hover:text-primary"
               )}
             >
               Início
@@ -435,7 +435,7 @@ export const Header = () => {
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
                 "text-sm font-medium",
-                isActive('/products') ? "text-primary" : "text-foreground hover:text-primary"
+                isLinkActive({ path: '/products', section: 'products' }) ? "text-primary" : "text-foreground hover:text-primary"
               )}
             >
               Produtos
@@ -466,7 +466,10 @@ export const Header = () => {
                   document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
                 }, 100);
               }}
-              className="text-sm font-medium text-foreground hover:text-primary"
+              className={cn(
+                "text-sm font-medium",
+                isLinkActive({ path: '/', section: 'contact', scrollTo: 'contact' }) ? "text-primary" : "text-foreground hover:text-primary"
+              )}
             >
               Contato
             </Link>
