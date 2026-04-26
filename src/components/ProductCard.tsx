@@ -133,7 +133,10 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     setCurrentImageIndex(newIndex);
     // Selecionar a cor da nova imagem para mostrar os tamanhos
     if (produto.variants[newIndex]) {
-      setCorSelecionada(produto.variants[newIndex].cor);
+      const novaCor = produto.variants[newIndex].cor;
+      setCorSelecionada(novaCor);
+      const corItem = coresList.find((c) => c.cor === novaCor);
+      if (corItem) setCorSelecionadaId(corItem.produto_cor_id);
       setTamanhoSelecionado("");
     }
   };
@@ -146,7 +149,10 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
     setCurrentImageIndex(newIndex);
     // Selecionar a cor da nova imagem para mostrar os tamanhos
     if (produto.variants[newIndex]) {
-      setCorSelecionada(produto.variants[newIndex].cor);
+      const novaCor = produto.variants[newIndex].cor;
+      setCorSelecionada(novaCor);
+      const corItem = coresList.find((c) => c.cor === novaCor);
+      if (corItem) setCorSelecionadaId(corItem.produto_cor_id);
       setTamanhoSelecionado("");
     }
   };
@@ -195,7 +201,7 @@ export const ProductCard = ({ produto, layoutMode = "grade" }: ProductCardProps)
       description: `${produto.nome} (${corParaAdicionar} - ${tamanhoParaAdicionar}) foi adicionado ao carrinho.`,
     });
     setTamanhoSelecionado("");
-    setCorSelecionada("");
+    // Mantém a cor selecionada para preservar a imagem da cor escolhida no card
   };
 
   const handleWhatsApp = () => {
