@@ -25,7 +25,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *   <button onClick={() => guide.guide()}>Selecione o tamanho</button>
  */
 export function useSizeSelectionGuide() {
-  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   // Contador serve de "nonce" para reanunciar mesmo quando o texto repete.
   const [announceTick, setAnnounceTick] = useState(0);
   // Mensagem dinâmica: muda quando não há alvo de tamanho válido (fallback).
