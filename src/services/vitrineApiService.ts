@@ -1,4 +1,4 @@
-import type { Produto, ProdutoCor, VarianteProduto } from "@/data/products";
+import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
@@ -745,10 +745,45 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       imagem_thumb: readCorImagem(corRec, "thumb") || null,
       imagem_full: readCorImagem(corRec, "full") || null,
       tamanhos,
+      imagens: extractCorImagens(corRec),
     });
   });
 
   return cores.length > 0 ? cores : undefined;
+}
+
+/**
+ * Extrai `cores[].imagens[]` (galeria por cor — só vem no detalhe do produto).
+ * Aceita variações de nomenclatura: `url_thumb/url_full`, `imagem_thumb/imagem_full`,
+ * `thumb/full`. Filtra entradas inválidas (sem nenhuma URL utilizável) e ordena
+ * por `principal` desc → `ordem` asc, mantendo estabilidade.
+ */
+function extractCorImagens(corRec: ApiRecord): ProdutoCorImagem[] | undefined {
+  const arr = asArray(corRec.imagens ?? corRec.fotos ?? corRec.images);
+  if (arr.length === 0) return undefined;
+
+  const mapped: ProdutoCorImagem[] = arr
+    .map(asRecord)
+    .map((rec, idx) => {
+      const urlFull = readString(rec, ["url_full", "imagem_full", "full", "url", "src"]) || null;
+      const urlThumb = readString(rec, ["url_thumb", "imagem_thumb", "thumb", "thumbnail"]) || urlFull;
+      if (!urlFull && !urlThumb) return null;
+      return {
+        id: readString(rec, ["id", "uuid"]) || undefined,
+        url_thumb: urlThumb && isValidImageUrl(urlThumb) ? urlThumb : null,
+        url_full: urlFull && isValidImageUrl(urlFull) ? urlFull : (urlThumb && isValidImageUrl(urlThumb) ? urlThumb : null),
+        principal: readBoolean(rec, ["principal", "main", "primary"], false),
+        ordem: readNumber(rec, ["ordem", "order", "posicao", "position"], idx),
+      } satisfies ProdutoCorImagem;
+    })
+    .filter((img): img is ProdutoCorImagem => !!img && (!!img.url_full || !!img.url_thumb));
+
+  if (mapped.length === 0) return undefined;
+
+  return mapped.sort((a, b) => {
+    if (!!b.principal !== !!a.principal) return (b.principal ? 1 : 0) - (a.principal ? 1 : 0);
+    return (a.ordem ?? 0) - (b.ordem ?? 0);
+  });
 }
 
 function unwrapList(response: unknown): unknown[] {
