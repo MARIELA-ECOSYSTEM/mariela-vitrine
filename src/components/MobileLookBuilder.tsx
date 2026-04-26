@@ -372,6 +372,19 @@ export const MobileLookBuilder = () => {
   const getImageForColor = (produto: Produto | null, cor: string) =>
     getProductImageByColor(produto, cor).src;
 
+  // Leva o usuário até o card da categoria correspondente para escolher o
+  // tamanho ali (sem dialog separado). Usado tanto pela validação do envio
+  // ao WhatsApp quanto pelo toque em itens incompletos da prévia mobile.
+  const goToCategorySize = (cat: CategoryKey) => {
+    setExpandedCategory(cat);
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-category="${cat}"]`,
+      );
+      sizeGuide.guideElement(el);
+    });
+  };
+
   const handleWhatsApp = () => {
     const whatsappNumber = "5583986567915";
 
