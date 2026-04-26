@@ -94,6 +94,7 @@ const Index = () => {
       <HeroBannerCarousel />
       <CategoryNav />
 
+      <div id="products">
       <FeaturedProducts
         title="Novidades"
         subtitle="Recém-chegadas à coleção"
@@ -141,6 +142,7 @@ const Index = () => {
         linkTo="/products?filter=promocoes"
         linkLabel="Ver todas as promoções"
       />
+      </div>
       <QuickActions />
       <Footer />
     </div>
