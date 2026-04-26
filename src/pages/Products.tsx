@@ -477,7 +477,7 @@ const Products = () => {
       <div className="min-h-screen pt-[60px] sm:pt-[68px]">
         <Header />
         <main className="bg-background">
-          <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-12">
+          <PageContainer>
             <Breadcrumbs currentPage="Todos os Produtos" />
             
             {/* Silent background refresh when data is stale - no visible indicator */}
