@@ -717,9 +717,18 @@ const ProductDetail = () => {
 
               {/* Botões de Ação */}
               <div className="space-y-3 pt-4">
+                {produtoIndisponivel && (
+                  <p
+                    role="status"
+                    className="text-sm text-muted-foreground text-center bg-muted/50 border border-border rounded-md py-2 px-3"
+                  >
+                    Produto indisponível no momento.
+                  </p>
+                )}
                 <Button
                   size="lg"
                   onClick={handleAdicionarCarrinho}
+                  disabled={produtoIndisponivel}
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <ShoppingCart className="h-5 w-5" />
@@ -729,6 +738,7 @@ const ProductDetail = () => {
                   size="lg"
                   variant="outline"
                   onClick={handleWhatsApp}
+                  disabled={produtoIndisponivel}
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] active:scale-[0.98] border-2"
                 >
                   <MessageCircle className="h-5 w-5" />
