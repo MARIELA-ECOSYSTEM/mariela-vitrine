@@ -816,7 +816,9 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  Adicionar ao Carrinho
+                  {!isAcessorio && !tamanhoSelecionado
+                    ? "Selecione o tamanho"
+                    : "Adicionar ao Carrinho"}
                 </Button>
                 <Button
                   size="lg"
