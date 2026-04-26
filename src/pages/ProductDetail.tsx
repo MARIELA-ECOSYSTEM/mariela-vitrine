@@ -23,6 +23,7 @@ import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/servi
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
 import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
+import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
