@@ -1009,7 +1009,12 @@ const PreviewPanel = ({
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
                   )}
-                  alt="Look"
+                  alt={(() => {
+                    const p = selectedProducts.vestido || selectedProducts.conjunto;
+                    const c = selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto;
+                    if (!p) return "Look";
+                    return c ? `${p.nome} — cor ${c}` : p.nome;
+                  })()}
                   className="w-[85%] h-[85%] object-contain drop-shadow-2xl"
                 />
               </div>
@@ -1022,7 +1027,7 @@ const PreviewPanel = ({
                     <img
                       key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
                       src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
-                      alt={selectedProducts.blusa.nome}
+                      alt={selectedColors.blusa ? `${selectedProducts.blusa.nome} — cor ${selectedColors.blusa}` : selectedProducts.blusa.nome}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
@@ -1038,7 +1043,7 @@ const PreviewPanel = ({
                     <img
                       key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
                       src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
-                      alt={selectedProducts.bottom.nome}
+                      alt={selectedColors.bottom ? `${selectedProducts.bottom.nome} — cor ${selectedColors.bottom}` : selectedProducts.bottom.nome}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
                   ) : (
@@ -1056,7 +1061,7 @@ const PreviewPanel = ({
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
-                  alt={selectedProducts.bolsa.nome}
+                  alt={selectedColors.bolsa ? `${selectedProducts.bolsa.nome} — cor ${selectedColors.bolsa}` : selectedProducts.bolsa.nome}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -1102,7 +1107,7 @@ const PreviewPanel = ({
                     <img
                       key={`${product.id}-${color || "default"}`}
                       src={getImageForColor(product, color)}
-                      alt={product.nome}
+                      alt={color ? `${product.nome} — cor ${color}` : product.nome}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
                     />
                     <div className="min-w-0">
