@@ -17,12 +17,16 @@ import { formatBRL, getDisplayPrice } from "@/lib/formatters";
 import { useProducts } from "@/hooks/useProducts";
 import { Produto } from "@/data/products";
 import confetti from "canvas-confetti";
-import produtoGenerico from "@/assets/produto-generico.png";
 import { cn } from "@/lib/utils";
 import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 import { toast } from "@/hooks/use-toast";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
+import {
+  getProductImageByColor,
+  handleProductImageError,
+  PRODUCT_IMAGE_PLACEHOLDER,
+} from "@/lib/productImage";
 
 // Ícone oficial do WhatsApp (inline SVG) — deixa explícito o canal de envio.
 const WhatsAppIcon = ({ className }: { className?: string }) => (
