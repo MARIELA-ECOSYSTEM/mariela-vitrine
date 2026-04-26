@@ -367,56 +367,10 @@ export const MobileLookBuilder = () => {
     setSelectedSizes({ ...selectedSizes, [category]: "" });
   };
 
-  const getImageForColor = (produto: Produto | null, cor: string) => {
-    if (!produto) return produtoGenerico;
-    // Contrato novo: cores[] traz a imagem própria por cor (mais confiável).
-    if (cor && produto.cores && produto.cores.length > 0) {
-      const corMatch = produto.cores.find((c) => c.cor === cor);
-      const fromCor =
-        corMatch?.imagem_full ||
-        corMatch?.imagem_thumb ||
-        corMatch?.imagens?.[0]?.url_full ||
-        corMatch?.imagens?.[0]?.url_thumb ||
-        null;
-      if (fromCor) return fromCor;
-    }
-    if (!produto.imagens || produto.imagens.length === 0) {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.warn("[MonteSeuLook] Sem imagens — usando placeholder.", {
-          produto: produto.nome,
-          cor,
-          origem: "placeholder",
-        });
-      }
-      return produtoGenerico;
-    }
-    if (!cor) return produto.imagens[0] || produtoGenerico;
-    
-    const coresUnicas = [...new Set(produto.variants.map(v => v.cor))];
-    const corIndex = coresUnicas.findIndex(c => c === cor);
-    
-    if (corIndex >= 0 && produto.imagens[corIndex]) {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.debug("[MonteSeuLook] Imagem por cor via fallback de índice.", {
-          produto: produto.nome,
-          cor,
-          origem: "imagens[index]",
-        });
-      }
-      return produto.imagens[corIndex];
-    }
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.warn("[MonteSeuLook] Imagem para a cor não encontrada — usando primeira disponível.", {
-        produto: produto.nome,
-        cor,
-        origem: "imagens[0]",
-      });
-    }
-    return produto.imagens[0] || produtoGenerico;
-  };
+  // Wrapper fino sobre o utilitário central — mantém a assinatura usada
+  // pelos componentes filhos (que esperam apenas a URL).
+  const getImageForColor = (produto: Produto | null, cor: string) =>
+    getProductImageByColor(produto, cor).src;
 
   const handleWhatsApp = () => {
     const whatsappNumber = "5583986567915";
