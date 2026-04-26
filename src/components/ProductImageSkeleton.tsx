@@ -204,7 +204,8 @@ export const ProductImageSkeleton = ({
   alt, 
   className, 
   slideDirection,
-  priority = false 
+  priority = false,
+  enableBlurUp = false,
 }: ProductImageSkeletonProps) => {
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [isInView, setIsInView] = useState(priority); // Priority images load immediately
@@ -230,8 +231,13 @@ export const ProductImageSkeleton = ({
   // Placeholder color baseado na URL
   const placeholderColor = useMemo(() => generatePlaceholderColor(src), [src]);
 
-  // Gerar um blur placeholder tiny (usando canvas)
+  // Gerar um blur placeholder tiny (usando canvas) — APENAS na imagem
+  // principal (`enableBlurUp`). Cards/thumbs deixam `false` para evitar
+  // o custo de canvas + segundo Image() por miniatura. CLS=0 garantido:
+  // o blur é renderizado em `position:absolute inset-0`, sem ocupar
+  // espaço próprio no fluxo.
   useEffect(() => {
+    if (!enableBlurUp) return;
     if (!isInView || !src) return;
     
     // Criar uma versão tiny da imagem para blur
@@ -257,7 +263,12 @@ export const ProductImageSkeleton = ({
     };
     
     img.src = src;
-  }, [src, isInView]);
+    return () => {
+      // Aborta a tiny image se a URL mudar antes de carregar.
+      img.onload = null;
+      try { img.src = ""; } catch { /* ignore */ }
+    };
+  }, [src, isInView, enableBlurUp]);
 
   // Lazy loading with Intersection Observer
   useEffect(() => {
