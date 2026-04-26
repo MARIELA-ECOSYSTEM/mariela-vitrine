@@ -464,7 +464,7 @@ export const MobileLookBuilder = () => {
             onWhatsApp={handleWhatsApp}
             getImageForColor={getImageForColor}
             missingSize={missingSize}
-            onPickSize={(cat) => setPendingSizeCategory(cat)}
+            onPickSize={(cat) => goToCategorySize(cat)}
           />
           {/* aria-live region (desktop) — anuncia falta de tamanho ao tentar enviar. */}
           <p aria-live="polite" aria-atomic="true" className="sr-only">
