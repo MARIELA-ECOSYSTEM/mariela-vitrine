@@ -95,67 +95,9 @@ const ProductDetail = () => {
   
   const whatsappNumber = "5583986567915";
 
-  // Ref + estado para guiar o usuário até a seção de tamanhos quando ele clica
-  // no CTA do WhatsApp sem ter selecionado tamanho. Substitui o toast agressivo
-  // por scroll suave + destaque temporário (UX guiada).
-  const tamanhosSectionRef = useRef<HTMLDivElement | null>(null);
-  const [tamanhosHighlight, setTamanhosHighlight] = useState(false);
-  // Mensagem para leitor de tela (aria-live). Usa um nonce para reanunciar
-  // mesmo quando o texto é igual ao anterior (clicar várias vezes seguidas).
-  const [tamanhosAnnounce, setTamanhosAnnounce] = useState<string>("");
-  const highlightTimerRef = useRef<number | null>(null);
-
-  const focarSelecaoTamanho = () => {
-    const el = tamanhosSectionRef.current;
-    if (el) {
-      // Calcula posição considerando header fixo (~68px desktop / 60px mobile)
-      // + um respiro extra. Usa window.scrollTo para controle preciso do offset.
-      const headerOffset = window.innerWidth >= 640 ? 84 : 76;
-      const rect = el.getBoundingClientRect();
-      const targetY = window.scrollY + rect.top - headerOffset;
-      window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
-    }
-    // Reinicia a animação de destaque a cada clique:
-    // desliga primeiro, força reflow no próximo frame e religa.
-    if (highlightTimerRef.current) {
-      window.clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = null;
-    }
-    setTamanhosHighlight(false);
-    requestAnimationFrame(() => {
-      setTamanhosHighlight(true);
-      highlightTimerRef.current = window.setTimeout(() => {
-        setTamanhosHighlight(false);
-        highlightTimerRef.current = null;
-      }, 1600);
-    });
-
-    // Anúncio acessível (aria-live). Nonce garante reanúncio em cliques repetidos.
-    setTamanhosAnnounce(`Selecione um tamanho para continuar. \u200B`.repeat(1) + Date.now());
-
-    // Foco programático no primeiro tamanho disponível (ou na própria seção),
-    // após o scroll começar — melhora navegação por teclado/leitor de tela.
-    window.setTimeout(() => {
-      const firstSizeBtn = el?.querySelector<HTMLButtonElement>(
-        "button[data-size-option]"
-      );
-      if (firstSizeBtn) {
-        firstSizeBtn.focus({ preventScroll: true });
-      } else if (el) {
-        el.focus({ preventScroll: true });
-      }
-    }, 350);
-  };
-
-  // Limpa timer de destaque se o componente desmontar no meio da animação.
-  useEffect(() => {
-    return () => {
-      if (highlightTimerRef.current) {
-        window.clearTimeout(highlightTimerRef.current);
-        highlightTimerRef.current = null;
-      }
-    };
-  }, []);
+  // Hook compartilhado: scroll com header dinâmico + destaque + aria-live + foco.
+  const sizeGuide = useSizeSelectionGuide();
+  const focarSelecaoTamanho = sizeGuide.guide;
 
   useEffect(() => {
     if (!produto || !id) return;
