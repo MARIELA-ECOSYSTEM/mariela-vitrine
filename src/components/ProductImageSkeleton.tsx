@@ -67,6 +67,9 @@ export const ProductImageSkeleton = ({
   const [previousSrc, setPreviousSrc] = useState<string | null>(null);
   const [isSwapping, setIsSwapping] = useState(false);
   const fadeTimerRef = useRef<number | null>(null);
+  // Último src solicitado por prop — usado para descartar resultados de
+  // preloads obsoletos quando o usuário troca de cor rapidamente.
+  const latestRequestedSrcRef = useRef<string>(src);
 
   // Placeholder color baseado na URL
   const placeholderColor = useMemo(() => generatePlaceholderColor(src), [src]);
@@ -137,12 +140,16 @@ export const ProductImageSkeleton = ({
       setDisplaySrc(src);
       setLoadState('loading');
       setBlurDataUrl(null);
+      latestRequestedSrcRef.current = src;
       return;
     }
     if (src === displaySrc) return;
+    latestRequestedSrcRef.current = src;
     let cancelled = false;
     const swap = () => {
       if (cancelled) return;
+      // Descarta se uma nova troca já foi solicitada nesse meio tempo.
+      if (latestRequestedSrcRef.current !== src) return;
       // Mantém a imagem anterior visível durante o fade.
       setPreviousSrc(displaySrc);
       setDisplaySrc(src);
@@ -153,12 +160,13 @@ export const ProductImageSkeleton = ({
         setIsSwapping(false);
         setPreviousSrc(null);
         fadeTimerRef.current = null;
-      }, 220);
+      }, 200);
     };
     preloadImage(src).then(swap).catch(() => {
       if (cancelled) return;
-      setDisplaySrc(src);
-      setLoadState('error');
+      // Fallback seguro: se a nova imagem falhou, NÃO trocamos o src nem
+      // aplicamos fade — mantemos a imagem anterior visível para evitar
+      // qualquer quebra visual. O erro fica silencioso.
     });
     return () => {
       cancelled = true;
@@ -220,13 +228,19 @@ export const ProductImageSkeleton = ({
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
               loadState === 'loading' && "opacity-0 scale-[1.02] transition-all duration-700 ease-out",
               loadState !== 'loading' && !isSwapping && "opacity-100 scale-100 transition-all duration-700 ease-out",
-              // Troca de cor: cross-fade curto (~180ms) sem zoom.
+              // Troca de cor: cross-fade curto (~200ms) sem zoom, ease-out
+              // consistente entre desktop e mobile.
               isSwapping && "opacity-0 transition-opacity duration-200 ease-out animate-[fade-in_200ms_ease-out_forwards]",
               slideDirection === 'left' && "animate-slide-left",
               slideDirection === 'right' && "animate-slide-right"
             )}
             onLoad={() => setLoadState('loaded')}
-            onError={() => setLoadState('error')}
+            onError={() => {
+              // Só marcamos erro na PRIMEIRA carga (quando ainda não há
+              // imagem renderizada). Em trocas posteriores, a imagem
+              // anterior continua visível e o erro é silencioso.
+              if (loadState === 'loading') setLoadState('error');
+            }}
           />
         </>
       )}
