@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 interface ProductImageSkeletonProps {
@@ -382,161 +382,153 @@ interface ImageTrackProps {
 const TRACK_EASING = "cubic-bezier(0.22, 1, 0.36, 1)"; // mesma curva da Posthaus
 const TRACK_DURATION_MS = 420;
 
-const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, priority, enableBlurUp }: ImageTrackProps) => {
+// =====================================================================
+// ImageTrack — crossfade leve no mesmo slot
+// ---------------------------------------------------------------------
+// Sem remount, sem skeleton, sem placeholder durante a troca:
+// - Duas camadas <img> empilhadas (front/back) ocupando o mesmo slot.
+// - Ao mudar `currentIndex`, pré-carregamos a próxima URL e só então
+//   alternamos qual camada fica em opacity-1 (120-180ms).
+// - A camada anterior permanece visível até a nova estar pronta E com
+//   o fade-in concluído.
+// - Trava de transição: cliques durante o fade são ignorados (apenas a
+//   última intenção é enfileirada via `pendingSrcRef`).
+// =====================================================================
+
+const CROSSFADE_MS = 160;
+
+const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTrackProps) => {
   const len = images.length;
-  const [trackState, setTrackState] = useState({
-    centerIndex: currentIndex,
-    targetIndex: currentIndex,
-    direction: null as "next" | "prev" | null,
-    animating: false,
-  });
-  const trackStateRef = useRef(trackState);
-  const frameRef = useRef<number | null>(null);
-  const settleTimerRef = useRef<number | null>(null);
+  const safeIndex = Math.min(Math.max(currentIndex, 0), Math.max(len - 1, 0));
+  const targetSrc = images[safeIndex] ?? "";
 
+  // Camadas A/B; `activeLayer` indica qual está visível.
+  const [layerA, setLayerA] = useState<string>(targetSrc);
+  const [layerB, setLayerB] = useState<string>("");
+  const [activeLayer, setActiveLayer] = useState<"A" | "B">("A");
+
+  const isAnimatingRef = useRef(false);
+  const pendingSrcRef = useRef<string | null>(null);
+  const fadeTimerRef = useRef<number | null>(null);
+  const currentSrcRef = useRef<string>(targetSrc);
+
+  // Pré-carrega vizinhos (silencioso, respeita cache).
   useEffect(() => {
-    trackStateRef.current = trackState;
-  }, [trackState]);
+    if (len <= 1) return;
+    const left = images[(safeIndex - 1 + len) % len];
+    const right = images[(safeIndex + 1) % len];
+    [left, right].forEach((u) => {
+      if (u) preloadImage(u, "low").catch(() => {});
+    });
+  }, [images, safeIndex, len]);
 
-  const centerIdx = Math.min(trackState.centerIndex, len - 1);
-  const targetIdx = Math.min(trackState.targetIndex, len - 1);
-  let leftIdx = (centerIdx - 1 + len) % len;
-  let rightIdx = (centerIdx + 1) % len;
-  if (trackState.direction === "prev") leftIdx = targetIdx;
-  if (trackState.direction === "next") rightIdx = targetIdx;
+  const runSwap = useCallback((nextSrc: string) => {
+    if (!nextSrc || nextSrc === currentSrcRef.current) return;
+    if (isAnimatingRef.current) {
+      // Trava: só guardamos a última intenção.
+      pendingSrcRef.current = nextSrc;
+      return;
+    }
+    isAnimatingRef.current = true;
 
-  // Pré-carrega slot atual + vizinhos com PRIORIDADE ALTA assim que o
-  // índice muda. Garante que a imagem do slot já esteja no cache do
-  // browser antes do `<img>` ser pintado, eliminando frames vazios na
-  // troca por seta/cor. Respeita o cache global — sem fetch duplicado.
+    const finishSwap = () => {
+      // Coloca a nova imagem na camada inativa, então flipa.
+      const incomingLayer: "A" | "B" = activeLayerRef.current === "A" ? "B" : "A";
+      if (incomingLayer === "A") setLayerA(nextSrc);
+      else setLayerB(nextSrc);
+      // Aguarda o próximo frame para garantir que a nova camada já
+      // está com a `src` aplicada antes de iniciar o fade.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setActiveLayer(incomingLayer);
+          currentSrcRef.current = nextSrc;
+          if (fadeTimerRef.current) window.clearTimeout(fadeTimerRef.current);
+          fadeTimerRef.current = window.setTimeout(() => {
+            isAnimatingRef.current = false;
+            fadeTimerRef.current = null;
+            // Limpa a camada antiga depois do fade (libera memória mas
+            // permanece em cache do browser).
+            const stale: "A" | "B" = incomingLayer === "A" ? "B" : "A";
+            if (stale === "A") setLayerA("");
+            else setLayerB("");
+            // Drena pendência: aplica apenas a última intenção.
+            const pending = pendingSrcRef.current;
+            pendingSrcRef.current = null;
+            if (pending && pending !== currentSrcRef.current) runSwap(pending);
+          }, CROSSFADE_MS + 20);
+        });
+      });
+    };
+
+    // Prefetch antes do swap visual — se já estiver em cache, resolve
+    // imediatamente (sem request duplicada).
+    if (isImagePreloaded(nextSrc)) {
+      finishSwap();
+    } else {
+      preloadImage(nextSrc, "high").then(finishSwap).catch(() => {
+        // Falha silenciosa: descarta swap e mantém imagem atual.
+        isAnimatingRef.current = false;
+        pendingSrcRef.current = null;
+      });
+    }
+  }, []);
+
+  // Mantém ref sincronizada para uso dentro de runSwap.
+  const activeLayerRef = useRef<"A" | "B">("A");
+  useEffect(() => { activeLayerRef.current = activeLayer; }, [activeLayer]);
+
+  // Reage a mudanças de `currentIndex`/`targetSrc`.
   useEffect(() => {
-    const targets = [images[centerIdx], images[targetIdx], images[leftIdx], images[rightIdx]]
-      .filter((u): u is string => typeof u === "string" && u.length > 0);
-    targets.forEach((u) => preloadImage(u, "high").catch(() => {}));
-    return () => {
-      // Não cancela: as 3 imagens visíveis devem permanecer "quentes"
-      // até o próximo ciclo, que substitui pelo novo conjunto.
-    };
-  }, [images, centerIdx, targetIdx, leftIdx, rightIdx]);
+    if (!targetSrc) return;
+    if (targetSrc === currentSrcRef.current) return;
+    runSwap(targetSrc);
+  }, [targetSrc, runSwap]);
 
-  useLayoutEffect(() => {
-    const previous = trackStateRef.current.animating
-      ? trackStateRef.current.targetIndex
-      : trackStateRef.current.centerIndex;
-    if (previous === currentIndex) return;
-
-    if (frameRef.current != null) window.cancelAnimationFrame(frameRef.current);
-    if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
-
-    const forward = (currentIndex - previous + len) % len;
-    const backward = (previous - currentIndex + len) % len;
-    const dir: "next" | "prev" = slideDirection === "right"
-      ? "prev"
-      : slideDirection === "left"
-      ? "next"
-      : forward <= backward
-      ? "next"
-      : "prev";
-
-    setTrackState({ centerIndex: previous, targetIndex: currentIndex, direction: dir, animating: true });
-    settleTimerRef.current = window.setTimeout(() => {
-      setTrackState({ centerIndex: currentIndex, targetIndex: currentIndex, direction: null, animating: false });
-      settleTimerRef.current = null;
-    }, TRACK_DURATION_MS + 30);
-
-    return () => {
-      if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
-      if (frameRef.current != null) window.cancelAnimationFrame(frameRef.current);
-    };
-  }, [currentIndex, len, slideDirection]);
-
-  // Translate alvo durante a animação. Trilho tem `width: 300%`, então
-  // cada slot equivale a 33.3333% do próprio trilho. Estado neutro =
-  // slot central visível (-33.3333%).
-  let translate = "-33.3333%";
-  if (trackState.animating && trackState.direction === "next") translate = "-66.6667%";
-  if (trackState.animating && trackState.direction === "prev") translate = "0%";
-
-  // Cada slot ocupa 1/3 do trilho. Usamos `flex: 0 0 33.3333%` em vez
-  // de `width` inline para impedir que `flex` recalcule e colapse os
-  // slots em layouts complexos (containers `aspect-square`, `min-w-0`,
-  // etc.). `min-width:0` garante que o slot não estoure o trilho.
-  const slotStyle: React.CSSProperties = {
-    flex: "0 0 33.3333%",
-    maxWidth: "33.3333%",
-    minWidth: 0,
-    height: "100%",
-    position: "relative",
-  };
+  useEffect(() => () => {
+    if (fadeTimerRef.current) window.clearTimeout(fadeTimerRef.current);
+  }, []);
 
   return (
     <div className={cn("relative w-full h-full overflow-hidden", className)}>
-      <div
-        className="absolute inset-0 flex flex-row flex-nowrap items-stretch will-change-transform"
-        style={{
-          width: "300%",
-          height: "100%",
-          transform: `translateX(${translate})`,
-          transition: trackState.animating ? `transform ${TRACK_DURATION_MS}ms ${TRACK_EASING}` : "none",
-        }}
-      >
-        {/* Slot esquerdo — <img> direto evita remount com skeleton/fade no settle. */}
-        <div style={slotStyle}>
-          <TrackImageSlot
-            key={`left-${images[leftIdx]}`}
-            src={images[leftIdx]}
-            alt=""
-            priority
-            ariaHidden
-          />
-        </div>
-        {/* Slot central (atual) */}
-        <div style={slotStyle}>
-          <TrackImageSlot
-            key={`center-${images[centerIdx]}`}
-            src={images[centerIdx]}
-            alt={alt}
-            priority={priority}
-          />
-        </div>
-        {/* Slot direito */}
-        <div style={slotStyle}>
-          <TrackImageSlot
-            key={`right-${images[rightIdx]}`}
-            src={images[rightIdx]}
-            alt=""
-            priority
-            ariaHidden
-          />
-        </div>
-      </div>
+      {layerA && (
+        <img
+          src={layerA}
+          alt={activeLayer === "A" ? alt : ""}
+          aria-hidden={activeLayer !== "A" || undefined}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          draggable={false}
+          {...({ fetchpriority: priority ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
+            "transition-opacity ease-out",
+            activeLayer === "A" ? "opacity-100" : "opacity-0",
+          )}
+          style={{ transitionDuration: `${CROSSFADE_MS}ms` }}
+          onLoad={() => markImagePreloaded(layerA)}
+        />
+      )}
+      {layerB && (
+        <img
+          src={layerB}
+          alt={activeLayer === "B" ? alt : ""}
+          aria-hidden={activeLayer !== "B" || undefined}
+          loading="eager"
+          decoding="async"
+          draggable={false}
+          {...({ fetchpriority: "high" } as React.ImgHTMLAttributes<HTMLImageElement>)}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
+            "transition-opacity ease-out",
+            activeLayer === "B" ? "opacity-100" : "opacity-0",
+          )}
+          style={{ transitionDuration: `${CROSSFADE_MS}ms` }}
+          onLoad={() => markImagePreloaded(layerB)}
+        />
+      )}
     </div>
   );
 };
-
-const TrackImageSlot = ({
-  src,
-  alt,
-  priority = false,
-  ariaHidden = false,
-}: {
-  src: string;
-  alt: string;
-  priority?: boolean;
-  ariaHidden?: boolean;
-}) => (
-  <img
-    src={src}
-    alt={alt}
-    aria-hidden={ariaHidden || undefined}
-    loading={priority ? "eager" : "lazy"}
-    decoding="async"
-    {...({ fetchpriority: priority ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
-    className="absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none"
-    draggable={false}
-    onLoad={() => markImagePreloaded(src)}
-  />
-);
 
 /**
  * Implementação clássica (cross-fade do `src`). Mantida como fallback
