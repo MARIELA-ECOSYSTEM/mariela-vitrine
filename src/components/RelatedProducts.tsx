@@ -12,6 +12,20 @@ interface RelatedProductsProps {
 }
 
 /**
+ * Cache de preço numérico normalizado por produto.
+ * Evita reformatar/reavaliar `getDisplayPrice` em cada render do sort.
+ * `WeakMap` libera a entrada quando o produto é descartado.
+ */
+const priceCache = new WeakMap<Produto, number>();
+function cachedPrice(p: Produto): number {
+  const hit = priceCache.get(p);
+  if (hit !== undefined) return hit;
+  const v = Number(getDisplayPrice(p)) || 0;
+  priceCache.set(p, v);
+  return v;
+}
+
+/**
  * Seção "Combine com / Complete o look".
  * Reutiliza o ProductCard padrão para manter consistência visual e cache.
  * Filtro: mesma coleção, exclui o produto atual, apenas com estoque disponível.
@@ -26,16 +40,18 @@ export const RelatedProducts = ({
   // Mobile: 4, Desktop: até `max` (default 6).
   const limite = isMobile ? 4 : max;
 
-  const relacionados = useMemo(() => {
-    const colecao = currentProduct.colecao?.trim();
-    if (!colecao) return [];
+  // Chaves estáveis para deps — evitam re-render quando a referência muda mas
+  // os campos relevantes são os mesmos (ex.: novo array vindo do contexto).
+  const currentKey = String(currentProduct.produtoId || currentProduct.id);
+  const colecaoKey = currentProduct.colecao?.trim().toLowerCase() ?? "";
 
-    const currentKey = String(currentProduct.produtoId || currentProduct.id);
+  const relacionados = useMemo(() => {
+    if (!colecaoKey) return [];
 
     const filtrados = allProducts
       .filter((p) => {
         if (!p.colecao) return false;
-        if (p.colecao.trim().toLowerCase() !== colecao.toLowerCase()) return false;
+        if (p.colecao.trim().toLowerCase() !== colecaoKey) return false;
         const key = String(p.produtoId || p.id);
         if (key === currentKey) return false;
         // Apenas disponíveis
@@ -54,12 +70,12 @@ export const RelatedProducts = ({
       .sort((a, b) => {
         const ds = score(a) - score(b);
         if (ds !== 0) return ds;
-        const dp = getDisplayPrice(a) - getDisplayPrice(b);
+        const dp = cachedPrice(a) - cachedPrice(b);
         if (dp !== 0) return dp;
         return a.nome.localeCompare(b.nome, "pt-BR");
       })
       .slice(0, limite);
-  }, [currentProduct, allProducts, limite]);
+  }, [allProducts, colecaoKey, currentKey, limite]);
 
   if (relacionados.length < 2) return null;
 
