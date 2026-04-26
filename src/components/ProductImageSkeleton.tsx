@@ -478,6 +478,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, prio
         {/* Slot esquerdo — priority=true para evitar lazy-load durante o slide. */}
         <div style={slotStyle}>
           <LegacyImageDisplay
+            key={`left-${images[leftIdx]}`}
             src={images[leftIdx]}
             alt={alt}
             priority
@@ -488,6 +489,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, prio
         {/* Slot central (atual) */}
         <div style={slotStyle}>
           <LegacyImageDisplay
+            key={`center-${images[centerIdx]}`}
             src={images[centerIdx]}
             alt={alt}
             priority={priority}
@@ -497,6 +499,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, slideDirection, prio
         {/* Slot direito */}
         <div style={slotStyle}>
           <LegacyImageDisplay
+            key={`right-${images[rightIdx]}`}
             src={images[rightIdx]}
             alt={alt}
             priority
@@ -523,7 +526,7 @@ const LegacyImageDisplay = ({
   enableBlurUp = false,
   silentError = false,
 }: Omit<ProductImageSkeletonProps, "images" | "currentIndex">) => {
-  const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>(() => isImagePreloaded(src) ? 'loaded' : 'loading');
   const [isInView, setIsInView] = useState(priority); // Priority images load immediately
   const imgRef = useRef<HTMLDivElement>(null);
   const [blurDataUrl, setBlurDataUrl] = useState<string | null>(null);
