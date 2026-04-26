@@ -30,6 +30,11 @@ export const ProductImageSkeleton = ({
   const [isInView, setIsInView] = useState(priority); // Priority images load immediately
   const imgRef = useRef<HTMLDivElement>(null);
   const [blurDataUrl, setBlurDataUrl] = useState<string | null>(null);
+  // `displaySrc` é o src efetivamente exibido. Mantemos a imagem anterior
+  // visível até a nova carregar via Image() preload — evita flicker ao trocar
+  // de cor no ProductDetail. Primeira carga ainda passa pelo ciclo normal.
+  const [displaySrc, setDisplaySrc] = useState<string>(src);
+  const isFirstSrcRef = useRef(true);
 
   // Placeholder color baseado na URL
   const placeholderColor = useMemo(() => generatePlaceholderColor(src), [src]);
@@ -89,11 +94,37 @@ export const ProductImageSkeleton = ({
     return () => observer.disconnect();
   }, [priority]);
 
-  // Reset state when src changes
+  // Troca de src: na PRIMEIRA carga deixamos o fluxo normal (skeleton/blur).
+  // Em trocas subsequentes (ex.: troca de cor), pré-carregamos a nova imagem
+  // em memória e só atualizamos `displaySrc` quando ela estiver pronta —
+  // mantendo a imagem atual visível e eliminando o flicker.
   useEffect(() => {
-    setLoadState('loading');
-    setBlurDataUrl(null);
-  }, [src]);
+    if (!isInView || !src) return;
+    if (isFirstSrcRef.current) {
+      isFirstSrcRef.current = false;
+      setDisplaySrc(src);
+      setLoadState('loading');
+      setBlurDataUrl(null);
+      return;
+    }
+    if (src === displaySrc) return;
+    let cancelled = false;
+    const preload = new Image();
+    preload.onload = () => {
+      if (cancelled) return;
+      setDisplaySrc(src);
+      setLoadState('loaded');
+    };
+    preload.onerror = () => {
+      if (cancelled) return;
+      setDisplaySrc(src);
+      setLoadState('error');
+    };
+    preload.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src, isInView, displaySrc]);
 
   return (
     <div 
@@ -124,8 +155,7 @@ export const ProductImageSkeleton = ({
       {/* Main image - only load when in viewport */}
       {isInView && (
         <img
-          key={src}
-          src={src}
+          src={displaySrc}
           alt={alt}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
