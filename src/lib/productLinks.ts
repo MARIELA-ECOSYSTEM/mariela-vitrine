@@ -37,11 +37,21 @@ export function getProductShareMessage(
   produto: Produto,
   options: { cor?: string; tamanho?: string; url?: string } = {}
 ): string {
-  const details = [`produto ${produto.nome || "selecionado"}`];
+  // Filtra valores vazios, undefined e fallbacks legados ("Única", "Único", "U")
+  // que NUNCA devem aparecer na mensagem do WhatsApp.
+  const isReal = (v?: string) => {
+    if (!v) return false;
+    const t = v.trim();
+    if (!t) return false;
+    const lower = t.toLowerCase();
+    return lower !== "única" && lower !== "unica" && lower !== "único" && lower !== "unico" && t !== "U";
+  };
 
+  const details: string[] = [];
+  details.push(`produto ${produto.nome?.trim() || "selecionado"}`);
   if (produto.colecao) details.push(`coleção ${produto.colecao}`);
-  if (options.cor) details.push(`cor ${options.cor}`);
-  if (options.tamanho) details.push(`tamanho ${options.tamanho}`);
+  if (isReal(options.cor)) details.push(`cor ${options.cor}`);
+  if (isReal(options.tamanho)) details.push(`tamanho ${options.tamanho}`);
 
   // Fonte única da verdade: mesmo helper usado na vitrine.
   const promo = getPromoInfo(produto);

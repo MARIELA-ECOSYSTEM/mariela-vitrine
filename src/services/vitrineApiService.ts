@@ -5,9 +5,13 @@ const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v3";
 const MAX_CACHE_ITEMS = 40;
-const LEGACY_CACHE_KEYS = ["mariela_vitrine_api_cache_v2", "mariela_vitrine_api_cache_v1"];
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v4";
+const LEGACY_CACHE_KEYS = [
+  "mariela_vitrine_api_cache_v3",
+  "mariela_vitrine_api_cache_v2",
+  "mariela_vitrine_api_cache_v1",
+];
 
 // Limpa caches antigos para forçar reload do novo contrato com `cores` na listagem.
 if (typeof localStorage !== "undefined") {
@@ -654,15 +658,18 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
   const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
 
   variantRecords.forEach((variant) => {
-    const cor = readString(variant, ["cor", "color", "nome_cor", "nomeCor"], "Única");
+    // NÃO inventar cor: descartamos a variant se a API não enviar cor real.
+    const cor = readString(variant, ["cor", "color", "nome_cor", "nomeCor"], "");
+    if (!cor) return;
     const sizeRecords = asArray(variant.tamanhos ?? variant.sizes ?? variant.grade);
 
     if (sizeRecords.length > 0) {
       sizeRecords.map(asRecord).forEach((sizeInfo) => {
         const quantidade = readNumber(sizeInfo, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
-        if (quantidade > 0) {
+        const tamanho = readString(sizeInfo, ["tamanho", "size", "nome"], "");
+        if (quantidade > 0 && tamanho) {
           variants.push({
-            tamanho: readString(sizeInfo, ["tamanho", "size", "nome"], "U"),
+            tamanho,
             cor,
             disponibilidade: quantidade,
           });
@@ -673,9 +680,10 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
 
     const quantidade = readNumber(variant, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
     const disponivel = readBoolean(variant, ["disponivel", "available", "ativo"], false);
-    if (quantidade > 0 || disponivel) {
+    const tamanho = readString(variant, ["tamanho", "size"], "");
+    if ((quantidade > 0 || disponivel) && tamanho) {
       variants.push({
-        tamanho: readString(variant, ["tamanho", "size"], "U"),
+        tamanho,
         cor,
         disponibilidade: Math.max(quantidade, 1),
       });
@@ -687,10 +695,15 @@ function extractVariants(product: ApiRecord): VarianteProduto[] {
     const hasExplicitAvailability = disponibilidade > 0 || readBoolean(product, ["disponivel", "available", "ativo"], false);
     const isListItemFromPublicCatalog = Boolean(product.id && product.nome && product.preco_venda !== undefined);
 
-    if (hasExplicitAvailability || isListItemFromPublicCatalog) {
+    // NUNCA inventar cor/tamanho. Só registramos a variant raiz quando a API
+    // explicitamente fornecer ambos (cor + tamanho). Isso elimina os fallbacks
+    // "Única"/"U" que apareciam em listagens sem grade real.
+    const corRaiz = readString(product, ["cor", "color"], "");
+    const tamanhoRaiz = readString(product, ["tamanho", "size"], "");
+    if ((hasExplicitAvailability || isListItemFromPublicCatalog) && corRaiz && tamanhoRaiz) {
       variants.push({
-        tamanho: readString(product, ["tamanho", "size"], "U"),
-        cor: readString(product, ["cor", "color"], "Única"),
+        tamanho: tamanhoRaiz,
+        cor: corRaiz,
         disponibilidade: Math.max(disponibilidade, 1),
       });
     }
@@ -723,21 +736,21 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       .map((tam) => {
         const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
         const disponivel = readBoolean(tam, ["disponivel", "available", "ativo"], quantidade > 0);
+        const tamanho = readString(tam, ["tamanho", "size", "nome"], "");
+        if (!tamanho) return null;
         return {
-          tamanho: readString(tam, ["tamanho", "size", "nome"], "U"),
+          tamanho,
           disponibilidade: quantidade > 0 ? quantidade : disponivel ? 1 : 0,
         };
       })
-      .filter((t) => t.disponibilidade > 0);
+      .filter((t): t is { tamanho: string; disponibilidade: number } => !!t && t.disponibilidade > 0);
 
-    // Listagem (`/vitrine-api/produtos`) não envia `tamanhos` por cor — apenas
-    // `disponivel`. Nesse caso, mantemos a cor com tamanho placeholder "U" para
-    // não filtrá-la no card. O detalhe (`/produto/{id}`) traz tamanhos reais.
-    if (tamanhosArray.length === 0 && corDisponivel) {
-      tamanhos.push({ tamanho: "U", disponibilidade: 1 });
-    }
-
-    if (tamanhos.length === 0) return;
+    // Listagem (`/vitrine-api/produtos`) pode não enviar `tamanhos` por cor.
+    // Nesse caso, NÃO inventamos tamanho ("U") — mantemos a cor com `tamanhos`
+    // vazio. A grade real só aparece no detalhe (`/produto/{id}`); a UI de card
+    // não exige tamanho para listar a cor. Se a cor não estiver disponível e
+    // não houver grade, descartamos.
+    if (tamanhos.length === 0 && !corDisponivel) return;
 
     cores.push({
       produto_cor_id: produtoCorId,

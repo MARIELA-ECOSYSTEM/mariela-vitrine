@@ -1,8 +1,10 @@
 import { Produto } from "@/data/products";
 
-const CACHE_KEY = "mariela_products_cache_v5";
-const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v5";
+const CACHE_KEY = "mariela_products_cache_v6";
+const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v6";
 const LEGACY_KEYS = [
+  "mariela_products_cache_v5",
+  "mariela_products_cache_timestamp_v5",
   "mariela_products_cache_v4",
   "mariela_products_cache_timestamp_v4",
   "mariela_products_cache_v3",

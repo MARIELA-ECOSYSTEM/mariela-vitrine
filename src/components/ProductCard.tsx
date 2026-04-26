@@ -49,49 +49,18 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
 
   const publicBadge = getPublicProductBadge(produto);
 
-  // Aviso apenas em desenvolvimento quando a listagem não trouxer `cores`.
-  // Não exibe erro ao usuário; apenas sinaliza inconsistência de contrato.
-  if (import.meta.env.DEV && (!produto.cores || produto.cores.length === 0)) {
-    // eslint-disable-next-line no-console
-    console.debug(
-      `[ProductCard] produto sem 'cores' na listagem — fallback "Única" será usado`,
-      { id: produto.produtoId || produto.id, nome: produto.nome },
-    );
-  }
-
-  // Lista unificada de cores. Regra definitiva:
-  //  1. Se `produto.cores` veio na listagem e contém ao menos 1 entrada → usar
-  //     EXCLUSIVAMENTE essas cores. Não filtrar por tamanhos (na listagem o
-  //     campo `tamanhos` pode vir como placeholder "U", a grade real só vem
-  //     no detalhe `/produto/{id}`).
-  //  2. Caso contrário (ausente OU vazio) → fallback discreto "Única" derivado
-  //     das variants. Único caminho que aceita o rótulo "Única".
+  // Lista de cores: SOMENTE dados reais vindos da API em `produto.cores`.
+  // Sem fallback "Única" — se a API não enviar cores, o card não exibe seletor.
   const coresList = useMemo(() => {
-    if (produto.cores && produto.cores.length > 0) {
-      return produto.cores.map((c) => ({
-        produto_cor_id: c.produto_cor_id,
-        cor: c.cor,
-        tamanhos: c.tamanhos.map((t) => t.tamanho),
-        imagem_full: c.imagem_full,
-        imagem_thumb: c.imagem_thumb,
-      }));
-    }
-    // Fallback legado: derivar de variants quando `cores` ausente/vazio.
-    const map: Record<string, string[]> = {};
-    produto.variants
-      .filter((v) => v.disponibilidade > 0)
-      .forEach((v) => {
-        if (!map[v.cor]) map[v.cor] = [];
-        if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
-      });
-    return Object.entries(map).map(([cor, tamanhos]) => ({
-      produto_cor_id: cor,
-      cor,
-      tamanhos,
-      imagem_full: null as string | null,
-      imagem_thumb: null as string | null,
+    if (!produto.cores || produto.cores.length === 0) return [];
+    return produto.cores.map((c) => ({
+      produto_cor_id: c.produto_cor_id,
+      cor: c.cor,
+      tamanhos: c.tamanhos.map((t) => t.tamanho).filter((t) => t && t !== "U"),
+      imagem_full: c.imagem_full,
+      imagem_thumb: c.imagem_thumb,
     }));
-  }, [produto.cores, produto.variants, produto.id, produto.nome, produto.produtoId]);
+  }, [produto.cores]);
 
   const primeiraCorDisponivel = coresList[0]?.cor || "";
   const primeiraCorIdDisponivel = coresList[0]?.produto_cor_id || "";
