@@ -26,10 +26,17 @@ export function getTrackedProductUrl(produto: Produto, search = window.location.
   const url = new URL(getProductPath(produto), window.location.origin);
   const currentParams = new URLSearchParams(search);
   currentParams.forEach((value, key) => url.searchParams.set(key, value));
-  url.searchParams.set("utm_source", "whatsapp");
-  url.searchParams.set("utm_medium", "share");
-  url.searchParams.set("utm_campaign", "produto");
-  url.searchParams.set("utm_content", String(produto.id));
+  // Preserva UTMs já existentes (não sobrescreve). Apenas adiciona o que falta,
+  // garantindo que o tracking original (ex: campanha de origem) seja mantido.
+  const defaults: Record<string, string> = {
+    utm_source: "whatsapp",
+    utm_medium: "product_cta",
+    utm_campaign: "vitrine",
+    utm_content: String(produto.id),
+  };
+  Object.entries(defaults).forEach(([key, value]) => {
+    if (!url.searchParams.get(key)) url.searchParams.set(key, value);
+  });
   return url.toString();
 }
 

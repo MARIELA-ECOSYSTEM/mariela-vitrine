@@ -19,7 +19,7 @@ import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesPr
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getPublicProductBadge } from "@/services/productInsightsService";
-import { trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
+import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import type { Produto } from "@/data/products";
 import produtoGenerico from "@/assets/produto-generico.png";
 
@@ -517,7 +517,15 @@ const ProductDetail = () => {
     });
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     try {
-      trackWhatsappClick(produto.produtoId || produto.id, "detalhe");
+      const utm = getUtm();
+      trackWhatsappClick(produto.produtoId || produto.id, "detalhe", {
+        cor: corSelecionada || undefined,
+        tamanho: tamanhoParaUsar || undefined,
+        utm_source: utm.utm_source ?? "whatsapp",
+        utm_medium: utm.utm_medium ?? "product_cta",
+        utm_campaign: utm.utm_campaign ?? "vitrine",
+        utm_content: utm.utm_content ?? String(produto.id),
+      });
     } catch {
       /* nunca bloquear o clique */
     }
@@ -642,7 +650,15 @@ const ProductDetail = () => {
                             onClick={() => {
                               setCorSelecionada(cor);
                               setCorSelecionadaId(corItem.produto_cor_id);
-                              setTamanhoSelecionado("");
+                              // Preserva tamanho se ainda existir na nova cor; senão limpa.
+                              // Se houver apenas 1 tamanho disponível, auto-seleciona.
+                              if (tamanhoSelecionado && tamanhosDaCor.includes(tamanhoSelecionado)) {
+                                // mantém
+                              } else if (tamanhosDaCor.length === 1) {
+                                setTamanhoSelecionado(tamanhosDaCor[0]);
+                              } else {
+                                setTamanhoSelecionado("");
+                              }
                             }}
                             className={`group flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98] ${
                               isSelected
