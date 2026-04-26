@@ -22,6 +22,7 @@ import produtoGenerico from "@/assets/produto-generico.png";
 import { cn } from "@/lib/utils";
 import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 import { toast } from "@/hooks/use-toast";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface SelectedItems {
   blusa: number | null;
