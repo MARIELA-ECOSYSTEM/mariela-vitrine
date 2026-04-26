@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { PageContainer } from "@/components/PageContainer";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton, ProductsLoadingSkeleton } from "@/components/ProductSkeleton";
 import { ProductFilters } from "@/components/ProductFilters";
