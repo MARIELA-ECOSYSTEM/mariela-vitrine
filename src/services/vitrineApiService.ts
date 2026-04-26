@@ -387,13 +387,17 @@ async function fetchCachedJson<T>(path: string, params: QueryParams | undefined,
     if (result.notModified) {
       // 304 sem entrada local — força nova requisição sem ETag.
       const retry = await requestJson<unknown>(url) as RequestResult<unknown>;
-      if (retry.notModified) throw new VitrineApiError("Resposta inesperada (304) sem cache local.");
+      if (retry.notModified === true) {
+        throw new VitrineApiError("Resposta inesperada (304) sem cache local.");
+      }
       const validatedRetry = validate ? validate(retry.data) : (retry.data as T);
       setCached(url, validatedRetry, retry.etag);
       return validatedRetry;
     }
-    const validated = validate ? validate(result.data) : (result.data as T);
-    setCached(url, validated, result.etag);
+    // result aqui é { notModified: false; data; etag? }
+    const fresh = result as Extract<RequestResult<unknown>, { notModified: false }>;
+    const validated = validate ? validate(fresh.data) : (fresh.data as T);
+    setCached(url, validated, fresh.etag);
     return validated;
   } catch (error) {
     const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
