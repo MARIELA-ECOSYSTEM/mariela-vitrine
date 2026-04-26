@@ -233,6 +233,35 @@ const ProductDetail = () => {
     preloadImagesPrioritized(urls, immediate);
   }, [coresList, corSelecionadaObj?.produto_cor_id]);
 
+  // Preload sob demanda de uma cor + até 2 vizinhas (próximas na ordem).
+  // Usado no hover (desktop) e ao selecionar uma cor (mobile) para que a
+  // próxima troca pareça instantânea. Respeita o cache global — nunca
+  // duplica request.
+  const preloadColorNeighbors = useCallback(
+    (produtoCorId: string) => {
+      if (coresList.length === 0) return;
+      const idx = coresList.findIndex((c) => c.produto_cor_id === produtoCorId);
+      if (idx < 0) return;
+      const targets = [
+        coresList[idx],
+        coresList[(idx + 1) % coresList.length],
+        coresList[(idx + 2) % coresList.length],
+      ];
+      const urls: string[] = [];
+      const seen = new Set<string>();
+      targets.forEach((c) => {
+        if (!c || seen.has(c.produto_cor_id)) return;
+        seen.add(c.produto_cor_id);
+        const principal =
+          c.imagens[0]?.url_full || c.imagem_full || c.imagem_thumb || "";
+        if (principal) urls.push(principal);
+      });
+      // Limite duro: máximo 2 imagens por interação.
+      preloadImagesPrioritized(urls.slice(0, 2), 2);
+    },
+    [coresList],
+  );
+
   // Ao trocar cor, volta para a primeira imagem (que agora corresponde à cor selecionada).
   useEffect(() => {
     if (!corSelecionadaObj) return;
