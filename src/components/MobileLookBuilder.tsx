@@ -76,6 +76,8 @@ export const MobileLookBuilder = () => {
   const sheetRef = useRef<HTMLDivElement | null>(null);
   // Ref do timer da animação de saída — evita race em abrir/fechar rápido.
   const closeTimerRef = useRef<number | null>(null);
+  // Ref de "componente montado" — bloqueia setState após desmontagem.
+  const mountedRef = useRef(true);
 
   // Fechamento animado: dispara animação de saída e desmonta após o término.
   const closePreview = () => {
@@ -86,6 +88,7 @@ export const MobileLookBuilder = () => {
     }
     closeTimerRef.current = window.setTimeout(() => {
       closeTimerRef.current = null;
+      if (!mountedRef.current) return;
       setShowPreview(false);
       setIsClosingPreview(false);
       if (lastTriggerRef.current && typeof lastTriggerRef.current.focus === "function") {
@@ -106,9 +109,11 @@ export const MobileLookBuilder = () => {
     setShowPreview(true);
   };
 
-  // Cleanup global: garante que timer e scroll lock sumam ao desmontar.
+  // Cleanup global: marca desmontado e cancela timer pendente.
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (closeTimerRef.current !== null) {
         window.clearTimeout(closeTimerRef.current);
         closeTimerRef.current = null;
