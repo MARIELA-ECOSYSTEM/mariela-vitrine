@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Ha
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ProductImageSkeleton, preloadImage } from "@/components/ProductImageSkeleton";
+import { ProductImageSkeleton, preloadAdjacentImage, type PreloadPriority } from "@/components/ProductImageSkeleton";
 import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 
 interface ImageGalleryProps {
@@ -109,18 +109,18 @@ export const ImageGallery = ({
   }, [onImageSelect]);
 
   /**
-   * Pré-carrega a imagem na direção provável do clique. Usado em
-   * hover/touchstart das setas para reduzir delay perceptível ao trocar
-   * rapidamente. Sem custo se a URL já está em cache (lookup O(1)).
+   * Helper compartilhado: usa exatamente a mesma lógica de cálculo de
+   * vizinho do ProductCard para garantir que a direção prevista é
+   * idêntica nos dois pontos. Prioridade conforme o trigger:
+   * - hover/focus = `low`  (intenção, não compete com a principal)
+   * - touchstart  = `high` (clique iminente em mobile)
    */
-  const preloadDirection = useCallback((direction: "next" | "prev") => {
-    if (imagensValidas.length <= 1) return;
-    const targetIdx = direction === "next"
-      ? (indiceAtual === imagensValidas.length - 1 ? 0 : indiceAtual + 1)
-      : (indiceAtual === 0 ? imagensValidas.length - 1 : indiceAtual - 1);
-    const url = imagensValidas[targetIdx];
-    if (url) preloadImage(url).catch(() => {});
-  }, [imagensValidas, indiceAtual]);
+  const preloadDirection = useCallback(
+    (direction: "next" | "prev", priority: PreloadPriority = "low") => {
+      preloadAdjacentImage(imagensValidas, indiceAtual, direction, priority);
+    },
+    [imagensValidas, indiceAtual],
+  );
 
   return (
     <div className="space-y-3 md:space-y-4">
@@ -280,7 +280,7 @@ export const ImageGallery = ({
               onClick={(e) => { e.stopPropagation(); handleAnterior(); }}
               onMouseEnter={() => preloadDirection("prev")}
               onPointerEnter={() => preloadDirection("prev")}
-              onTouchStart={() => preloadDirection("prev")}
+              onTouchStart={() => preloadDirection("prev", "high")}
               onFocus={() => preloadDirection("prev")}
               className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 md:p-2.5 rounded-full shadow-md transition-all hover:scale-110 active:scale-95"
               aria-label="Imagem anterior"
@@ -291,7 +291,7 @@ export const ImageGallery = ({
               onClick={(e) => { e.stopPropagation(); handleProxima(); }}
               onMouseEnter={() => preloadDirection("next")}
               onPointerEnter={() => preloadDirection("next")}
-              onTouchStart={() => preloadDirection("next")}
+              onTouchStart={() => preloadDirection("next", "high")}
               onFocus={() => preloadDirection("next")}
               className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 md:p-2.5 rounded-full shadow-md transition-all hover:scale-110 active:scale-95"
               aria-label="Próxima imagem"
