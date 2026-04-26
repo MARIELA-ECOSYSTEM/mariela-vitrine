@@ -27,13 +27,6 @@ import {
   handleProductImageError,
   PRODUCT_IMAGE_PLACEHOLDER,
 } from "@/lib/productImage";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 // Ícone oficial do WhatsApp (inline SVG) — deixa explícito o canal de envio.
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -229,10 +222,6 @@ export const MobileLookBuilder = () => {
     conjunto: "",
   });
 
-  // Categoria atualmente aberta no dialog rápido de seleção de tamanho
-  // (acionado tocando num item da prévia que ainda não tem tamanho).
-  const [pendingSizeCategory, setPendingSizeCategory] = useState<CategoryKey | null>(null);
-
   // Filtrar produtos por categoria
   const productsByCategory = useMemo(() => ({
     blusa: produtos.filter(p => p.categoria === "blusas"),
@@ -383,6 +372,19 @@ export const MobileLookBuilder = () => {
   const getImageForColor = (produto: Produto | null, cor: string) =>
     getProductImageByColor(produto, cor).src;
 
+  // Leva o usuário até o card da categoria correspondente para escolher o
+  // tamanho ali (sem dialog separado). Usado tanto pela validação do envio
+  // ao WhatsApp quanto pelo toque em itens incompletos da prévia mobile.
+  const goToCategorySize = (cat: CategoryKey) => {
+    setExpandedCategory(cat);
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-category="${cat}"]`,
+      );
+      sizeGuide.guideElement(el);
+    });
+  };
+
   const handleWhatsApp = () => {
     const whatsappNumber = "5583986567915";
 
@@ -393,16 +395,8 @@ export const MobileLookBuilder = () => {
       (k) => selectedProducts[k] && !selectedSizes[k],
     );
     if (categoriaFaltante) {
-      // Expande a categoria para garantir que o seletor de tamanho fique visível,
-      // depois localiza o nó pelo data-attribute e dispara o guia (scroll + destaque + foco).
-      setExpandedCategory(categoriaFaltante);
-      // Aguarda um frame para a expansão renderizar antes de medir/rolar.
-      requestAnimationFrame(() => {
-        const el = document.querySelector<HTMLElement>(
-          `[data-category="${categoriaFaltante}"]`,
-        );
-        sizeGuide.guideElement(el);
-      });
+      // Leva o usuário direto ao card da categoria para escolher o tamanho lá.
+      goToCategorySize(categoriaFaltante);
       return;
     }
     
@@ -470,7 +464,7 @@ export const MobileLookBuilder = () => {
             onWhatsApp={handleWhatsApp}
             getImageForColor={getImageForColor}
             missingSize={missingSize}
-            onPickSize={(cat) => setPendingSizeCategory(cat)}
+            onPickSize={(cat) => goToCategorySize(cat)}
           />
           {/* aria-live region (desktop) — anuncia falta de tamanho ao tentar enviar. */}
           <p aria-live="polite" aria-atomic="true" className="sr-only">
@@ -688,9 +682,10 @@ export const MobileLookBuilder = () => {
                 missingSize={missingSize}
                 isMobile
                 onPickSize={(cat) => {
-                  // Fecha a prévia mobile e abre o dialog de seleção rápida.
+                  // Fecha a prévia mobile e leva o usuário até o card da
+                  // categoria correspondente para escolher o tamanho lá.
                   closePreview();
-                  setPendingSizeCategory(cat);
+                  goToCategorySize(cat);
                 }}
               />
             </div>
@@ -698,22 +693,6 @@ export const MobileLookBuilder = () => {
         </div>,
         document.body
       )}
-
-      {/* Dialog rápido de seleção de tamanho — disparado ao tocar num item
-          incompleto na prévia. Não altera fluxo do WhatsApp; apenas grava
-          o tamanho escolhido na categoria correspondente. */}
-      <QuickSizeDialog
-        category={pendingSizeCategory}
-        product={pendingSizeCategory ? selectedProducts[pendingSizeCategory] : null}
-        selectedColor={pendingSizeCategory ? selectedColors[pendingSizeCategory] : ""}
-        selectedSize={pendingSizeCategory ? selectedSizes[pendingSizeCategory] : ""}
-        onClose={() => setPendingSizeCategory(null)}
-        onSelectSize={(size) => {
-          if (!pendingSizeCategory) return;
-          setSelectedSizes({ ...selectedSizes, [pendingSizeCategory]: size });
-          setPendingSizeCategory(null);
-        }}
-      />
     </div>
   );
 };
@@ -1167,75 +1146,5 @@ const PreviewPanel = ({
         </div>
       )}
     </div>
-  );
-};
-// Dialog rápido para escolher tamanho de um item da prévia.
-// Renderiza apenas tamanhos disponíveis para a cor selecionada (sem chips riscados).
-interface QuickSizeDialogProps {
-  category: CategoryKey | null;
-  product: Produto | null;
-  selectedColor: string;
-  selectedSize: string;
-  onClose: () => void;
-  onSelectSize: (size: string) => void;
-}
-
-const QuickSizeDialog = ({
-  category,
-  product,
-  selectedColor,
-  selectedSize,
-  onClose,
-  onSelectSize,
-}: QuickSizeDialogProps) => {
-  const open = !!category && !!product;
-  const tamanhos = product && selectedColor
-    ? [...new Set(
-        product.variants
-          .filter((v) => v.cor === selectedColor && v.disponibilidade > 0)
-          .map((v) => v.tamanho),
-      )]
-    : product
-      ? [...new Set(product.variants.filter((v) => v.disponibilidade > 0).map((v) => v.tamanho))]
-      : [];
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="text-base">
-            Escolha o tamanho
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            {product?.nome}
-            {selectedColor ? ` — ${selectedColor}` : ""}
-          </DialogDescription>
-        </DialogHeader>
-
-        {tamanhos.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            Nenhum tamanho disponível para esta cor.
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-2 py-2">
-            {tamanhos.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => onSelectSize(t)}
-                className={cn(
-                  "min-w-[48px] h-11 px-3 rounded-lg text-sm font-semibold transition-all touch-feedback",
-                  selectedSize === t
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary border border-border hover:border-primary/50",
-                )}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
   );
 };
