@@ -118,6 +118,15 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
     [corSelecionada, coresTamanhosMap],
   );
 
+  // União de TODOS os tamanhos do produto (em qualquer cor), ordenada.
+  // Usada para renderizar chips desabilitados de tamanhos indisponíveis
+  // na cor atual — sem inventar dados, apenas espelhando a oferta real.
+  const todosTamanhos = useMemo(() => {
+    const set = new Set<string>();
+    coresList.forEach((c) => c.tamanhos.forEach((t) => set.add(t)));
+    return sortSizes(Array.from(set));
+  }, [coresList]);
+
   // Filtra apenas URLs de imagem não vazias/válidas (string não-vazia).
   // Evita índices "fantasmas" no carrossel quando a API envia entradas vazias.
   const imagensValidas = useMemo(
