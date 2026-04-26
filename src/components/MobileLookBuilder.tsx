@@ -570,6 +570,9 @@ export const MobileLookBuilder = () => {
                 <span className="sm:hidden">WhatsApp</span>
               </Button>
             </div>
+            <p aria-live="polite" aria-atomic="true" className="sr-only">
+              {sizeGuide.announceMessage}
+            </p>
           </div>
         </div>
       )}
