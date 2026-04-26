@@ -25,6 +25,12 @@ interface ProductImageSkeletonProps {
    */
   images?: string[];
   currentIndex?: number;
+  /**
+   * Quando true, o estado de erro fica silencioso (sem overlay visível).
+   * Usado nos slots laterais do trilho para evitar que uma falha em
+   * vizinho "cego" pinte "Imagem indisponível" sob a imagem principal.
+   */
+  silentError?: boolean;
 }
 
 // =====================================================================
@@ -487,6 +493,7 @@ const LegacyImageDisplay = ({
   slideDirection,
   priority = false,
   enableBlurUp = false,
+  silentError = false,
 }: Omit<ProductImageSkeletonProps, "images" | "currentIndex">) => {
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [isInView, setIsInView] = useState(priority); // Priority images load immediately
