@@ -705,9 +705,14 @@ const ProductDetail = () => {
                         return (
                           <button
                             key={corItem.produto_cor_id}
+                            onMouseEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
+                            onFocus={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onClick={() => {
                               setCorSelecionada(cor);
                               setCorSelecionadaId(corItem.produto_cor_id);
+                              // Mobile/desktop: ao escolher, antecipa as próximas
+                              // 1–2 cores prováveis para tornar a próxima troca instantânea.
+                              preloadColorNeighbors(corItem.produto_cor_id);
                               // Preserva tamanho se ainda existir na nova cor; senão limpa.
                               // Se houver apenas 1 tamanho disponível, auto-seleciona.
                               if (tamanhoSelecionado && tamanhosDaCor.includes(tamanhoSelecionado)) {
