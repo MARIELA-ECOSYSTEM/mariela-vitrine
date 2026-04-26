@@ -52,10 +52,14 @@ function setCanonical(url: string): void {
 }
 
 export function absoluteUrl(value?: string | null): string {
-  const fallback = new URL(DEFAULT_IMAGE_PATH, window.location.origin).toString();
+  const toHttps = (u: string): string =>
+    window.location.protocol === "https:" && u.startsWith("http://")
+      ? u.replace(/^http:\/\//, "https://")
+      : u;
+  const fallback = toHttps(new URL(DEFAULT_IMAGE_PATH, window.location.origin).toString());
   if (!value) return fallback;
   try {
-    return new URL(value, window.location.origin).toString();
+    return toHttps(new URL(value, window.location.origin).toString());
   } catch {
     return fallback;
   }
