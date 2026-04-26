@@ -381,20 +381,27 @@ const ProductDetail = () => {
     }
   }, [tamanhosDisponiveis, tamanhoSelecionado]);
 
-  // Persiste cor/tamanho na URL (sem recarregar) para permitir share da seleção exata.
+  // Persiste cor/tamanho na URL (sem recarregar) para permitir share da seleção
+  // exata. Lê `location` via window dentro do effect para NÃO reagir à própria
+  // mudança de query string que ele dispara — isso evita um loop sutil que
+  // re-disparava effects dependentes (SEO, redirect, etc.) e dava sensação
+  // de "reload" ao trocar cor/tamanho.
   useEffect(() => {
     if (!produto) return;
-    const params = new URLSearchParams(location.search);
+    const currentSearch = window.location.search;
+    const currentPath = window.location.pathname;
+    const params = new URLSearchParams(currentSearch);
     if (corSelecionada) params.set("cor", corSelecionada);
     else params.delete("cor");
     if (tamanhoSelecionado) params.set("tamanho", tamanhoSelecionado);
     else params.delete("tamanho");
     const next = params.toString();
-    const target = `${location.pathname}${next ? `?${next}` : ""}`;
-    if (target !== `${location.pathname}${location.search}`) {
+    const target = `${currentPath}${next ? `?${next}` : ""}`;
+    if (target !== `${currentPath}${currentSearch}`) {
       navigate(target, { replace: true });
     }
-  }, [corSelecionada, tamanhoSelecionado, produto, location.pathname, location.search, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corSelecionada, tamanhoSelecionado, produto?.id]);
 
   // Pré-carregamento controlado: pré-carrega APENAS as imagens adicionais da
   // cor selecionada (a primeira já é carregada pelo <img> principal). Não
