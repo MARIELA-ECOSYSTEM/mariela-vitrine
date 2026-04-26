@@ -401,10 +401,12 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority, enableBlur
     return () => window.clearTimeout(t);
   }, [currentIndex, len]);
 
-  // Translate alvo durante a animação. Em estado neutro (sem direção),
-  // mantemos o slot CENTRO visível (translateX -100%).
-  let translate = "-100%";
-  if (animating && direction === "next") translate = "-200%";
+  // Translate alvo durante a animação. Como o trilho tem `width: 300%`,
+  // percentuais de `translateX` são relativos ao próprio trilho — então
+  // cada slot equivale a 33.3333%, não 100%. O valor anterior (-100%)
+  // deslocava o trilho 3 larguras de container e deixava a imagem fora da tela.
+  let translate = "-33.3333%";
+  if (animating && direction === "next") translate = "-66.6667%";
   if (animating && direction === "prev") translate = "0%";
 
   return (
