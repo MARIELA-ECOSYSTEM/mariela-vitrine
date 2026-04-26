@@ -307,7 +307,7 @@ export const ProductCard = ({ produto: produtoProp, layoutMode = "grade" }: Prod
                 slideDirection={slideDirection}
               />
               {/* Navigation Arrows */}
-              {produto.imagens.length > 1 && (
+              {imagensValidas.length > 1 && (
                 <>
                   <button
                     onClick={handlePrevImage}
