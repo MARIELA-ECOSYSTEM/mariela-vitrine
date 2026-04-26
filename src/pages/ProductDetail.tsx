@@ -798,6 +798,15 @@ const ProductDetail = () => {
 
               {/* Botões de Ação */}
               <div className="space-y-3 pt-4">
+                {/* Região acessível para anunciar a necessidade de selecionar
+                    um tamanho a leitores de tela. Visualmente oculta. */}
+                <p
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="sr-only"
+                >
+                  {tamanhosAnnounce ? "Selecione um tamanho para continuar." : ""}
+                </p>
                 {produtoIndisponivel && (
                   <p
                     role="status"
