@@ -774,7 +774,9 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] active:scale-[0.98] border-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  Comprar pelo WhatsApp
+                  {!isAcessorio && !tamanhoSelecionado
+                    ? "Selecione o tamanho"
+                    : "Comprar pelo WhatsApp"}
                 </Button>
               </div>
 
