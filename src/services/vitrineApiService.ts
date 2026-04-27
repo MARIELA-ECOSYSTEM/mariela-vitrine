@@ -1125,6 +1125,27 @@ export const vitrineApiService = {
       .filter((colecao): colecao is FilterOption => Boolean(colecao));
   },
 
+  /**
+   * Lista de coleções marcadas como destaque no PDV. Consome
+   * `/colecoes?detalhes=1&destaque=1` e devolve apenas os campos do
+   * contrato público (id, nome, descricao, imagem_capa_url, destaque,
+   * ordem). Já vem ordenada por (ordem ASC, nome ASC).
+   *
+   * Usa o mesmo cache memo/localStorage com ETag dos demais endpoints
+   * (TTL = CACHE_TTL.colecoes), respeita Cache-Control do servidor via
+   * revalidação condicional, e desduplica chamadas concorrentes.
+   */
+  async getColecoesDestaque(): Promise<ColecaoDestaque[]> {
+    const params: QueryParams = { detalhes: 1, destaque: 1 };
+    const response = await fetchCachedJson<unknown>(
+      "/colecoes",
+      params,
+      CACHE_TTL.colecoes,
+      validateColecoesDestaqueResponse,
+    );
+    return response as ColecaoDestaque[];
+  },
+
   async getCategorias(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<CategoriaResponse>("/categorias", undefined, CACHE_TTL.categorias, validateCategoriaResponse);
     return unwrapList(response)
