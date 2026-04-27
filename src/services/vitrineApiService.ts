@@ -369,7 +369,9 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
       }
 
       if (attempt < MAX_RETRIES) {
-        await delay(RETRY_DELAY);
+        // Backoff exponencial: 1x, 2x, 4x... — dá tempo para o runtime
+        // do edge function se recuperar de instabilidades momentâneas (503).
+        await delay(RETRY_DELAY * Math.pow(2, attempt - 1));
       }
     }
   }
