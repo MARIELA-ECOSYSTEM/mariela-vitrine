@@ -314,8 +314,8 @@ function logVitrineWarning(message: string, details?: unknown): void {
     console.warn(`[vitrine-api] ${message}`, details ?? "");
     return;
   }
-
-  console.warn(`[vitrine-api] ${message}`);
+  // Produção: silêncio total. Falhas técnicas não devem poluir o
+  // console do usuário final — a UI já trata via fallback silencioso.
 }
 
 export function getVitrineApiErrorMessage(error: unknown): string {
