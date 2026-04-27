@@ -90,6 +90,20 @@ export interface ColecaoResponse {
   data: unknown[];
 }
 
+/**
+ * Coleção em destaque consumida da rota
+ * `/colecoes?detalhes=1&destaque=1`. A Vitrine usa APENAS estes campos do
+ * contrato — não depende de campos internos do PDV.
+ */
+export interface ColecaoDestaque {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  imagem_capa_url: string | null;
+  destaque: boolean;
+  ordem: number;
+}
+
 export interface FilterOption {
   value: string;
   label: string;
@@ -907,6 +921,55 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
   return { data };
 }
 
+/**
+ * Valida e normaliza a resposta de `/colecoes?detalhes=1&destaque=1`.
+ *
+ * Princípios (alinhados às regras de produção da vitrine):
+ *  - ZERO fallback de dados: a vitrine não inventa coleção, imagem ou
+ *    capa. Itens sem `id` ou `nome` são descartados silenciosamente.
+ *  - Filtra fora coleções com `destaque !== true` (defesa em camadas
+ *    caso o backend ignore o filtro `?destaque=1`).
+ *  - Preserva apenas os campos do contrato público; nada mais.
+ *  - Ordena por (`ordem` ASC, `nome` ASC) para layout estável.
+ */
+function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
+  const items = unwrapList(payload)
+    .map(asRecord)
+    .map((item): ColecaoDestaque | null => {
+      const id = readString(item, ["id", "colecao_id", "colecaoId", "_id"]);
+      const nome = readString(item, ["nome", "name", "titulo", "title"]);
+      if (!id || !nome) return null;
+
+      const destaque = readBoolean(item, ["destaque", "em_destaque", "featured", "highlight"], false);
+      const imagemCapa = readOptionalString(item, [
+        "imagem_capa_url",
+        "imagemCapaUrl",
+        "imagem_capa",
+        "capa_url",
+        "imagem_url",
+        "imagem",
+      ]);
+      const imagemCapaValida = imagemCapa && isValidImageUrl(imagemCapa) ? imagemCapa : null;
+
+      return {
+        id,
+        nome,
+        descricao: readOptionalString(item, ["descricao", "description", "subtitulo", "subtitle"]),
+        imagem_capa_url: imagemCapaValida,
+        destaque,
+        ordem: readNumber(item, ["ordem", "order", "posicao", "position"], 0),
+      };
+    })
+    .filter((item): item is ColecaoDestaque => item !== null && item.destaque === true);
+
+  items.sort((a, b) => {
+    if (a.ordem !== b.ordem) return a.ordem - b.ordem;
+    return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
+  });
+
+  return items;
+}
+
 function validateDestaquesResponse(payload: unknown): RespostaDestaques {
   const items = unwrapList(payload)
     .map(asRecord)
@@ -1109,6 +1172,27 @@ export const vitrineApiService = {
     return unwrapList(response)
       .map(toFilterOption)
       .filter((colecao): colecao is FilterOption => Boolean(colecao));
+  },
+
+  /**
+   * Lista de coleções marcadas como destaque no PDV. Consome
+   * `/colecoes?detalhes=1&destaque=1` e devolve apenas os campos do
+   * contrato público (id, nome, descricao, imagem_capa_url, destaque,
+   * ordem). Já vem ordenada por (ordem ASC, nome ASC).
+   *
+   * Usa o mesmo cache memo/localStorage com ETag dos demais endpoints
+   * (TTL = CACHE_TTL.colecoes), respeita Cache-Control do servidor via
+   * revalidação condicional, e desduplica chamadas concorrentes.
+   */
+  async getColecoesDestaque(): Promise<ColecaoDestaque[]> {
+    const params: QueryParams = { detalhes: 1, destaque: 1 };
+    const response = await fetchCachedJson<unknown>(
+      "/colecoes",
+      params,
+      CACHE_TTL.colecoes,
+      validateColecoesDestaqueResponse,
+    );
+    return response as ColecaoDestaque[];
   },
 
   async getCategorias(): Promise<FilterOption[]> {
