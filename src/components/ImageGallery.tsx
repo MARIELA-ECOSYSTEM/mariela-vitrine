@@ -48,6 +48,56 @@ export const ImageGallery = ({
     if (typeof raw !== "string" || raw.length === 0) return null;
     return raw;
   };
+
+  /**
+   * Badge com nome canônico da cor + tooltip. Estilo unificado para card e
+   * miniaturas, com fundo high-contrast (foreground sobre background) e
+   * sombra dupla para legibilidade sobre qualquer imagem (claras/escuras).
+   * `size`:
+   *  - `md`: badge da imagem principal
+   *  - `sm`: badge de miniatura desktop
+   *  - `xs`: badge de miniatura mobile (mais compacta)
+   * O tooltip ativa em hover (desktop) e em foco/long-press (mobile).
+   */
+  const ColorBadge = ({
+    cor,
+    size,
+    label,
+  }: {
+    cor: string;
+    size: "md" | "sm" | "xs";
+    label: string;
+  }) => {
+    const sizeClass =
+      size === "md"
+        ? "px-2.5 py-1 text-xs"
+        : size === "sm"
+        ? "px-1.5 py-0 text-[10px] leading-tight"
+        : "px-1.5 py-0 text-[9px] leading-tight";
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            variant="secondary"
+            tabIndex={0}
+            aria-label={label}
+            className={
+              "bg-foreground/85 text-background border border-background/30 " +
+              "backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.45)] " +
+              "font-semibold tracking-wide max-w-[calc(100%-0.5rem)] truncate " +
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 " +
+              sizeClass
+            }
+          >
+            {cor}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>
+          <span className="text-xs">{label}</span>
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
   const [indiceAtual, setIndiceAtual] = useState(selectedIndex || 0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
