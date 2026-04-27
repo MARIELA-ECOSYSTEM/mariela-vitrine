@@ -921,6 +921,55 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
   return { data };
 }
 
+/**
+ * Valida e normaliza a resposta de `/colecoes?detalhes=1&destaque=1`.
+ *
+ * Princípios (alinhados às regras de produção da vitrine):
+ *  - ZERO fallback de dados: a vitrine não inventa coleção, imagem ou
+ *    capa. Itens sem `id` ou `nome` são descartados silenciosamente.
+ *  - Filtra fora coleções com `destaque !== true` (defesa em camadas
+ *    caso o backend ignore o filtro `?destaque=1`).
+ *  - Preserva apenas os campos do contrato público; nada mais.
+ *  - Ordena por (`ordem` ASC, `nome` ASC) para layout estável.
+ */
+function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
+  const items = unwrapList(payload)
+    .map(asRecord)
+    .map((item): ColecaoDestaque | null => {
+      const id = readString(item, ["id", "colecao_id", "colecaoId", "_id"]);
+      const nome = readString(item, ["nome", "name", "titulo", "title"]);
+      if (!id || !nome) return null;
+
+      const destaque = readBoolean(item, ["destaque", "em_destaque", "featured", "highlight"], false);
+      const imagemCapa = readOptionalString(item, [
+        "imagem_capa_url",
+        "imagemCapaUrl",
+        "imagem_capa",
+        "capa_url",
+        "imagem_url",
+        "imagem",
+      ]);
+      const imagemCapaValida = imagemCapa && isValidImageUrl(imagemCapa) ? imagemCapa : null;
+
+      return {
+        id,
+        nome,
+        descricao: readOptionalString(item, ["descricao", "description", "subtitulo", "subtitle"]),
+        imagem_capa_url: imagemCapaValida,
+        destaque,
+        ordem: readNumber(item, ["ordem", "order", "posicao", "position"], 0),
+      };
+    })
+    .filter((item): item is ColecaoDestaque => item !== null && item.destaque === true);
+
+  items.sort((a, b) => {
+    if (a.ordem !== b.ordem) return a.ordem - b.ordem;
+    return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
+  });
+
+  return items;
+}
+
 function validateDestaquesResponse(payload: unknown): RespostaDestaques {
   const items = unwrapList(payload)
     .map(asRecord)
