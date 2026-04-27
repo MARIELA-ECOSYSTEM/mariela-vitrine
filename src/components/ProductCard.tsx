@@ -316,8 +316,25 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   useEffect(() => () => { lastPreloadHandleRef.current?.cancel(); }, []);
 
   // Imagem atual: índice do carrossel é a fonte primária (setas sempre funcionam).
-  // Fallback: imagem da cor selecionada → primeira imagem válida → genérico.
+  // Regra de exibição da cor selecionada:
+  //   - Se a cor possui imagem dedicada (em `imagemPorCor`), usa a imagem do
+  //     índice atual do carrossel (setas continuam funcionando normalmente).
+  //   - Se a cor selecionada NÃO possui imagem dedicada, exibe o placeholder
+  //     oficial em vez de manter visível a imagem de outra cor (que confundiria
+  //     o usuário ao selecionar a "cor de referência" sem foto).
+  // Fallback geral: primeira imagem válida → placeholder.
   const imagemAtual = useMemo(() => {
+    // Cor selecionada sem imagem dedicada → placeholder (independente do índice).
+    if (corSelecionada && !imagemPorCor[corSelecionada]) {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug("[ProductCard] Cor sem imagem dedicada — exibindo placeholder.", {
+          produto: produto.nome,
+          cor: corSelecionada,
+        });
+      }
+      return PRODUCT_IMAGE_PLACEHOLDER;
+    }
     const imgIndice = imagensValidas[currentImageIndex];
     if (imgIndice) return imgIndice;
     if (corSelecionadaObj) {
@@ -341,7 +358,7 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
       });
     }
     return imagensValidas[0] || PRODUCT_IMAGE_PLACEHOLDER;
-  }, [imagensValidas, currentImageIndex, corSelecionadaObj, corSelecionada, produto.nome]);
+  }, [imagensValidas, currentImageIndex, corSelecionadaObj, corSelecionada, imagemPorCor, produto.nome]);
 
   // Alt dinâmico via utilitário central — garante padronização entre
   // ProductCard, ProductDetail e Monte seu Look.
