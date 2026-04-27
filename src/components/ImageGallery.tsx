@@ -7,6 +7,74 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProductImageSkeleton, preloadAdjacentImage, type PreloadPriority } from "@/components/ProductImageSkeleton";
 
+/**
+ * Helpers HOISTED (fora do componente) para garantir referência estável
+ * entre renders e permitir cache module-level. Em alternâncias rápidas de
+ * cor, isso evita reparses de HEX e re-cálculos de luminância.
+ */
+
+/** Mantém o nome canônico EXATAMENTE como veio do payload. */
+const canonicalColorName = (raw: string | null | undefined): string | null => {
+  if (typeof raw !== "string" || raw.length === 0) return null;
+  return raw;
+};
+
+/**
+ * Cache module-level de luminância por HEX. As cores do catálogo são um
+ * conjunto pequeno e estável → cache cresce só uma vez e nunca expira.
+ */
+const LUMINANCE_CACHE = new Map<string, number | null>();
+const hexLuminance = (hex: string | undefined): number | null => {
+  if (!hex || typeof hex !== "string") return null;
+  const cached = LUMINANCE_CACHE.get(hex);
+  if (cached !== undefined) return cached;
+  let h = hex.trim().replace(/^#/, "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) {
+    LUMINANCE_CACHE.set(hex, null);
+    return null;
+  }
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const lin = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const lum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  LUMINANCE_CACHE.set(hex, lum);
+  return lum;
+};
+
+/**
+ * Cache de classes Tailwind por `size`. Pré-computado uma vez no load do
+ * módulo — strings imutáveis, zero alocação por render.
+ */
+const BADGE_SIZE_CLASSES: Record<"md" | "sm" | "xs", { pill: string; dot: string }> = {
+  md: {
+    pill: "h-7 pl-1 pr-2.5 gap-1.5 text-xs rounded-full max-w-[12rem]",
+    dot: "h-5 w-5 shrink-0",
+  },
+  sm: {
+    pill: "h-6 pl-1 pr-2 gap-1 text-[10px] leading-none rounded-full max-w-[7rem]",
+    dot: "h-4 w-4 shrink-0",
+  },
+  xs: {
+    pill: "h-5 pl-[3px] pr-1.5 gap-1 text-[9px] leading-none rounded-full max-w-[5.5rem]",
+    dot: "h-3.5 w-3.5 shrink-0",
+  },
+};
+
+const BADGE_BASE_CLASSES =
+  "inline-flex items-center justify-center select-none cursor-default " +
+  "bg-black/55 text-white border border-white/15 " +
+  "backdrop-blur-xl backdrop-saturate-150 " +
+  "shadow-[0_4px_12px_-2px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.05)_inset] " +
+  "font-medium tracking-wide whitespace-nowrap " +
+  "[text-shadow:0_1px_2px_rgba(0,0,0,0.55)] " +
+  "transition-[transform,box-shadow,background-color] duration-200 ease-out " +
+  "hover:-translate-y-0.5 hover:bg-black/65 " +
+  "hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-1 focus-visible:ring-offset-background/40 ";
+
 interface ImageGalleryProps {
   images: string[];
   productName: string;
@@ -45,36 +113,6 @@ export const ImageGallery = ({
   colorSwatchMap,
 }: ImageGalleryProps) => {
   /**
-   * Renderiza o nome da cor EXATAMENTE como veio do payload da vitrine-api,
-   * sem trim/lowercase/normalização. Apenas confirma que é string não-vazia
-   * (o ProductDetail já usa `c.cor` diretamente do `coresList`, que reflete
-   * o campo `cor` da API). Esta função existe para deixar a regra explícita
-   * em um único ponto e prevenir regressões futuras.
-   */
-  const canonicalColorName = (raw: string | null | undefined): string | null => {
-    if (typeof raw !== "string" || raw.length === 0) return null;
-    return raw;
-  };
-
-  /**
-   * Calcula a luminância relativa (0–1) de uma cor HEX usando coeficientes
-   * WCAG. Usado para auto-contraste do anel do swatch dot quando a cor é
-   * muito clara (ex: Branco sobre fundo branco).
-   */
-  const hexLuminance = (hex: string | undefined): number | null => {
-    if (!hex || typeof hex !== "string") return null;
-    let h = hex.trim().replace(/^#/, "");
-    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
-    if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) return null;
-    const r = parseInt(h.slice(0, 2), 16) / 255;
-    const g = parseInt(h.slice(2, 4), 16) / 255;
-    const b = parseInt(h.slice(4, 6), 16) / 255;
-    const lin = (c: number) =>
-      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  };
-
-  /**
    * Badge com nome canônico da cor + tooltip. Estilo unificado para card e
    * miniaturas, com fundo high-contrast (foreground sobre background) e
    * sombra dupla para legibilidade sobre qualquer imagem (claras/escuras).
@@ -103,29 +141,21 @@ export const ImageGallery = ({
     size: "md" | "sm" | "xs";
     label: string;
   }) => {
+    // Memoização por (cor, size, swatchHex): em troca de cor e re-renders,
+    // recuperamos os mesmos objetos/strings sem re-parsear HEX nem
+    // recompor classes Tailwind. Cache module-level de luminância garante
+    // que um HEX só é decodificado UMA vez no ciclo de vida do app.
     const swatchHex = colorSwatchMap?.[cor];
-    // Proporções consistentes entre desktop e mobile: dot ≈ altura - 2px,
-    // padding horizontal proporcional, e `max-w` evita quebra/corte do
-    // texto em telas pequenas (truncate com ellipsis).
-    const sizeClass =
-      size === "md"
-        ? "h-7 pl-1 pr-2.5 gap-1.5 text-xs rounded-full max-w-[12rem]"
-        : size === "sm"
-        ? "h-6 pl-1 pr-2 gap-1 text-[10px] leading-none rounded-full max-w-[7rem]"
-        : "h-5 pl-[3px] pr-1.5 gap-1 text-[9px] leading-none rounded-full max-w-[5.5rem]";
-    const dotClass =
-      size === "md"
-        ? "h-5 w-5 shrink-0"
-        : size === "sm"
-        ? "h-4 w-4 shrink-0"
-        : "h-3.5 w-3.5 shrink-0";
-    // Auto-contraste do anel do swatch: cores muito claras ganham anel
-    // escuro para não desaparecer sobre o fundo translúcido da pill.
-    const lum = hexLuminance(swatchHex);
-    const isLightSwatch = lum !== null && lum > 0.7;
-    const swatchRingClass = isLightSwatch
-      ? "ring-1 ring-black/30"
-      : "ring-1 ring-white/40";
+    const { sizeClass, dotClass, swatchRingClass } = useMemo(() => {
+      const sizes = BADGE_SIZE_CLASSES[size];
+      const lum = hexLuminance(swatchHex);
+      const isLight = lum !== null && lum > 0.7;
+      return {
+        sizeClass: sizes.pill,
+        dotClass: sizes.dot,
+        swatchRingClass: isLight ? "ring-1 ring-black/30" : "ring-1 ring-white/40",
+      };
+    }, [size, swatchHex]);
     return (
       <Tooltip>
         <TooltipTrigger asChild>
@@ -133,24 +163,7 @@ export const ImageGallery = ({
             type="button"
             tabIndex={0}
             aria-label={label}
-            className={
-              "inline-flex items-center justify-center select-none cursor-default " +
-              // Glass surface — escura semitransparente + blur
-              "bg-black/55 text-white border border-white/15 " +
-              "backdrop-blur-xl backdrop-saturate-150 " +
-              // Sombra dupla: profundidade externa + brilho interno
-              "shadow-[0_4px_12px_-2px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.05)_inset] " +
-              // Tipografia + text-shadow para legibilidade em fotos muito claras
-              "font-medium tracking-wide whitespace-nowrap " +
-              "[text-shadow:0_1px_2px_rgba(0,0,0,0.55)] " +
-              // Animações
-              "transition-[transform,box-shadow,background-color] duration-200 ease-out " +
-              "hover:-translate-y-0.5 hover:bg-black/65 " +
-              "hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] " +
-              // Acessibilidade
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-1 focus-visible:ring-offset-background/40 " +
-              sizeClass
-            }
+            className={BADGE_BASE_CLASSES + sizeClass}
           >
             {swatchHex && (
               <span
