@@ -939,6 +939,15 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
  *  - Ordena por (`ordem` ASC, `nome` ASC) para layout estável.
  */
 function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
+  const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+  const now = Date.now();
+
+  const parseDate = (raw: string | null): number | null => {
+    if (!raw) return null;
+    const t = Date.parse(raw);
+    return Number.isFinite(t) ? t : null;
+  };
+
   const items = unwrapList(payload)
     .map(asRecord)
     .map((item): ColecaoDestaque | null => {
@@ -947,6 +956,11 @@ function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
       if (!id || !nome) return null;
 
       const destaque = readBoolean(item, ["destaque", "em_destaque", "featured", "highlight"], false);
+      // `ativo` é opcional: quando ausente assumimos `true` para não
+      // ocultar coleções legacy; quando presente respeitamos o PDV.
+      const ativo = readBoolean(item, ["ativo", "active", "enabled", "publicada"], true);
+      if (!ativo) return null;
+
       const imagemCapa = readOptionalString(item, [
         "imagem_capa_url",
         "imagemCapaUrl",
@@ -957,6 +971,36 @@ function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
       ]);
       const imagemCapaValida = imagemCapa && isValidImageUrl(imagemCapa) ? imagemCapa : null;
 
+      const corDestaqueRaw = readOptionalString(item, [
+        "cor_destaque",
+        "corDestaque",
+        "cor",
+        "accent_color",
+        "accentColor",
+      ]);
+      const corDestaque = corDestaqueRaw && HEX_RE.test(corDestaqueRaw) ? corDestaqueRaw : null;
+
+      const dataInicio = readOptionalString(item, [
+        "data_inicio",
+        "dataInicio",
+        "inicio",
+        "start_date",
+        "starts_at",
+      ]);
+      const dataFim = readOptionalString(item, [
+        "data_fim",
+        "dataFim",
+        "fim",
+        "end_date",
+        "ends_at",
+      ]);
+      const inicioMs = parseDate(dataInicio);
+      const fimMs = parseDate(dataFim);
+      // Janela de campanha (defesa em camadas — backend já deveria filtrar):
+      // se houver data_inicio futura ou data_fim passada, descartar.
+      if (inicioMs !== null && now < inicioMs) return null;
+      if (fimMs !== null && now > fimMs) return null;
+
       return {
         id,
         nome,
@@ -964,6 +1008,9 @@ function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
         imagem_capa_url: imagemCapaValida,
         destaque,
         ordem: readNumber(item, ["ordem", "order", "posicao", "position"], 0),
+        cor_destaque: corDestaque,
+        data_inicio: dataInicio,
+        data_fim: dataFim,
       };
     })
     .filter((item): item is ColecaoDestaque => item !== null && item.destaque === true);
