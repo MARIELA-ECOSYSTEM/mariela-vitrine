@@ -118,7 +118,7 @@ describe("getColecoesDestaque — performance & cache", () => {
     const ETAG = 'W/"perf-3-stable"';
 
     // 1ª chamada: 200 + ETag salvo no cache
-    fetchSpy.mockImplementationOnce(async (_input, init) => {
+    fetchSpy.mockImplementationOnce(async (_input: unknown, init?: RequestInit) => {
       const headers = new Headers(init?.headers);
       if (headers.get("If-None-Match")) {
         fail("Primeira chamada NÃO deve enviar If-None-Match (cache vazio).");
@@ -135,7 +135,7 @@ describe("getColecoesDestaque — performance & cache", () => {
     // 2ª chamada: deve enviar If-None-Match com o ETag salvo. Backend
     // responde 304 (sem body). Service deve reaproveitar o cache.
     let sawConditional = false;
-    fetchSpy.mockImplementationOnce(async (_input, init) => {
+    fetchSpy.mockImplementationOnce(async (_input: unknown, init?: RequestInit) => {
       const headers = new Headers(init?.headers);
       const inm = headers.get("If-None-Match");
       if (inm !== ETAG) {
