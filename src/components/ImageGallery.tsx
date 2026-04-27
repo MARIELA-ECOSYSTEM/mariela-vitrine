@@ -169,6 +169,17 @@ export const ImageGallery = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Badge da cor associada à imagem principal */}
+        {imageColors?.[indiceAtual] && (
+          <div className="absolute top-3 left-3 z-10 pointer-events-none">
+            <Badge
+              variant="secondary"
+              className="bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium"
+            >
+              {imageColors[indiceAtual]}
+            </Badge>
+          </div>
+        )}
         {/* Imagem Principal com tap para zoom */}
         <div 
           className="relative h-full overflow-hidden cursor-pointer"
