@@ -510,12 +510,26 @@ function uniqueImages(images: string[]): string[] {
   // diferentes — fenômeno relatado como "3ª imagem fantasma" em
   // ProductCard, MonteSeuLook etc.
   const RESIZE_PARAMS = ["w", "h", "q", "width", "height", "quality", "fit", "auto", "dpr", "format"];
+  // Prefixos de tamanho aplicados pelo PDV no NOME do arquivo
+  // (ex.: `thumb_<uuid>.webp` vs `full_<uuid>.webp` para a MESMA foto).
+  // Sem essa normalização, a listagem agrega `imagem_thumb` e `imagem_full`
+  // de uma cor como duas imagens distintas — gerando a "imagem fantasma"
+  // observada no ProductCard (ex.: produto com 3 fotos exibindo 4).
+  const SIZE_FILENAME_PREFIX = /^(?:thumb|full|sm|md|lg|xl|xs|preview|original|orig)_/i;
   const normalize = (url: string): string => {
     try {
       const u = new URL(url, typeof window !== "undefined" ? window.location.origin : "https://placeholder.local");
       RESIZE_PARAMS.forEach((k) => u.searchParams.delete(k));
       const search = u.searchParams.toString();
-      return `${u.origin}${u.pathname}${search ? `?${search}` : ""}`;
+      // Normaliza o último segmento removendo o prefixo de tamanho do
+      // arquivo. Mantém o resto do path inalterado para não colidir
+      // arquivos diferentes que compartilham apenas o sufixo (UUID).
+      const segments = u.pathname.split("/");
+      const last = segments[segments.length - 1] ?? "";
+      const normalizedLast = last.replace(SIZE_FILENAME_PREFIX, "");
+      segments[segments.length - 1] = normalizedLast;
+      const normalizedPath = segments.join("/");
+      return `${u.origin}${normalizedPath}${search ? `?${search}` : ""}`;
     } catch {
       return url.split("?")[0];
     }
