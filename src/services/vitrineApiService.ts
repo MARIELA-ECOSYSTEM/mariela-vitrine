@@ -90,6 +90,20 @@ export interface ColecaoResponse {
   data: unknown[];
 }
 
+/**
+ * Coleção em destaque consumida da rota
+ * `/colecoes?detalhes=1&destaque=1`. A Vitrine usa APENAS estes campos do
+ * contrato — não depende de campos internos do PDV.
+ */
+export interface ColecaoDestaque {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  imagem_capa_url: string | null;
+  destaque: boolean;
+  ordem: number;
+}
+
 export interface FilterOption {
   value: string;
   label: string;
