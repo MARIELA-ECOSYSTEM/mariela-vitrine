@@ -321,9 +321,13 @@ export const ImageGallery = ({
         {(() => {
           const cor = canonicalColorName(imageColors?.[indiceAtual]);
           if (!cor) return null;
+          // Key combina cor + URL da imagem atual para re-montar a badge
+          // (crossfade) sempre que o usuário trocar a cor — sincronizando
+          // com o swap da imagem principal vinda da vitrine-api.
+          const fadeKey = `${cor}::${imagensValidas[indiceAtual] ?? ""}`;
           return (
             <div
-              key={cor}
+              key={fadeKey}
               className="absolute top-3 left-3 z-10 animate-fade-in"
             >
               <ColorBadge cor={cor} size="md" label={`Cor: ${cor}`} />
