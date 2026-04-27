@@ -75,6 +75,40 @@ const BADGE_BASE_CLASSES =
   "hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-1 focus-visible:ring-offset-background/40 ";
 
+/**
+ * Cache module-level dos cálculos do badge por chave `(size|hex)`.
+ * Toda badge — independente de qual instância do `ImageGallery` ela
+ * pertença — reaproveita o MESMO objeto resultante. Isso elimina
+ * alocações em re-renders frequentes (ex.: alternância rápida de cor
+ * em mobile) e mantém referências estáveis para componentes filhos.
+ */
+interface BadgeStyle {
+  buttonClass: string;
+  swatchClass: string;
+}
+const BADGE_STYLE_CACHE = new Map<string, BadgeStyle>();
+const RING_LIGHT = "ring-1 ring-black/30";
+const RING_DARK = "ring-1 ring-white/40";
+const SWATCH_BASE =
+  "rounded-full shadow-inner shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] ";
+
+function getBadgeStyle(size: "md" | "sm" | "xs", swatchHex: string | undefined): BadgeStyle {
+  // Chave estável; HEX vazio/undefined entram como "" — mesmo caminho.
+  const key = `${size}|${swatchHex ?? ""}`;
+  const cached = BADGE_STYLE_CACHE.get(key);
+  if (cached) return cached;
+  const sizes = BADGE_SIZE_CLASSES[size];
+  const lum = hexLuminance(swatchHex);
+  const isLight = lum !== null && lum > 0.7;
+  const ring = isLight ? RING_LIGHT : RING_DARK;
+  const style: BadgeStyle = {
+    buttonClass: BADGE_BASE_CLASSES + sizes.pill,
+    swatchClass: SWATCH_BASE + ring + " " + sizes.dot,
+  };
+  BADGE_STYLE_CACHE.set(key, style);
+  return style;
+}
+
 interface ImageGalleryProps {
   images: string[];
   productName: string;
@@ -141,21 +175,12 @@ export const ImageGallery = ({
     size: "md" | "sm" | "xs";
     label: string;
   }) => {
-    // Memoização por (cor, size, swatchHex): em troca de cor e re-renders,
-    // recuperamos os mesmos objetos/strings sem re-parsear HEX nem
-    // recompor classes Tailwind. Cache module-level de luminância garante
-    // que um HEX só é decodificado UMA vez no ciclo de vida do app.
+    // Memoização por (size, swatchHex) compartilhada entre TODAS as
+    // instâncias de badge do app via `BADGE_STYLE_CACHE`. Em troca rápida
+    // de cor (mobile/desktop) o lookup é O(1) e devolve as MESMAS strings
+    // — zero alocação, zero reparse de HEX, zero recompose de Tailwind.
     const swatchHex = colorSwatchMap?.[cor];
-    const { sizeClass, dotClass, swatchRingClass } = useMemo(() => {
-      const sizes = BADGE_SIZE_CLASSES[size];
-      const lum = hexLuminance(swatchHex);
-      const isLight = lum !== null && lum > 0.7;
-      return {
-        sizeClass: sizes.pill,
-        dotClass: sizes.dot,
-        swatchRingClass: isLight ? "ring-1 ring-black/30" : "ring-1 ring-white/40",
-      };
-    }, [size, swatchHex]);
+    const { buttonClass, swatchClass } = getBadgeStyle(size, swatchHex);
     return (
       <Tooltip>
         <TooltipTrigger asChild>
@@ -163,17 +188,12 @@ export const ImageGallery = ({
             type="button"
             tabIndex={0}
             aria-label={label}
-            className={BADGE_BASE_CLASSES + sizeClass}
+            className={buttonClass}
           >
             {swatchHex && (
               <span
                 aria-hidden="true"
-                className={
-                  "rounded-full shadow-inner " +
-                  "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] " +
-                  swatchRingClass + " " +
-                  dotClass
-                }
+                className={swatchClass}
                 style={{ backgroundColor: swatchHex }}
               />
             )}
