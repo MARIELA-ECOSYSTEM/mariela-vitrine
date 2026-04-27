@@ -101,15 +101,33 @@ const FiltersContent = ({
   }).length;
 
   // Calcular quantidade por coleção (mesmo padrão de cores/tamanhos):
-  // baseado em `produtosFiltradosParcial` para refletir os demais filtros
-  // ativos. "todas" agrega o total geral do recorte parcial.
+  // baseado em `produtosFiltradosParcial` PLUS os filtros de categoria,
+  // cores e tamanhos ativos — assim a badge reflete o recorte real
+  // que o usuário verá ao escolher cada coleção. O próprio filtro de
+  // coleção é excluído (caso contrário só a coleção atual teria > 0).
   const colecoesCount: Record<string, number> = {};
+  const baseColecoes = produtosFiltradosParcial.filter((p: any) => {
+    if (categoriaSelecionada !== "todas" && p.categoria !== categoriaSelecionada) {
+      return false;
+    }
+    if (coresSelecionadas.length > 0) {
+      const hasCor = p.variants?.some((v: any) =>
+        coresSelecionadas.includes(v.cor) &&
+        (tamanhosSelecionados.length === 0 || tamanhosSelecionados.includes(v.tamanho)),
+      );
+      if (!hasCor) return false;
+    } else if (tamanhosSelecionados.length > 0) {
+      const hasTam = p.variants?.some((v: any) => tamanhosSelecionados.includes(v.tamanho));
+      if (!hasTam) return false;
+    }
+    return true;
+  });
   colecoesDisponiveis.forEach((colecao) => {
     if (colecao.value === "todas") {
-      colecoesCount[colecao.value] = produtosFiltradosParcial.length;
+      colecoesCount[colecao.value] = baseColecoes.length;
       return;
     }
-    colecoesCount[colecao.value] = produtosFiltradosParcial.filter(
+    colecoesCount[colecao.value] = baseColecoes.filter(
       (p: any) => (p.colecao ?? "").toString() === colecao.value,
     ).length;
   });
@@ -197,30 +215,41 @@ const FiltersContent = ({
           </button>
           {colecaoAberta && (
             <div className="flex flex-col gap-2 animate-fade-in transition-all duration-300">
-              {colecoesDisponiveis.map((colecao) => (
+              {colecoesDisponiveis.map((colecao) => {
+                const count = colecoesCount[colecao.value] ?? 0;
+                const isSelected = colecaoSelecionada === colecao.value;
+                // Desabilita itens vazios — exceto "todas" e o já selecionado
+                // (para permitir desmarcar). Mantém padrão acessível com
+                // aria-disabled e título explicativo.
+                const isEmpty = count === 0 && colecao.value !== "todas" && !isSelected;
+                return (
                 <Button
                   key={colecao.value}
-                  variant={colecaoSelecionada === colecao.value ? "default" : "ghost"}
+                  variant={isSelected ? "default" : "ghost"}
                   onClick={() => {
                     setColecaoSelecionada(colecao.value);
                     setPaginaAtual(1);
                   }}
-                  className="justify-between group transition-all duration-300"
+                  className="justify-between group transition-all duration-300 disabled:opacity-50"
                   size="sm"
+                  disabled={isEmpty}
+                  aria-disabled={isEmpty}
+                  title={isEmpty ? "Sem produtos para os filtros atuais" : undefined}
                 >
                   <span className="transition-transform duration-300 group-hover:translate-x-1">
                     {colecao.label}
                   </span>
                   {colecoesCount[colecao.value] !== undefined && (
                     <Badge
-                      variant={colecaoSelecionada === colecao.value ? "secondary" : "outline"}
+                      variant={isSelected ? "secondary" : "outline"}
                       className="ml-2 transition-all duration-300"
                     >
                       {colecoesCount[colecao.value]}
                     </Badge>
                   )}
                 </Button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
