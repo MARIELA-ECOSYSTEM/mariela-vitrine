@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { vitrineApiService } from "./vitrineApiService";
+
+// Importamos o service dinamicamente em cada teste (após `vi.resetModules`)
+// para zerar `memoryCache` e `inflightRequests` que são módulo-level.
+type Service = typeof import("./vitrineApiService").vitrineApiService;
 
 /**
  * Verificação de performance / contrato de cache para
@@ -57,11 +60,15 @@ function clearAllVitrineCache() {
 
 describe("getColecoesDestaque — performance & cache", () => {
   let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let vitrineApiService: Service;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     clearAllVitrineCache();
     vi.useRealTimers();
+    vi.resetModules();
     fetchSpy = vi.spyOn(globalThis, "fetch");
+    const mod = await import("./vitrineApiService");
+    vitrineApiService = mod.vitrineApiService;
   });
 
   afterEach(() => {
