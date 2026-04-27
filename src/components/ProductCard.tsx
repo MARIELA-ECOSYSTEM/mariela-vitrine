@@ -7,7 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
-import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER } from "@/lib/productImage";
+import { getProductImageByColor } from "@/lib/productImage";
 import { ProductImageSkeleton, preloadAdjacentImage, preloadImagesPrioritized, type PreloadPriority } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
@@ -315,20 +315,16 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   // Garante limpeza ao desmontar o card (ex.: filtro reordenando lista).
   useEffect(() => () => { lastPreloadHandleRef.current?.cancel(); }, []);
 
-  // Imagem atual: a Vitrine consome o que a API entregou.
-  //   - Quando há cor selecionada com imagem dedicada, o carrossel usa a
-  //     imagem do índice atual (setas continuam funcionando).
-  //   - Quando a cor selecionada NÃO tem imagem dedicada, usamos o que
-  //     `getProductImageByColor` (fonte central) decidir — que por sua vez
-  //     respeita estritamente o payload da API. A imagem genérica, quando
-  //     necessária, é entregue pela própria API (PDV).
-  //   - O fallback local (PRODUCT_IMAGE_PLACEHOLDER) só atua via `onError`
-  //     do <img> caso a URL da API falhe ao carregar.
+  // Imagem atual: a Vitrine consome ESTRITAMENTE o que a API entregou.
+  //   - Prioridade 1: `cores[].imagem_thumb`/`imagem_full` da cor selecionada
+  //     (resolvido por `getProductImageByColor`, fonte central).
+  //   - Prioridade 2: imagem do índice atual do carrossel (`produto.imagens`).
+  //   - Sem fallback proativo local. Se a API entregar string vazia, o
+  //     `<img onError>` aciona `PRODUCT_IMAGE_PLACEHOLDER` como último recurso.
   const imagemAtual = useMemo(() => {
-    const imgIndice = imagensValidas[currentImageIndex];
-    if (imgIndice) return imgIndice;
     const fromApi = getProductImageByColor(produto, corSelecionada).src;
-    return fromApi || imagensValidas[0] || PRODUCT_IMAGE_PLACEHOLDER;
+    if (fromApi) return fromApi;
+    return imagensValidas[currentImageIndex] || imagensValidas[0] || "";
   }, [imagensValidas, currentImageIndex, produto, corSelecionada]);
 
   // Alt dinâmico via utilitário central — garante padronização entre
