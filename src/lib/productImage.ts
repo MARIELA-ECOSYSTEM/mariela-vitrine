@@ -9,11 +9,14 @@ export interface ProductImageResult {
 /**
  * Fonte única de verdade para imagem por cor + alt acessível.
  *
- * Prioridade da imagem:
+ * IMPORTANTE: A regra de imagem genérica/placeholder agora é centralizada
+ * no PDV e entregue pela vitrine-api. A Vitrine NÃO inventa fallback de
+ * imagem genérica — apenas consome o que veio resolvido pela API.
+ *
+ * Prioridade da imagem (somente o que a API entregou):
  *   1. produto.cores[].imagem_full / imagem_thumb / imagens[0]
- *   2. fallback por índice em produto.imagens (ordem das cores únicas em variants)
- *   3. produto.imagens[0]
- *   4. placeholder oficial
+ *   2. produto.imagens[0]
+ *   3. string vazia (deixa o <img onError> aplicar fallback extremo local)
  *
  * Alt:
  *   - com cor:  "{nome} — cor {cor}"
@@ -24,7 +27,7 @@ export function getProductImageByColor(
   corSelecionada?: string | null,
 ): ProductImageResult {
   if (!produto) {
-    return { src: produtoGenerico, alt: "Produto" };
+    return { src: "", alt: "Produto" };
   }
 
   const nome = produto.nome ?? "Produto";
@@ -32,9 +35,6 @@ export function getProductImageByColor(
   const alt = cor ? `${nome} — cor ${cor}` : nome;
 
   // 1. Contrato novo: cores[] com imagem própria
-  // Tratamento defensivo: cores pode existir mas estar vazia, ou ter
-  // entradas com campos ausentes / strings em branco. Sempre caímos
-  // graciosamente em imagens[0] → placeholder.
   if (cor && Array.isArray(produto.cores) && produto.cores.length > 0) {
     const corMatch = produto.cores.find((c) => c?.cor === cor);
     const candidates = [
@@ -51,49 +51,24 @@ export function getProductImageByColor(
 
   const imagens = produto.imagens ?? [];
 
-  // 2. Fallback por índice (ordem das cores únicas)
-  if (cor && imagens.length > 0 && produto.variants?.length) {
-    const coresUnicas = Array.from(new Set(produto.variants.map((v) => v.cor)));
-    const corIndex = coresUnicas.findIndex((c) => c === cor);
-    if (corIndex >= 0 && imagens[corIndex]) {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.debug("[productImage] fallback por índice.", {
-          produto: nome,
-          cor,
-          origem: "imagens[index]",
-        });
-      }
-      return { src: imagens[corIndex], alt };
-    }
-  }
-
-  // 3. Primeira imagem disponível
+  // 2. Primeira imagem do produto retornada pela API (já inclui a genérica
+  //    quando o PDV decidir aplicá-la).
   if (imagens[0]) {
-    if (import.meta.env.DEV && cor) {
-      // eslint-disable-next-line no-console
-      console.warn("[productImage] cor sem imagem dedicada — usando imagens[0].", {
-        produto: nome,
-        cor,
-        origem: "imagens[0]",
-      });
-    }
     return { src: imagens[0], alt };
   }
 
-  // 4. Placeholder
-  if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
-    console.warn("[productImage] sem imagens — usando placeholder.", {
-      produto: nome,
-      cor,
-      origem: "placeholder",
-    });
-  }
-  return { src: produtoGenerico, alt };
+  // 3. Sem imagem da API — devolve string vazia. O onError do <img> vai
+  //    aplicar o fallback extremo local (handleProductImageError) caso o
+  //    navegador tente carregar e falhe. Isso evita "inventar" imagem
+  //    genérica antes de saber se a API realmente não entregou nada.
+  return { src: "", alt };
 }
 
-/** Placeholder oficial — exportado para uso em onError sem loop. */
+/**
+ * Fallback extremo local — usado APENAS no onError do <img> quando a
+ * imagem entregue pela API falhar ao carregar (rede/cache antigo/erro
+ * inesperado). Não deve ser usado como regra de exibição padrão.
+ */
 export const PRODUCT_IMAGE_PLACEHOLDER = produtoGenerico;
 
 /**

@@ -315,50 +315,21 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   // Garante limpeza ao desmontar o card (ex.: filtro reordenando lista).
   useEffect(() => () => { lastPreloadHandleRef.current?.cancel(); }, []);
 
-  // Imagem atual: índice do carrossel é a fonte primária (setas sempre funcionam).
-  // Regra de exibição da cor selecionada:
-  //   - Se a cor possui imagem dedicada (em `imagemPorCor`), usa a imagem do
-  //     índice atual do carrossel (setas continuam funcionando normalmente).
-  //   - Se a cor selecionada NÃO possui imagem dedicada, exibe o placeholder
-  //     oficial em vez de manter visível a imagem de outra cor (que confundiria
-  //     o usuário ao selecionar a "cor de referência" sem foto).
-  // Fallback geral: primeira imagem válida → placeholder.
+  // Imagem atual: a Vitrine consome o que a API entregou.
+  //   - Quando há cor selecionada com imagem dedicada, o carrossel usa a
+  //     imagem do índice atual (setas continuam funcionando).
+  //   - Quando a cor selecionada NÃO tem imagem dedicada, usamos o que
+  //     `getProductImageByColor` (fonte central) decidir — que por sua vez
+  //     respeita estritamente o payload da API. A imagem genérica, quando
+  //     necessária, é entregue pela própria API (PDV).
+  //   - O fallback local (PRODUCT_IMAGE_PLACEHOLDER) só atua via `onError`
+  //     do <img> caso a URL da API falhe ao carregar.
   const imagemAtual = useMemo(() => {
-    // Cor selecionada sem imagem dedicada → placeholder (independente do índice).
-    if (corSelecionada && !imagemPorCor[corSelecionada]) {
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.debug("[ProductCard] Cor sem imagem dedicada — exibindo placeholder.", {
-          produto: produto.nome,
-          cor: corSelecionada,
-        });
-      }
-      return PRODUCT_IMAGE_PLACEHOLDER;
-    }
     const imgIndice = imagensValidas[currentImageIndex];
     if (imgIndice) return imgIndice;
-    if (corSelecionadaObj) {
-      const imgCor = (corSelecionadaObj.imagem_full || corSelecionadaObj.imagem_thumb || "").trim();
-      if (imgCor) return imgCor;
-      if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
-        console.warn("[ProductCard] Imagem da cor ausente — usando primeira disponível.", {
-          produto: produto.nome,
-          cor: corSelecionada,
-          origem: "imagensValidas[0]",
-        });
-      }
-    }
-    if (import.meta.env.DEV && imagensValidas.length === 0) {
-      // eslint-disable-next-line no-console
-      console.warn("[ProductCard] Sem imagens — usando placeholder.", {
-        produto: produto.nome,
-        cor: corSelecionada,
-        origem: "placeholder",
-      });
-    }
-    return imagensValidas[0] || PRODUCT_IMAGE_PLACEHOLDER;
-  }, [imagensValidas, currentImageIndex, corSelecionadaObj, corSelecionada, imagemPorCor, produto.nome]);
+    const fromApi = getProductImageByColor(produto, corSelecionada).src;
+    return fromApi || imagensValidas[0] || PRODUCT_IMAGE_PLACEHOLDER;
+  }, [imagensValidas, currentImageIndex, produto, corSelecionada]);
 
   // Alt dinâmico via utilitário central — garante padronização entre
   // ProductCard, ProductDetail e Monte seu Look.
