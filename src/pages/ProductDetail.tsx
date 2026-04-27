@@ -22,7 +22,6 @@ import { getPublicProductBadge } from "@/services/productInsightsService";
 import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
-import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
 
 // Mapa de cores para as amostras visuais
