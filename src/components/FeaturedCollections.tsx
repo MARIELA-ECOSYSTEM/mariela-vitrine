@@ -1,53 +1,193 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
-import { vitrineApiService, type ColecaoDestaque } from "@/services/vitrineApiService";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowRight, ImageOff, Sparkles } from "lucide-react";
+import {
+  vitrineApiService,
+  type ColecaoDestaque,
+} from "@/services/vitrineApiService";
+import { cn } from "@/lib/utils";
 
 /**
- * Seção de coleções em destaque na home.
+ * Banners dinâmicos de coleções em destaque na Home.
  *
- * Regras (alinhadas ao contrato de produção da vitrine):
- *  - Consome `/colecoes?detalhes=1&destaque=1` via service (cache + ETag).
- *  - ZERO fallback de dados: nada de coleção/imagem/placeholder inventado.
+ * Regras (alinhadas ao contrato de produção da vitrine-api):
+ *  - Consome `/colecoes?detalhes=1&destaque=1` via service (cache + ETag,
+ *    dedupe de inflight, revalidação condicional).
+ *  - ZERO fallback de dados: nada de coleção/imagem/placeholder inventado
+ *    no frontend. Filtragem por `ativo`, `destaque` e janela de campanha
+ *    (`data_inicio`/`data_fim`) é feita no service.
  *  - UI fallback silencioso: em erro ou lista vazia a seção NÃO renderiza
  *    (retorna `null`) — sem espaço em branco, sem mensagem técnica.
- *  - Layout estável: enquanto carrega, também não ocupa espaço, evitando
- *    "saltos" visuais na home.
- *  - Usa apenas campos do contrato público: id, nome, descricao,
- *    imagem_capa_url, destaque, ordem (ordenação já vem do service).
- *  - Coleções sem capa válida são descartadas para não quebrar o layout
- *    de imagens.
+ *  - Destaque inteligente: a 1ª coleção (menor `ordem`) ganha um banner
+ *    hero maior; demais aparecem em grid de cards menores.
+ *  - UTMs preservadas: parâmetros `utm_*` da URL atual são repassados ao
+ *    link de `/products?colecao=...` para não quebrar atribuição.
+ *  - Fallback visual: se `imagem_capa_url` vier ausente por inconsistência
+ *    inesperada, mostra um placeholder discreto (sem `<img>` quebrado).
+ *  - Performance: memoiza split hero/grid; imagens com `loading=lazy` e
+ *    aspect-ratio fixo para evitar layout shift.
  */
+
+type CollectionLike = ColecaoDestaque;
+
+/** Preserva UTMs da URL atual ao montar o link da coleção. */
+function buildCollectionHref(search: string, colecaoNome: string): string {
+  const params = new URLSearchParams();
+  try {
+    const current = new URLSearchParams(search);
+    current.forEach((value, key) => {
+      if (key.toLowerCase().startsWith("utm_")) params.set(key, value);
+    });
+  } catch {
+    /* ignore — montamos sem UTMs */
+  }
+  params.set("colecao", colecaoNome);
+  return `/products?${params.toString()}`;
+}
+
+/** Estilo inline do acento (cor_destaque). Apenas se HEX válido vier do PDV. */
+function accentStyle(hex: string | null): React.CSSProperties | undefined {
+  if (!hex) return undefined;
+  return { backgroundColor: hex };
+}
+
+interface CardProps {
+  colecao: CollectionLike;
+  href: string;
+  variant: "hero" | "grid";
+}
+
+const CollectionCard = ({ colecao, href, variant }: CardProps) => {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showFallback = !colecao.imagem_capa_url || imgFailed;
+
+  return (
+    <Link
+      to={href}
+      aria-label={`Ver coleção ${colecao.nome}`}
+      className={cn(
+        "group relative block overflow-hidden rounded-xl bg-muted focus:outline-none focus:ring-2 focus:ring-primary",
+        variant === "hero"
+          ? "aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/7]"
+          : "aspect-[4/5] sm:aspect-[3/4]",
+      )}
+    >
+      {showFallback ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-secondary/40">
+          <ImageOff className="w-8 h-8 text-muted-foreground/50" aria-hidden />
+        </div>
+      ) : (
+        <img
+          src={colecao.imagem_capa_url ?? undefined}
+          alt={colecao.nome}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+
+      {/* Faixa de acento (cor_destaque) — discreta no topo */}
+      {colecao.cor_destaque && (
+        <span
+          aria-hidden
+          style={accentStyle(colecao.cor_destaque)}
+          className="absolute top-0 left-0 right-0 h-1"
+        />
+      )}
+
+      <div
+        className={cn(
+          "absolute inset-x-0 bottom-0 text-white",
+          variant === "hero" ? "p-4 sm:p-6 lg:p-8" : "p-3 sm:p-4",
+        )}
+      >
+        {variant === "hero" && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 backdrop-blur px-2.5 py-0.5 text-[10px] sm:text-xs uppercase tracking-wider mb-2">
+            <Sparkles className="w-3 h-3" /> Destaque
+          </span>
+        )}
+
+        <h3
+          className={cn(
+            "font-serif font-semibold leading-tight line-clamp-2",
+            variant === "hero"
+              ? "text-xl sm:text-3xl lg:text-4xl"
+              : "text-base sm:text-xl",
+          )}
+        >
+          {colecao.nome}
+        </h3>
+
+        {colecao.descricao && (
+          <p
+            className={cn(
+              "mt-1 text-white/85 line-clamp-2",
+              variant === "hero" ? "text-sm sm:text-base max-w-xl" : "text-xs sm:text-sm",
+            )}
+          >
+            {colecao.descricao}
+          </p>
+        )}
+
+        <span
+          className={cn(
+            "mt-2 sm:mt-3 inline-flex items-center gap-1.5 font-medium",
+            variant === "hero"
+              ? "rounded-full bg-white text-foreground px-3.5 py-1.5 text-xs sm:text-sm shadow-md"
+              : "text-xs sm:text-sm opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all",
+          )}
+          style={
+            variant === "hero" && colecao.cor_destaque
+              ? { color: colecao.cor_destaque }
+              : undefined
+          }
+        >
+          Ver coleção <ArrowRight className="w-3.5 h-3.5" />
+        </span>
+      </div>
+    </Link>
+  );
+};
+
 export const FeaturedCollections = () => {
-  const [colecoes, setColecoes] = useState<ColecaoDestaque[] | null>(null);
+  const [colecoes, setColecoes] = useState<CollectionLike[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const { search } = useLocation();
 
   useEffect(() => {
     let cancelled = false;
     vitrineApiService
       .getColecoesDestaque()
       .then((items) => {
-        if (cancelled) return;
-        setColecoes(items);
+        if (!cancelled) setColecoes(items);
       })
       .catch(() => {
-        if (cancelled) return;
-        // UI fallback: esconde a seção. Não logar erro técnico ao usuário.
-        setFailed(true);
+        if (!cancelled) setFailed(true);
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Estado inicial / falha / lista vazia → não renderiza nada.
-  if (failed || colecoes === null) return null;
+  const { hero, restantes } = useMemo(() => {
+    if (!colecoes || colecoes.length === 0) {
+      return { hero: null as CollectionLike | null, restantes: [] as CollectionLike[] };
+    }
+    return { hero: colecoes[0], restantes: colecoes.slice(1) };
+  }, [colecoes]);
 
-  const visiveis = colecoes.filter((c) => c.imagem_capa_url);
-  if (visiveis.length === 0) return null;
+  // Estado inicial / falha / lista vazia → não renderiza nada (sem espaço em branco).
+  if (failed || colecoes === null) return null;
+  if (colecoes.length === 0 || !hero) return null;
 
   return (
-    <section className="py-10 sm:py-14 bg-background" aria-label="Coleções em destaque">
+    <section
+      className="py-10 sm:py-14 bg-background"
+      aria-label="Coleções em destaque"
+    >
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-end justify-between mb-6 sm:mb-8">
           <div>
@@ -60,36 +200,26 @@ export const FeaturedCollections = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-          {visiveis.map((colecao) => (
-            <Link
-              key={colecao.id}
-              to={`/products?colecao=${encodeURIComponent(colecao.nome)}`}
-              className="group relative overflow-hidden rounded-xl bg-muted aspect-[4/5] sm:aspect-[3/4] focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <img
-                src={colecao.imagem_capa_url ?? undefined}
-                alt={colecao.nome}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        {/* Hero — primeira coleção por ordem ganha banner maior */}
+        <CollectionCard
+          colecao={hero}
+          href={buildCollectionHref(search, hero.nome)}
+          variant="hero"
+        />
+
+        {/* Grid das demais coleções destacadas */}
+        {restantes.length > 0 && (
+          <div className="mt-3 sm:mt-5 grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+            {restantes.map((colecao) => (
+              <CollectionCard
+                key={colecao.id}
+                colecao={colecao}
+                href={buildCollectionHref(search, colecao.nome)}
+                variant="grid"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 text-white">
-                <h3 className="font-serif text-base sm:text-xl font-semibold leading-tight line-clamp-2">
-                  {colecao.nome}
-                </h3>
-                {colecao.descricao && (
-                  <p className="mt-1 text-xs sm:text-sm text-white/85 line-clamp-2">
-                    {colecao.descricao}
-                  </p>
-                )}
-                <span className="mt-2 inline-flex items-center gap-1 text-xs sm:text-sm font-medium opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-                  Ver peças <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
