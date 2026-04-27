@@ -106,9 +106,9 @@ describe("FeaturedCollections — robustez de produção", () => {
   });
 
   it("Falha de rede em produção (DEV=false) NÃO loga no console", async () => {
-    const originalDev = import.meta.env.DEV;
-    // @ts-expect-error – sobrescrevendo flag de DEV apenas para o teste.
-    import.meta.env.DEV = false;
+    const env = import.meta.env as Record<string, unknown>;
+    const originalDev = env.DEV;
+    env.DEV = false;
 
     fetchSpy.mockRejectedValue(new TypeError("network down"));
 
@@ -126,8 +126,7 @@ describe("FeaturedCollections — robustez de produção", () => {
       expect(noisyWarns).toHaveLength(0);
       expect(noisyErrors).toHaveLength(0);
     } finally {
-      // @ts-expect-error – restaurando flag.
-      import.meta.env.DEV = originalDev;
+      env.DEV = originalDev;
     }
   });
 
