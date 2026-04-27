@@ -17,6 +17,13 @@ interface ImageGalleryProps {
   } | null;
   selectedIndex?: number;
   onImageSelect?: (index: number) => void;
+  /**
+   * Cor associada a cada imagem (mesma ordem de `images`). `null` quando
+   * a imagem é solta (não pertence a uma cor específica). Quando fornecido,
+   * a galeria exibe uma badge com o nome da cor sobre cada miniatura e
+   * sobre a imagem principal.
+   */
+  imageColors?: (string | null)[];
 }
 
 export const ImageGallery = ({ 
@@ -26,7 +33,8 @@ export const ImageGallery = ({
   isNovidade,
   publicBadge,
   selectedIndex,
-  onImageSelect
+  onImageSelect,
+  imageColors,
 }: ImageGalleryProps) => {
   const [indiceAtual, setIndiceAtual] = useState(selectedIndex || 0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
