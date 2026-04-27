@@ -102,6 +102,12 @@ export interface ColecaoDestaque {
   imagem_capa_url: string | null;
   destaque: boolean;
   ordem: number;
+  /** Hex (#rrggbb) opcional, usado como acento visual no banner. */
+  cor_destaque: string | null;
+  /** ISO date opcional — campanha só aparece a partir desta data. */
+  data_inicio: string | null;
+  /** ISO date opcional — campanha some após esta data. */
+  data_fim: string | null;
 }
 
 export interface FilterOption {
