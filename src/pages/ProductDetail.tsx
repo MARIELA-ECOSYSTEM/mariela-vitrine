@@ -820,6 +820,7 @@ const ProductDetail = () => {
             <div className="animate-fade-in">
               <ImageGallery
                 images={imagensParaMostrar}
+                imageColors={galeriaUnificada.map((g) => g.cor)}
                 productName={
                   corSelecionada
                     ? `${produto.nome} — cor ${corSelecionada}`

@@ -17,6 +17,13 @@ interface ImageGalleryProps {
   } | null;
   selectedIndex?: number;
   onImageSelect?: (index: number) => void;
+  /**
+   * Cor associada a cada imagem (mesma ordem de `images`). `null` quando
+   * a imagem é solta (não pertence a uma cor específica). Quando fornecido,
+   * a galeria exibe uma badge com o nome da cor sobre cada miniatura e
+   * sobre a imagem principal.
+   */
+  imageColors?: (string | null)[];
 }
 
 export const ImageGallery = ({ 
@@ -26,7 +33,8 @@ export const ImageGallery = ({
   isNovidade,
   publicBadge,
   selectedIndex,
-  onImageSelect
+  onImageSelect,
+  imageColors,
 }: ImageGalleryProps) => {
   const [indiceAtual, setIndiceAtual] = useState(selectedIndex || 0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -161,6 +169,17 @@ export const ImageGallery = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Badge da cor associada à imagem principal */}
+        {imageColors?.[indiceAtual] && (
+          <div className="absolute top-3 left-3 z-10 pointer-events-none">
+            <Badge
+              variant="secondary"
+              className="bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium"
+            >
+              {imageColors[indiceAtual]}
+            </Badge>
+          </div>
+        )}
         {/* Imagem Principal com tap para zoom */}
         <div 
           className="relative h-full overflow-hidden cursor-pointer"
@@ -397,6 +416,14 @@ export const ImageGallery = ({
                   className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
                 />
               </button>
+              {imageColors?.[index] && (
+                <Badge
+                  variant="secondary"
+                  className="absolute top-1 left-1 px-1.5 py-0 text-[10px] leading-tight bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium pointer-events-none max-w-[calc(100%-0.5rem)] truncate"
+                >
+                  {imageColors[index]}
+                </Badge>
+              )}
             </div>
           ))}
         </div>
@@ -406,22 +433,31 @@ export const ImageGallery = ({
       {temMultiplasImagens && (
         <div className="flex md:hidden gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {imagensValidas.map((img, index) => (
-            <button
-              key={index}
-              onClick={() => handleThumbnailClick(index)}
-              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                indiceAtual === index
-                  ? "border-primary ring-2 ring-primary/20 shadow-md opacity-100"
-                  : "border-border opacity-80"
-              }`}
-              aria-label={`Ver imagem ${index + 1}`}
-            >
-              <img
-                src={img}
-                alt={`${productName} miniatura ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-            </button>
+            <div key={index} className="relative flex-shrink-0">
+              <button
+                onClick={() => handleThumbnailClick(index)}
+                className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  indiceAtual === index
+                    ? "border-primary ring-2 ring-primary/20 shadow-md opacity-100"
+                    : "border-border opacity-80"
+                }`}
+                aria-label={`Ver imagem ${index + 1}`}
+              >
+                <img
+                  src={img}
+                  alt={`${productName} miniatura ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+              {imageColors?.[index] && (
+                <Badge
+                  variant="secondary"
+                  className="absolute top-1 left-1 px-1.5 py-0 text-[9px] leading-tight bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium pointer-events-none max-w-[calc(100%-0.5rem)] truncate"
+                >
+                  {imageColors[index]}
+                </Badge>
+              )}
+            </div>
           ))}
         </div>
       )}
