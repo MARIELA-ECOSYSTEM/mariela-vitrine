@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Ha
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProductImageSkeleton, preloadAdjacentImage, type PreloadPriority } from "@/components/ProductImageSkeleton";
 
 interface ImageGalleryProps {
@@ -36,6 +37,17 @@ export const ImageGallery = ({
   onImageSelect,
   imageColors,
 }: ImageGalleryProps) => {
+  /**
+   * Renderiza o nome da cor EXATAMENTE como veio do payload da vitrine-api,
+   * sem trim/lowercase/normalização. Apenas confirma que é string não-vazia
+   * (o ProductDetail já usa `c.cor` diretamente do `coresList`, que reflete
+   * o campo `cor` da API). Esta função existe para deixar a regra explícita
+   * em um único ponto e prevenir regressões futuras.
+   */
+  const canonicalColorName = (raw: string | null | undefined): string | null => {
+    if (typeof raw !== "string" || raw.length === 0) return null;
+    return raw;
+  };
   const [indiceAtual, setIndiceAtual] = useState(selectedIndex || 0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
