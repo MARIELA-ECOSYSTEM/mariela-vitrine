@@ -57,6 +57,24 @@ export const ImageGallery = ({
   };
 
   /**
+   * Calcula a luminância relativa (0–1) de uma cor HEX usando coeficientes
+   * WCAG. Usado para auto-contraste do anel do swatch dot quando a cor é
+   * muito clara (ex: Branco sobre fundo branco).
+   */
+  const hexLuminance = (hex: string | undefined): number | null => {
+    if (!hex || typeof hex !== "string") return null;
+    let h = hex.trim().replace(/^#/, "");
+    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+    if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) return null;
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    const lin = (c: number) =>
+      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+
+  /**
    * Badge com nome canônico da cor + tooltip. Estilo unificado para card e
    * miniaturas, com fundo high-contrast (foreground sobre background) e
    * sombra dupla para legibilidade sobre qualquer imagem (claras/escuras).
@@ -86,18 +104,28 @@ export const ImageGallery = ({
     label: string;
   }) => {
     const swatchHex = colorSwatchMap?.[cor];
+    // Proporções consistentes entre desktop e mobile: dot ≈ altura - 2px,
+    // padding horizontal proporcional, e `max-w` evita quebra/corte do
+    // texto em telas pequenas (truncate com ellipsis).
     const sizeClass =
       size === "md"
-        ? "h-7 pl-1 pr-2.5 gap-1.5 text-xs rounded-full"
+        ? "h-7 pl-1 pr-2.5 gap-1.5 text-xs rounded-full max-w-[12rem]"
         : size === "sm"
-        ? "h-5 pl-0.5 pr-1.5 gap-1 text-[10px] leading-none rounded-full"
-        : "h-[18px] pl-0.5 pr-1.5 gap-1 text-[9px] leading-none rounded-full";
+        ? "h-6 pl-1 pr-2 gap-1 text-[10px] leading-none rounded-full max-w-[7rem]"
+        : "h-5 pl-[3px] pr-1.5 gap-1 text-[9px] leading-none rounded-full max-w-[5.5rem]";
     const dotClass =
       size === "md"
-        ? "h-5 w-5"
+        ? "h-5 w-5 shrink-0"
         : size === "sm"
-        ? "h-4 w-4"
-        : "h-3.5 w-3.5";
+        ? "h-4 w-4 shrink-0"
+        : "h-3.5 w-3.5 shrink-0";
+    // Auto-contraste do anel do swatch: cores muito claras ganham anel
+    // escuro para não desaparecer sobre o fundo translúcido da pill.
+    const lum = hexLuminance(swatchHex);
+    const isLightSwatch = lum !== null && lum > 0.7;
+    const swatchRingClass = isLightSwatch
+      ? "ring-1 ring-black/30"
+      : "ring-1 ring-white/40";
     return (
       <Tooltip>
         <TooltipTrigger asChild>
@@ -112,8 +140,9 @@ export const ImageGallery = ({
               "backdrop-blur-xl backdrop-saturate-150 " +
               // Sombra dupla: profundidade externa + brilho interno
               "shadow-[0_4px_12px_-2px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.05)_inset] " +
-              // Tipografia
+              // Tipografia + text-shadow para legibilidade em fotos muito claras
               "font-medium tracking-wide whitespace-nowrap " +
+              "[text-shadow:0_1px_2px_rgba(0,0,0,0.55)] " +
               // Animações
               "transition-[transform,box-shadow,background-color] duration-200 ease-out " +
               "hover:-translate-y-0.5 hover:bg-black/65 " +
@@ -127,14 +156,15 @@ export const ImageGallery = ({
               <span
                 aria-hidden="true"
                 className={
-                  "rounded-full ring-1 ring-white/40 shadow-inner " +
+                  "rounded-full shadow-inner " +
                   "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] " +
+                  swatchRingClass + " " +
                   dotClass
                 }
                 style={{ backgroundColor: swatchHex }}
               />
             )}
-            <span className="truncate max-w-[10rem]">{cor}</span>
+            <span className="truncate">{cor}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={8} className="px-2.5 py-1">
