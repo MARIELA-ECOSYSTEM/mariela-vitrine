@@ -258,7 +258,8 @@ const ProductDetail = () => {
     if (!todasCoresTemImagens) {
       (produto.imagens || []).forEach((img) => push(img, null));
     }
-    if (entries.length === 0) entries.push({ url: produtoGenerico, cor: null });
+    // Sem fallback local. Se a API não entregou imagens, a galeria fica vazia
+    // e o ProductImageSkeleton exibe seu próprio estado de erro.
     return entries;
   }, [produto, coresList]);
 
@@ -473,9 +474,8 @@ const ProductDetail = () => {
   // antes de completar, garantindo que apenas a última seleção atualize a UI.
   useEffect(() => {
     if (!imagensParaMostrar || imagensParaMostrar.length <= 1) return;
-    // Pula o placeholder local — não há ganho em "prefetchar" import estático.
     const adicionais = imagensParaMostrar.slice(1).filter(
-      (url) => typeof url === "string" && url && url !== produtoGenerico,
+      (url) => typeof url === "string" && url.length > 0,
     );
     if (adicionais.length === 0) return;
 
