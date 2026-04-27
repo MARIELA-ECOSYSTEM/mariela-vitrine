@@ -101,15 +101,33 @@ const FiltersContent = ({
   }).length;
 
   // Calcular quantidade por coleção (mesmo padrão de cores/tamanhos):
-  // baseado em `produtosFiltradosParcial` para refletir os demais filtros
-  // ativos. "todas" agrega o total geral do recorte parcial.
+  // baseado em `produtosFiltradosParcial` PLUS os filtros de categoria,
+  // cores e tamanhos ativos — assim a badge reflete o recorte real
+  // que o usuário verá ao escolher cada coleção. O próprio filtro de
+  // coleção é excluído (caso contrário só a coleção atual teria > 0).
   const colecoesCount: Record<string, number> = {};
+  const baseColecoes = produtosFiltradosParcial.filter((p: any) => {
+    if (categoriaSelecionada !== "todas" && p.categoria !== categoriaSelecionada) {
+      return false;
+    }
+    if (coresSelecionadas.length > 0) {
+      const hasCor = p.variants?.some((v: any) =>
+        coresSelecionadas.includes(v.cor) &&
+        (tamanhosSelecionados.length === 0 || tamanhosSelecionados.includes(v.tamanho)),
+      );
+      if (!hasCor) return false;
+    } else if (tamanhosSelecionados.length > 0) {
+      const hasTam = p.variants?.some((v: any) => tamanhosSelecionados.includes(v.tamanho));
+      if (!hasTam) return false;
+    }
+    return true;
+  });
   colecoesDisponiveis.forEach((colecao) => {
     if (colecao.value === "todas") {
-      colecoesCount[colecao.value] = produtosFiltradosParcial.length;
+      colecoesCount[colecao.value] = baseColecoes.length;
       return;
     }
-    colecoesCount[colecao.value] = produtosFiltradosParcial.filter(
+    colecoesCount[colecao.value] = baseColecoes.filter(
       (p: any) => (p.colecao ?? "").toString() === colecao.value,
     ).length;
   });
