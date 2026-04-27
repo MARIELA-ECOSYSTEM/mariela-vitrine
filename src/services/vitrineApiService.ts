@@ -503,7 +503,7 @@ function isValidImageUrl(url: string): boolean {
   }
 }
 
-function uniqueImages(images: string[]): string[] {
+export function uniqueImages(images: string[]): string[] {
   // Deduplica ignorando parâmetros de redimensionamento/qualidade
   // (ex.: `?w=300` vs `?w=800` da MESMA foto). Sem isso, o serviço agrega
   // a `imagem_thumb` e a `imagem_full` da mesma cor como se fossem fotos
