@@ -30,8 +30,16 @@ import { cn } from "@/lib/utils";
 
 type CollectionLike = ColecaoDestaque;
 
-/** Preserva UTMs da URL atual ao montar o link da coleção. */
-function buildCollectionHref(search: string, colecaoNome: string): string {
+/**
+ * Monta o href para `/products` filtrando pela coleção.
+ *
+ * - Prefere `colecaoId={id}` (estável, imune a renomeação/acentuação).
+ * - Cai para `colecao={nome}` somente se `id` vier ausente (defesa em
+ *   camadas; o validador do service já garante `id` obrigatório).
+ * - Preserva todos os parâmetros `utm_*` da URL atual para não quebrar
+ *   atribuição de campanhas.
+ */
+function buildCollectionHref(search: string, colecao: { id: string; nome: string }): string {
   const params = new URLSearchParams();
   try {
     const current = new URLSearchParams(search);
@@ -41,7 +49,11 @@ function buildCollectionHref(search: string, colecaoNome: string): string {
   } catch {
     /* ignore — montamos sem UTMs */
   }
-  params.set("colecao", colecaoNome);
+  if (colecao.id) {
+    params.set("colecaoId", colecao.id);
+  } else {
+    params.set("colecao", colecao.nome);
+  }
   return `/products?${params.toString()}`;
 }
 
@@ -203,7 +215,7 @@ export const FeaturedCollections = () => {
         {/* Hero — primeira coleção por ordem ganha banner maior */}
         <CollectionCard
           colecao={hero}
-          href={buildCollectionHref(search, hero.nome)}
+          href={buildCollectionHref(search, hero)}
           variant="hero"
         />
 
@@ -214,7 +226,7 @@ export const FeaturedCollections = () => {
               <CollectionCard
                 key={colecao.id}
                 colecao={colecao}
-                href={buildCollectionHref(search, colecao.nome)}
+                href={buildCollectionHref(search, colecao)}
                 variant="grid"
               />
             ))}
