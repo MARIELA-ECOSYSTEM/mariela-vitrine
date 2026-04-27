@@ -386,6 +386,13 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     const corItem = coresList.find((c) => c.cor === cor);
     // Localiza a imagem dessa cor com lookup O(1).
     const urlAlvo = imagemPorCor[cor];
+    // Pré-carrega a imagem da cor de destino com prioridade alta ANTES de
+    // disparar a troca de estado. O ProductImageSkeleton já faz preload
+    // interno antes de trocar o `displaySrc`, mas iniciar o fetch aqui
+    // (no momento exato do clique) garante que o cache da imagem esteja
+    // quente quando o effect rodar — eliminando qualquer micro-flicker
+    // entre o setState e o resolve do preload.
+    if (urlAlvo) preloadImagesPrioritized([urlAlvo], 1);
     const imgIndex = urlAlvo ? indicePorUrl[urlAlvo] : undefined;
     if (typeof imgIndex === "number" && imgIndex !== currentImageIndex) {
       setSlideDirection(imgIndex > currentImageIndex ? 'left' : 'right');
