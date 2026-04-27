@@ -479,14 +479,15 @@ export const ImageGallery = ({
                   className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
                 />
               </button>
-              {imageColors?.[index] && (
-                <Badge
-                  variant="secondary"
-                  className="absolute top-1 left-1 px-1.5 py-0 text-[10px] leading-tight bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium pointer-events-none max-w-[calc(100%-0.5rem)] truncate"
-                >
-                  {imageColors[index]}
-                </Badge>
-              )}
+              {(() => {
+                const cor = canonicalColorName(imageColors?.[index]);
+                if (!cor) return null;
+                return (
+                  <div className="absolute top-1 left-1">
+                    <ColorBadge cor={cor} size="sm" label={`Cor: ${cor}`} />
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
