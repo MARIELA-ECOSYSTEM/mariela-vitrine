@@ -135,9 +135,12 @@ describe("getColecoesDestaque — performance & cache", () => {
 
     await vitrineApiService.getColecoesDestaque();
 
-    // Expira o TTL avançando o relógio (TTL = 5 min).
-    vi.useFakeTimers();
-    vi.setSystemTime(Date.now() + 6 * 60 * 1000);
+    // Expira o TTL avançando APENAS `Date.now()` (TTL = 5 min).
+    // Não usamos `vi.useFakeTimers()` porque isso bloqueia o `setTimeout`
+    // de timeout do `requestJson` (15s), causando timeout no teste.
+    const realDateNow = Date.now;
+    const baseTs = realDateNow();
+    vi.spyOn(Date, "now").mockImplementation(() => baseTs + 6 * 60 * 1000);
 
     // 2ª chamada: deve enviar If-None-Match com o ETag salvo. Backend
     // responde 304 (sem body). Service deve reaproveitar o cache.
