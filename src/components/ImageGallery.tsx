@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Ha
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProductImageSkeleton, preloadAdjacentImage, type PreloadPriority } from "@/components/ProductImageSkeleton";
 
 interface ImageGalleryProps {
@@ -36,6 +37,67 @@ export const ImageGallery = ({
   onImageSelect,
   imageColors,
 }: ImageGalleryProps) => {
+  /**
+   * Renderiza o nome da cor EXATAMENTE como veio do payload da vitrine-api,
+   * sem trim/lowercase/normalização. Apenas confirma que é string não-vazia
+   * (o ProductDetail já usa `c.cor` diretamente do `coresList`, que reflete
+   * o campo `cor` da API). Esta função existe para deixar a regra explícita
+   * em um único ponto e prevenir regressões futuras.
+   */
+  const canonicalColorName = (raw: string | null | undefined): string | null => {
+    if (typeof raw !== "string" || raw.length === 0) return null;
+    return raw;
+  };
+
+  /**
+   * Badge com nome canônico da cor + tooltip. Estilo unificado para card e
+   * miniaturas, com fundo high-contrast (foreground sobre background) e
+   * sombra dupla para legibilidade sobre qualquer imagem (claras/escuras).
+   * `size`:
+   *  - `md`: badge da imagem principal
+   *  - `sm`: badge de miniatura desktop
+   *  - `xs`: badge de miniatura mobile (mais compacta)
+   * O tooltip ativa em hover (desktop) e em foco/long-press (mobile).
+   */
+  const ColorBadge = ({
+    cor,
+    size,
+    label,
+  }: {
+    cor: string;
+    size: "md" | "sm" | "xs";
+    label: string;
+  }) => {
+    const sizeClass =
+      size === "md"
+        ? "px-2.5 py-1 text-xs"
+        : size === "sm"
+        ? "px-1.5 py-0 text-[10px] leading-tight"
+        : "px-1.5 py-0 text-[9px] leading-tight";
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            variant="secondary"
+            tabIndex={0}
+            aria-label={label}
+            className={
+              "bg-foreground/85 text-background border border-background/30 " +
+              "backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.45)] " +
+              "font-semibold tracking-wide max-w-[calc(100%-0.5rem)] truncate " +
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 " +
+              sizeClass
+            }
+          >
+            {cor}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>
+          <span className="text-xs">{label}</span>
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
   const [indiceAtual, setIndiceAtual] = useState(selectedIndex || 0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -161,6 +223,7 @@ export const ImageGallery = ({
   }
 
   return (
+   <TooltipProvider delayDuration={150}>
     <div className="space-y-3 md:space-y-4">
       {/* Imagem Principal */}
       <div 
@@ -169,17 +232,17 @@ export const ImageGallery = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Badge da cor associada à imagem principal */}
-        {imageColors?.[indiceAtual] && (
-          <div className="absolute top-3 left-3 z-10 pointer-events-none">
-            <Badge
-              variant="secondary"
-              className="bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium"
-            >
-              {imageColors[indiceAtual]}
-            </Badge>
-          </div>
-        )}
+        {/* Badge da cor associada à imagem principal — reflete `indiceAtual`,
+            atualiza imediatamente ao trocar de cor (mobile/desktop). */}
+        {(() => {
+          const cor = canonicalColorName(imageColors?.[indiceAtual]);
+          if (!cor) return null;
+          return (
+            <div className="absolute top-3 left-3 z-10">
+              <ColorBadge cor={cor} size="md" label={`Cor: ${cor}`} />
+            </div>
+          );
+        })()}
         {/* Imagem Principal com tap para zoom */}
         <div 
           className="relative h-full overflow-hidden cursor-pointer"
@@ -416,14 +479,15 @@ export const ImageGallery = ({
                   className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
                 />
               </button>
-              {imageColors?.[index] && (
-                <Badge
-                  variant="secondary"
-                  className="absolute top-1 left-1 px-1.5 py-0 text-[10px] leading-tight bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium pointer-events-none max-w-[calc(100%-0.5rem)] truncate"
-                >
-                  {imageColors[index]}
-                </Badge>
-              )}
+              {(() => {
+                const cor = canonicalColorName(imageColors?.[index]);
+                if (!cor) return null;
+                return (
+                  <div className="absolute top-1 left-1">
+                    <ColorBadge cor={cor} size="sm" label={`Cor: ${cor}`} />
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -449,18 +513,20 @@ export const ImageGallery = ({
                   className="w-full h-full object-cover"
                 />
               </button>
-              {imageColors?.[index] && (
-                <Badge
-                  variant="secondary"
-                  className="absolute top-1 left-1 px-1.5 py-0 text-[9px] leading-tight bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium pointer-events-none max-w-[calc(100%-0.5rem)] truncate"
-                >
-                  {imageColors[index]}
-                </Badge>
-              )}
+              {(() => {
+                const cor = canonicalColorName(imageColors?.[index]);
+                if (!cor) return null;
+                return (
+                  <div className="absolute top-1 left-1">
+                    <ColorBadge cor={cor} size="xs" label={`Cor: ${cor}`} />
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
       )}
     </div>
+   </TooltipProvider>
   );
 };
