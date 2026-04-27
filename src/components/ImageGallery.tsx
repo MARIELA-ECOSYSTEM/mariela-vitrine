@@ -5,7 +5,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductImageSkeleton, preloadAdjacentImage, type PreloadPriority } from "@/components/ProductImageSkeleton";
-import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 
 interface ImageGalleryProps {
   images: string[];
@@ -37,8 +36,11 @@ export const ImageGallery = ({
   
   // Memoiza para não recriar array a cada render (mantém referências estáveis
   // para filhos memoizados e evita work extra durante a troca de cor).
+  // SEM fallback local: a Vitrine consome estritamente o que a vitrine-api
+  // entregou. Se a API não enviar imagens, a galeria fica vazia e o
+  // ProductImageSkeleton exibe seu próprio estado de erro acessível.
   const imagensValidas = useMemo(
-    () => (images.length > 0 ? images : [produtoGenerico]),
+    () => images.filter((u): u is string => typeof u === "string" && u.trim().length > 0),
     [images],
   );
   const temMultiplasImagens = imagensValidas.length > 1;
