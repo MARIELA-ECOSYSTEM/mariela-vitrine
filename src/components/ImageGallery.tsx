@@ -5,7 +5,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductImageSkeleton, preloadAdjacentImage, type PreloadPriority } from "@/components/ProductImageSkeleton";
-import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
 
 interface ImageGalleryProps {
   images: string[];
@@ -37,11 +36,18 @@ export const ImageGallery = ({
   
   // Memoiza para não recriar array a cada render (mantém referências estáveis
   // para filhos memoizados e evita work extra durante a troca de cor).
+  // SEM fallback local: a Vitrine consome estritamente o que a vitrine-api
+  // entregou. Se a API não enviar imagens, a galeria fica vazia e o
+  // ProductImageSkeleton exibe seu próprio estado de erro acessível.
   const imagensValidas = useMemo(
-    () => (images.length > 0 ? images : [produtoGenerico]),
+    () => images.filter((u): u is string => typeof u === "string" && u.trim().length > 0),
     [images],
   );
   const temMultiplasImagens = imagensValidas.length > 1;
+  // Sem imagens da API: NÃO injetamos placeholder local. Renderizamos um
+  // estado vazio semântico para que o usuário perceba a ausência (e o
+  // PDV/QA detecte payloads incorretos), sem disfarçar com asset interno.
+  const semImagensDaApi = imagensValidas.length === 0;
 
   // Show swipe hint on first visit
   useEffect(() => {
@@ -130,6 +136,21 @@ export const ImageGallery = ({
     },
     [imagensValidas, indiceAtual],
   );
+
+  if (semImagensDaApi) {
+    return (
+      <div
+        className="aspect-square bg-muted rounded-xl md:rounded-2xl flex items-center justify-center"
+        role="img"
+        aria-label={`${productName} — imagem indisponível`}
+        data-testid="gallery-empty-state"
+      >
+        <span className="text-sm text-muted-foreground">
+          Imagem indisponível
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3 md:space-y-4">
