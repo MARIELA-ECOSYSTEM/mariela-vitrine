@@ -821,6 +821,7 @@ const ProductDetail = () => {
               <ImageGallery
                 images={imagensParaMostrar}
                 imageColors={galeriaUnificada.map((g) => g.cor)}
+                colorSwatchMap={COLOR_MAP}
                 productName={
                   corSelecionada
                     ? `${produto.nome} — cor ${corSelecionada}`

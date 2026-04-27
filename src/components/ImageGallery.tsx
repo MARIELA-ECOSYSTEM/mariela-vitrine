@@ -25,6 +25,12 @@ interface ImageGalleryProps {
    * sobre a imagem principal.
    */
   imageColors?: (string | null)[];
+  /**
+   * Mapa cor → HEX usado para renderizar o "swatch dot" dentro da badge.
+   * Quando a cor não está no mapa, a badge é exibida sem o ponto colorido
+   * (apenas com o nome). Vem do `COLOR_MAP` do `ProductDetail`.
+   */
+  colorSwatchMap?: Record<string, string>;
 }
 
 export const ImageGallery = ({ 
@@ -36,6 +42,7 @@ export const ImageGallery = ({
   selectedIndex,
   onImageSelect,
   imageColors,
+  colorSwatchMap,
 }: ImageGalleryProps) => {
   /**
    * Renderiza o nome da cor EXATAMENTE como veio do payload da vitrine-api,
@@ -59,6 +66,16 @@ export const ImageGallery = ({
    *  - `xs`: badge de miniatura mobile (mais compacta)
    * O tooltip ativa em hover (desktop) e em foco/long-press (mobile).
    */
+  /**
+   * Badge moderna estilo "pill" com glassmorphism:
+   *  - Fundo translúcido com `backdrop-blur-xl` e borda interna sutil
+   *    (white/20 sobre escuro) → legível em qualquer foto.
+   *  - Swatch dot circular com a cor real no início (anel branco fino para
+   *    destacar cores claras como Branco/Off White sobre fundos brancos).
+   *  - Micro-interação: hover/focus levanta a badge (translate-y) e
+   *    intensifica a sombra. Transição rápida (200ms) para sensação premium.
+   *  - Tooltip continua ativando em hover/focus/long-press.
+   */
   const ColorBadge = ({
     cor,
     size,
@@ -68,32 +85,69 @@ export const ImageGallery = ({
     size: "md" | "sm" | "xs";
     label: string;
   }) => {
+    const swatchHex = colorSwatchMap?.[cor];
     const sizeClass =
       size === "md"
-        ? "px-2.5 py-1 text-xs"
+        ? "h-7 pl-1 pr-2.5 gap-1.5 text-xs rounded-full"
         : size === "sm"
-        ? "px-1.5 py-0 text-[10px] leading-tight"
-        : "px-1.5 py-0 text-[9px] leading-tight";
+        ? "h-5 pl-0.5 pr-1.5 gap-1 text-[10px] leading-none rounded-full"
+        : "h-[18px] pl-0.5 pr-1.5 gap-1 text-[9px] leading-none rounded-full";
+    const dotClass =
+      size === "md"
+        ? "h-5 w-5"
+        : size === "sm"
+        ? "h-4 w-4"
+        : "h-3.5 w-3.5";
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge
-            variant="secondary"
+          <button
+            type="button"
             tabIndex={0}
             aria-label={label}
             className={
-              "bg-foreground/85 text-background border border-background/30 " +
-              "backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.45)] " +
-              "font-semibold tracking-wide max-w-[calc(100%-0.5rem)] truncate " +
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 " +
+              "inline-flex items-center justify-center select-none cursor-default " +
+              // Glass surface — escura semitransparente + blur
+              "bg-black/55 text-white border border-white/15 " +
+              "backdrop-blur-xl backdrop-saturate-150 " +
+              // Sombra dupla: profundidade externa + brilho interno
+              "shadow-[0_4px_12px_-2px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.05)_inset] " +
+              // Tipografia
+              "font-medium tracking-wide whitespace-nowrap " +
+              // Animações
+              "transition-[transform,box-shadow,background-color] duration-200 ease-out " +
+              "hover:-translate-y-0.5 hover:bg-black/65 " +
+              "hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] " +
+              // Acessibilidade
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-1 focus-visible:ring-offset-background/40 " +
               sizeClass
             }
           >
-            {cor}
-          </Badge>
+            {swatchHex && (
+              <span
+                aria-hidden="true"
+                className={
+                  "rounded-full ring-1 ring-white/40 shadow-inner " +
+                  "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] " +
+                  dotClass
+                }
+                style={{ backgroundColor: swatchHex }}
+              />
+            )}
+            <span className="truncate max-w-[10rem]">{cor}</span>
+          </button>
         </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={6}>
-          <span className="text-xs">{label}</span>
+        <TooltipContent side="top" sideOffset={8} className="px-2.5 py-1">
+          <div className="flex items-center gap-2">
+            {swatchHex && (
+              <span
+                aria-hidden="true"
+                className="h-3 w-3 rounded-full ring-1 ring-border"
+                style={{ backgroundColor: swatchHex }}
+              />
+            )}
+            <span className="text-xs font-medium">{label}</span>
+          </div>
         </TooltipContent>
       </Tooltip>
     );
