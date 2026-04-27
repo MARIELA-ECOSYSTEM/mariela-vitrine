@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { HeroBannerCarousel } from "@/components/HeroBannerCarousel";
 import { CategoryNav } from "@/components/CategoryNav";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
+import { FeaturedCollections } from "@/components/FeaturedCollections";
 import { QuickActions } from "@/components/QuickActions";
 import { Footer } from "@/components/Footer";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
@@ -93,6 +94,7 @@ const Index = () => {
       <Header />
       <HeroBannerCarousel />
       <CategoryNav />
+      <FeaturedCollections />
 
       <div id="products">
       <FeaturedProducts
