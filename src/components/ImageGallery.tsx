@@ -223,6 +223,7 @@ export const ImageGallery = ({
   }
 
   return (
+   <TooltipProvider delayDuration={150}>
     <div className="space-y-3 md:space-y-4">
       {/* Imagem Principal */}
       <div 
@@ -231,17 +232,17 @@ export const ImageGallery = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Badge da cor associada à imagem principal */}
-        {imageColors?.[indiceAtual] && (
-          <div className="absolute top-3 left-3 z-10 pointer-events-none">
-            <Badge
-              variant="secondary"
-              className="bg-background/90 backdrop-blur-sm text-foreground border border-border/50 shadow-sm font-medium"
-            >
-              {imageColors[indiceAtual]}
-            </Badge>
-          </div>
-        )}
+        {/* Badge da cor associada à imagem principal — reflete `indiceAtual`,
+            atualiza imediatamente ao trocar de cor (mobile/desktop). */}
+        {(() => {
+          const cor = canonicalColorName(imageColors?.[indiceAtual]);
+          if (!cor) return null;
+          return (
+            <div className="absolute top-3 left-3 z-10">
+              <ColorBadge cor={cor} size="md" label={`Cor: ${cor}`} />
+            </div>
+          );
+        })()}
         {/* Imagem Principal com tap para zoom */}
         <div 
           className="relative h-full overflow-hidden cursor-pointer"
