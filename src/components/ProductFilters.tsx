@@ -215,30 +215,41 @@ const FiltersContent = ({
           </button>
           {colecaoAberta && (
             <div className="flex flex-col gap-2 animate-fade-in transition-all duration-300">
-              {colecoesDisponiveis.map((colecao) => (
+              {colecoesDisponiveis.map((colecao) => {
+                const count = colecoesCount[colecao.value] ?? 0;
+                const isSelected = colecaoSelecionada === colecao.value;
+                // Desabilita itens vazios — exceto "todas" e o já selecionado
+                // (para permitir desmarcar). Mantém padrão acessível com
+                // aria-disabled e título explicativo.
+                const isEmpty = count === 0 && colecao.value !== "todas" && !isSelected;
+                return (
                 <Button
                   key={colecao.value}
-                  variant={colecaoSelecionada === colecao.value ? "default" : "ghost"}
+                  variant={isSelected ? "default" : "ghost"}
                   onClick={() => {
                     setColecaoSelecionada(colecao.value);
                     setPaginaAtual(1);
                   }}
-                  className="justify-between group transition-all duration-300"
+                  className="justify-between group transition-all duration-300 disabled:opacity-50"
                   size="sm"
+                  disabled={isEmpty}
+                  aria-disabled={isEmpty}
+                  title={isEmpty ? "Sem produtos para os filtros atuais" : undefined}
                 >
                   <span className="transition-transform duration-300 group-hover:translate-x-1">
                     {colecao.label}
                   </span>
                   {colecoesCount[colecao.value] !== undefined && (
                     <Badge
-                      variant={colecaoSelecionada === colecao.value ? "secondary" : "outline"}
+                      variant={isSelected ? "secondary" : "outline"}
                       className="ml-2 transition-all duration-300"
                     >
                       {colecoesCount[colecao.value]}
                     </Badge>
                   )}
                 </Button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
