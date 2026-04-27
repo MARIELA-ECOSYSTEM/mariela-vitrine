@@ -322,7 +322,10 @@ export const ImageGallery = ({
           const cor = canonicalColorName(imageColors?.[indiceAtual]);
           if (!cor) return null;
           return (
-            <div className="absolute top-3 left-3 z-10">
+            <div
+              key={cor}
+              className="absolute top-3 left-3 z-10 animate-fade-in"
+            >
               <ColorBadge cor={cor} size="md" label={`Cor: ${cor}`} />
             </div>
           );
