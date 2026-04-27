@@ -124,6 +124,7 @@ const Products = () => {
     const filter = searchParams.get("filter");
     const categoria = searchParams.get("categoria");
     const colecao = searchParams.get("colecao");
+    const colecaoId = searchParams.get("colecaoId");
     if (filter === "promocoes") {
       setMostrarPromocao(true);
       setMostrarNovidades(false);
@@ -144,6 +145,54 @@ const Products = () => {
       setColecaoSelecionada(colecao);
     }
   }, [searchParams]);
+
+  /**
+   * Resolve `?colecaoId={id}` em nome canônico da coleção.
+   *
+   * Por que: o filtro do catálogo (e da API `/produtos?colecao=...`) opera
+   * por NOME. Aceitar `id` no link permite navegação estável (imune a
+   * renomeação/acentuação) sem precisar reescrever toda a lógica de
+   * filtro. Resolvemos via `/colecoes?detalhes=1&destaque=1` (mesmo cache
+   * já em memória, custo ~0) e populamos `colecaoSelecionada` com o nome
+   * canônico vindo da API.
+   *
+   * Se a coleção não for encontrada (id inválido / fora de destaque /
+   * inativa), removemos o param da URL silenciosamente para não deixar a
+   * página em estado inconsistente.
+   */
+  useEffect(() => {
+    const colecaoId = searchParams.get("colecaoId");
+    if (!colecaoId) return;
+
+    let cancelled = false;
+    vitrineApiService
+      .getColecoesDestaque()
+      .then((colecoes) => {
+        if (cancelled) return;
+        const match = colecoes.find((c) => c.id === colecaoId);
+        const next = new URLSearchParams(searchParams);
+        next.delete("colecaoId");
+        if (match) {
+          setColecaoSelecionada(match.nome);
+          next.set("colecao", match.nome);
+        }
+        setSearchParams(next, { replace: true });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // API fora do ar: limpa o param para não travar o usuário num
+        // filtro fantasma. Sem toast, sem log — falha silenciosa.
+        const next = new URLSearchParams(searchParams);
+        next.delete("colecaoId");
+        setSearchParams(next, { replace: true });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Roda quando o id muda; setSearchParams é estável.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get("colecaoId")]);
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
