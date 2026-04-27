@@ -99,6 +99,21 @@ const FiltersContent = ({
     const preco = p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda;
     return preco >= faixaPreco[0] && preco <= faixaPreco[1];
   }).length;
+
+  // Calcular quantidade por coleção (mesmo padrão de cores/tamanhos):
+  // baseado em `produtosFiltradosParcial` para refletir os demais filtros
+  // ativos. "todas" agrega o total geral do recorte parcial.
+  const colecoesCount: Record<string, number> = {};
+  colecoesDisponiveis.forEach((colecao) => {
+    if (colecao.value === "todas") {
+      colecoesCount[colecao.value] = produtosFiltradosParcial.length;
+      return;
+    }
+    colecoesCount[colecao.value] = produtosFiltradosParcial.filter(
+      (p: any) => (p.colecao ?? "").toString() === colecao.value,
+    ).length;
+  });
+
   const hasActiveFilters = categoriaSelecionada !== "todas" || 
     colecaoSelecionada !== "todas" ||
     coresSelecionadas.length > 0 || 
@@ -172,7 +187,12 @@ const FiltersContent = ({
             onClick={() => setColecaoAberta(!colecaoAberta)}
             className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
           >
-            <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Coleção</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Coleção</h3>
+              {colecaoSelecionada !== "todas" && (
+                <Badge variant="secondary">1</Badge>
+              )}
+            </div>
             {colecaoAberta ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           {colecaoAberta && (
@@ -191,6 +211,14 @@ const FiltersContent = ({
                   <span className="transition-transform duration-300 group-hover:translate-x-1">
                     {colecao.label}
                   </span>
+                  {colecoesCount[colecao.value] !== undefined && (
+                    <Badge
+                      variant={colecaoSelecionada === colecao.value ? "secondary" : "outline"}
+                      className="ml-2 transition-all duration-300"
+                    >
+                      {colecoesCount[colecao.value]}
+                    </Badge>
+                  )}
                 </Button>
               ))}
             </div>
