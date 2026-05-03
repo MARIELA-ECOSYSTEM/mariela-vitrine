@@ -114,6 +114,14 @@ const ProductDetail = () => {
   // Hook compartilhado: scroll com header dinâmico + destaque + aria-live + foco.
   const sizeGuide = useSizeSelectionGuide();
   const focarSelecaoTamanho = sizeGuide.guide;
+  const pendingSizeFocusRef = useRef(false);
+  const focusFirstSizeOption = useCallback(() => {
+    const root = sizeGuide.sectionRef.current;
+    if (!root) return;
+    const selected = root.querySelector<HTMLElement>("[data-size-option][aria-pressed='true']");
+    const first = root.querySelector<HTMLElement>("[data-size-option]:not([disabled])");
+    (selected || first || root).focus({ preventScroll: true });
+  }, [sizeGuide.sectionRef]);
 
   // Redirect 1x do path legado (`/produto/:id`) para o slug canônico.
   // Não depende de `location.search` para não re-disparar quando os filtros
