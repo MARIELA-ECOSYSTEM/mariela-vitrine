@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { memo, useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { memo, useState, useMemo, useRef, useCallback, useEffect, useId } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
@@ -176,10 +176,12 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   const { addToCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const accessibilityId = useId();
 
   // Hook compartilhado para guiar o usuário até o seletor de tamanho do card
   // (mesma UX do ProductDetail e Monte seu Look). Sem toast agressivo.
   const sizeGuide = useSizeSelectionGuide();
+  const pendingSizeFocusRef = useRef(false);
 
   /**
    * O card pode renderizar até 3 containers de tamanho no DOM (lista, grade
@@ -204,6 +206,14 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     });
     return visible ?? null;
   }, []);
+
+  const focusFirstVisibleSizeOption = useCallback(() => {
+    const visibleSection = resolveVisibleSection();
+    if (!visibleSection) return;
+    const selected = visibleSection.querySelector<HTMLElement>("[data-size-option][aria-pressed='true']");
+    const first = visibleSection.querySelector<HTMLElement>("[data-size-option]:not([disabled])");
+    (selected || first || visibleSection).focus({ preventScroll: true });
+  }, [resolveVisibleSection]);
   
   const whatsappNumber = "5583986567915";
   // Acessórios costumam ter tamanho único "U", mas permitimos seletor se a API trouxer variações reais.
