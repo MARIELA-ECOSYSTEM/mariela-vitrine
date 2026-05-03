@@ -104,6 +104,25 @@ describe("getProdutoSignature", () => {
 describe("ProductCard — estabilidade em refresh de background", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("exibe tamanho único U vindo da API no card", () => {
+    const { getAllByText } = renderCard(
+      makeProduto({
+        nome: "Vestido Ribana Tomara que Caia",
+        cores: [
+          {
+            produto_cor_id: "bege",
+            cor: "Bege",
+            imagem_thumb: "https://img/bege.jpg",
+            imagem_full: "https://img/bege.jpg",
+            tamanhos: [{ tamanho: "Único", disponibilidade: 1 }],
+          },
+        ],
+      }),
+    );
+
+    expect(getAllByText(/U/).length).toBeGreaterThan(0);
+  });
+
   it("não re-renderiza quando a lista entrega nova ref com conteúdo idêntico", () => {
     const renderSpy = vi.fn();
     const Probe = ({ produto }: { produto: Produto }) => {

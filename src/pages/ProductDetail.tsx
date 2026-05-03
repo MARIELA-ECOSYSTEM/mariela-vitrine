@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, useId } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -23,6 +23,7 @@ import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/servi
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
 import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
+import { normalizeSizeLabel, sortSizes } from "@/lib/sizeUtils";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -54,6 +55,9 @@ const ProductDetail = () => {
   const { addToCart } = useCart();
   const { toast } = useToast();
   const { produtos, loading } = useProducts();
+  const accessibilityId = useId();
+  const colorLabelId = `${accessibilityId}-detail-color`;
+  const sizeLabelId = `${accessibilityId}-detail-size`;
   
   const productParam = id ?? slug;
   const produtoFromList = produtos.find(p => matchesProductSlug(p, productParam));
@@ -110,6 +114,14 @@ const ProductDetail = () => {
   // Hook compartilhado: scroll com header dinâmico + destaque + aria-live + foco.
   const sizeGuide = useSizeSelectionGuide();
   const focarSelecaoTamanho = sizeGuide.guide;
+  const pendingSizeFocusRef = useRef(false);
+  const focusFirstSizeOption = useCallback(() => {
+    const root = sizeGuide.sectionRef.current;
+    if (!root) return;
+    const selected = root.querySelector<HTMLElement>("[data-size-option][aria-pressed='true']");
+    const first = root.querySelector<HTMLElement>("[data-size-option]:not([disabled])");
+    (selected || first || root).focus({ preventScroll: true });
+  }, [sizeGuide.sectionRef]);
 
   // Redirect 1x do path legado (`/produto/:id`) para o slug canônico.
   // Não depende de `location.search` para não re-disparar quando os filtros
@@ -163,7 +175,11 @@ const ProductDetail = () => {
           return {
             produto_cor_id: c.produto_cor_id,
             cor: c.cor,
-            tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
+            tamanhos: sortSizes(
+              c.tamanhos
+                .filter((t) => t.disponibilidade > 0)
+                .map((t) => normalizeSizeLabel(t.tamanho)),
+            ),
             imagem_full: c.imagem_full,
             imagem_thumb: c.imagem_thumb,
             imagens: galeria,
@@ -181,7 +197,7 @@ const ProductDetail = () => {
     return Object.entries(map).map(([cor, tamanhos]) => ({
       produto_cor_id: cor,
       cor,
-      tamanhos,
+      tamanhos: sortSizes(tamanhos.map((tamanho) => normalizeSizeLabel(tamanho))),
       imagem_full: null,
       imagem_thumb: null,
       imagens: [],
@@ -534,6 +550,13 @@ const ProductDetail = () => {
     [galeriaUnificada, coresList, corSelecionada, tamanhoSelecionado],
   );
 
+  useEffect(() => {
+    if (!pendingSizeFocusRef.current || !corSelecionada || tamanhosDisponiveis.length === 0) return;
+    pendingSizeFocusRef.current = false;
+    const id = window.requestAnimationFrame(() => focusFirstSizeOption());
+    return () => window.cancelAnimationFrame(id);
+  }, [corSelecionada, tamanhosDisponiveis, focusFirstSizeOption]);
+
   // SEO/JSON-LD: só recalcula quando muda produto, cor ou tamanho REAIS
   // (chaves primitivas) — não a cada render por causa de arrays/objetos
   // recriados. Isso evita reescrever <title>, meta tags e <script type="ld+json">
@@ -877,7 +900,7 @@ const ProductDetail = () => {
                   {/* Seletor de Cor */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm md:text-base">
+                      <p id={colorLabelId} className="font-medium text-sm md:text-base">
                         Cor: <span className="text-primary font-semibold">{corSelecionada || "Selecione"}</span>
                       </p>
                       {corSelecionada && (
@@ -888,7 +911,7 @@ const ProductDetail = () => {
                     </div>
                     
                     {/* Grid de Cores com Tamanhos */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2" role="group" aria-labelledby={colorLabelId}>
                       {coresList.map((corItem) => {
                         const cor = corItem.cor;
                         const tamanhosDaCor = corItem.tamanhos;
@@ -902,7 +925,10 @@ const ProductDetail = () => {
                             onMouseEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onPointerEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onFocus={() => preloadColorNeighbors(corItem.produto_cor_id)}
+                            aria-pressed={isSelected}
+                            aria-label={`Cor ${cor}${isSelected ? " selecionada" : ""}. Tamanhos ${tamanhosDaCor.join(", ")}`}
                             onClick={() => {
+                              const shouldManageSizeFocus = cor !== corSelecionada && tamanhosDaCor.length > 0;
                               setCorSelecionada(cor);
                               setCorSelecionadaId(corItem.produto_cor_id);
                               // Mobile/desktop: ao escolher, antecipa as próximas
@@ -917,6 +943,7 @@ const ProductDetail = () => {
                               } else {
                                 setTamanhoSelecionado("");
                               }
+                              pendingSizeFocusRef.current = shouldManageSizeFocus;
                             }}
                             className={`group flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98] ${
                               isSelected
@@ -964,7 +991,7 @@ const ProductDetail = () => {
                       className="space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300"
                     >
                       <div className="flex items-center justify-between">
-                        <p className="font-medium text-sm md:text-base">
+                        <p id={sizeLabelId} className="font-medium text-sm md:text-base">
                           Tamanho: <span className="text-primary font-semibold">{tamanhoSelecionado || "Selecione"}</span>
                         </p>
                         <span className="text-xs text-muted-foreground">
@@ -973,12 +1000,15 @@ const ProductDetail = () => {
                       </div>
                       
                       {/* Grid de Tamanhos - Mobile friendly */}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2" role="group" aria-labelledby={sizeLabelId}>
                         {tamanhosDisponiveis.map((tamanho) => (
                           <button
                             key={tamanho}
+                            type="button"
                             data-size-option
                             onClick={() => setTamanhoSelecionado(tamanho)}
+                            aria-pressed={tamanhoSelecionado === tamanho}
+                            aria-label={`Tamanho ${tamanho}${tamanhoSelecionado === tamanho ? " selecionado" : ""}`}
                             className={`min-w-[48px] h-12 px-4 rounded-lg border-2 font-semibold transition-all active:scale-95 ${
                               tamanhoSelecionado === tamanho
                                 ? "border-primary bg-primary text-primary-foreground shadow-md"

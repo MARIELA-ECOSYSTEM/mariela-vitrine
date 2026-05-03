@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import { memo, useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { memo, useState, useMemo, useRef, useCallback, useEffect, useId } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
@@ -176,10 +176,18 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   const { addToCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const accessibilityId = useId();
+  const listColorLabelId = `${accessibilityId}-list-color`;
+  const listSizeLabelId = `${accessibilityId}-list-size`;
+  const mobileColorLabelId = `${accessibilityId}-mobile-color`;
+  const mobileSizeLabelId = `${accessibilityId}-mobile-size`;
+  const desktopColorLabelId = `${accessibilityId}-desktop-color`;
+  const desktopSizeLabelId = `${accessibilityId}-desktop-size`;
 
   // Hook compartilhado para guiar o usuário até o seletor de tamanho do card
   // (mesma UX do ProductDetail e Monte seu Look). Sem toast agressivo.
   const sizeGuide = useSizeSelectionGuide();
+  const pendingSizeFocusRef = useRef(false);
 
   /**
    * O card pode renderizar até 3 containers de tamanho no DOM (lista, grade
@@ -204,6 +212,14 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     });
     return visible ?? null;
   }, []);
+
+  const focusFirstVisibleSizeOption = useCallback(() => {
+    const visibleSection = resolveVisibleSection();
+    if (!visibleSection) return;
+    const selected = visibleSection.querySelector<HTMLElement>("[data-size-option][aria-pressed='true']");
+    const first = visibleSection.querySelector<HTMLElement>("[data-size-option]:not([disabled])");
+    (selected || first || visibleSection).focus({ preventScroll: true });
+  }, [resolveVisibleSection]);
   
   const whatsappNumber = "5583986567915";
   // Acessórios costumam ter tamanho único "U", mas permitimos seletor se a API trouxer variações reais.
@@ -407,6 +423,7 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
 
   const handleSelectColor = (cor: string) => {
     const corItem = coresList.find((c) => c.cor === cor);
+    const shouldManageSizeFocus = cor !== corSelecionada && (coresTamanhosMap[cor] || []).length > 0;
     // Localiza a imagem dessa cor com lookup O(1).
     const urlAlvo = imagemPorCor[cor];
     // Pré-carrega a imagem da cor de destino com prioridade alta ANTES de
@@ -424,7 +441,15 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     setCorSelecionada(cor);
     setCorSelecionadaId(corItem?.produto_cor_id || cor);
     reconcileSizeForColor(cor);
+    pendingSizeFocusRef.current = shouldManageSizeFocus;
   };
+
+  useEffect(() => {
+    if (!pendingSizeFocusRef.current || !corSelecionada || tamanhosDisponiveis.length === 0) return;
+    pendingSizeFocusRef.current = false;
+    const id = window.requestAnimationFrame(() => focusFirstVisibleSizeOption());
+    return () => window.cancelAnimationFrame(id);
+  }, [corSelecionada, tamanhosDisponiveis, focusFirstVisibleSizeOption]);
 
   const promo = getPromoInfo(produto);
   const precoFormatado = formatBRL(getDisplayPrice(produto));
@@ -592,8 +617,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               
               <div className="flex flex-col gap-2 md:min-w-[200px]">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Selecione a Cor:</p>
-                  <div className="flex flex-wrap gap-1">
+                  <p id={listColorLabelId} className="text-xs font-medium text-muted-foreground mb-1">Selecione a Cor:</p>
+                  <div className="flex flex-wrap gap-1" role="group" aria-labelledby={listColorLabelId}>
                     {coresDisponiveis.map((cor) => {
                       const isSelected = corSelecionada === cor;
                       const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
@@ -603,6 +628,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                           variant={isSelected || isHighlighted ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleSelectColor(cor)}
+                          aria-pressed={isSelected}
+                          aria-label={`Cor ${cor}${isSelected ? " selecionada" : ""}`}
                           className={cn(
                             "text-xs h-7 gap-1.5",
                             isHighlighted && !isSelected && "ring-2 ring-primary"
@@ -630,8 +657,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                       "scroll-mt-24 rounded-md transition-all duration-300"
                     )}
                   >
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
-                    <div className="flex flex-wrap gap-1">
+                    <p id={listSizeLabelId} className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
+                    <div className="flex flex-wrap gap-1" role="group" aria-labelledby={listSizeLabelId}>
                       {/* Renderizamos apenas os tamanhos disponíveis para a cor atual.
                           Tamanhos indisponíveis são omitidos (sem chip riscado). */}
                       {tamanhosDisponiveis.map((tamanho) => (
@@ -641,6 +668,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                           variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                           size="sm"
                           onClick={() => setTamanhoSelecionado(tamanho)}
+                          aria-pressed={tamanhoSelecionado === tamanho}
+                          aria-label={`Tamanho ${tamanho}${tamanhoSelecionado === tamanho ? " selecionado" : ""}`}
                           title={tamanho}
                           className="text-xs h-7"
                         >
@@ -794,7 +823,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               )}
             </div>
             {/* Mobile: cores com tamanhos */}
-            <div className="flex sm:hidden flex-col gap-1 mt-1.5">
+            <div className="flex sm:hidden flex-col gap-1 mt-1.5" role="group" aria-labelledby={mobileColorLabelId}>
+              <span id={mobileColorLabelId} className="sr-only">Cores disponíveis</span>
               {coresDisponiveis.slice(0, 2).map((cor) => {
                 const isSelected = corSelecionada === cor;
                 const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
@@ -802,7 +832,10 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                 return (
                   <button
                     key={cor}
+                    type="button"
                     onClick={() => handleSelectColor(cor)}
+                    aria-pressed={isSelected}
+                    aria-label={`Cor ${cor}${isSelected ? " selecionada" : ""}`}
                     className={cn(
                       "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left",
                       isSelected
@@ -839,10 +872,13 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               <div
                 data-size-section
                 tabIndex={-1}
+                role="group"
+                aria-labelledby={mobileSizeLabelId}
                 className={cn(
                   "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300"
                 )}
               >
+                <span id={mobileSizeLabelId} className="sr-only">Tamanhos disponíveis</span>
                 {/* Apenas tamanhos com disponibilidade na cor atual. */}
                 {tamanhosDisponiveis.map((tamanho) => (
                   <button
@@ -850,6 +886,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                     type="button"
                     data-size-option
                     onClick={() => setTamanhoSelecionado(tamanho)}
+                    aria-pressed={tamanhoSelecionado === tamanho}
+                    aria-label={`Tamanho ${tamanho}${tamanhoSelecionado === tamanho ? " selecionado" : ""}`}
                     title={tamanho}
                     className={cn(
                       "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
@@ -880,8 +918,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
             {/* Desktop: Seleção de cor e tamanho */}
             <div className="hidden sm:block min-h-[4.5rem]">
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Cor:</p>
-                <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-y-auto">
+                <p id={desktopColorLabelId} className="text-xs font-medium text-muted-foreground mb-1">Cor:</p>
+                <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-y-auto" role="group" aria-labelledby={desktopColorLabelId}>
                   {coresDisponiveis.map((cor) => {
                     const isSelected = corSelecionada === cor;
                     const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
@@ -891,6 +929,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                         variant={isSelected || isHighlighted ? "default" : "outline"}
                         size="sm"
                         onClick={() => handleSelectColor(cor)}
+                        aria-pressed={isSelected}
+                        aria-label={`Cor ${cor}${isSelected ? " selecionada" : ""}`}
                         className={cn(
                           "text-xs h-7 gap-1.5 px-2.5",
                           isHighlighted && !isSelected && "ring-2 ring-primary"
@@ -918,8 +958,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                     "mt-2 scroll-mt-24 rounded-md transition-all duration-300"
                   )}
                 >
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
-                  <div className="flex flex-wrap gap-1">
+                  <p id={desktopSizeLabelId} className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
+                  <div className="flex flex-wrap gap-1" role="group" aria-labelledby={desktopSizeLabelId}>
                     {/* Apenas tamanhos disponíveis para a cor selecionada. */}
                     {tamanhosDisponiveis.map((tamanho) => (
                       <Button
@@ -928,6 +968,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                         variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                         size="sm"
                         onClick={() => setTamanhoSelecionado(tamanho)}
+                        aria-pressed={tamanhoSelecionado === tamanho}
+                        aria-label={`Tamanho ${tamanho}${tamanhoSelecionado === tamanho ? " selecionado" : ""}`}
                         title={tamanho}
                         className="text-xs h-7 px-2.5"
                       >

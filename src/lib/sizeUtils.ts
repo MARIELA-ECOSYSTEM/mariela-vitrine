@@ -7,16 +7,16 @@
  * - Demais tamanhos textuais (não previstos) entram após os numéricos, em
  *   ordem alfabética estável.
  * - Duplicados são removidos, mantendo a primeira ocorrência.
- * - Strings vazias e legados ("U", "Único", "Unica") são descartados — nunca
- *   inventamos tamanho.
+ * - Strings vazias são descartadas. Tamanho único vindo da API
+ *   ("U", "Único", "Unico", "Única", "Unica") é dado real e normaliza para "U".
  */
 
-const TEXT_SIZE_ORDER = ["PP", "P", "M", "G", "GG", "XG", "XGG"] as const;
+const TEXT_SIZE_ORDER = ["PP", "P", "M", "G", "GG", "XG", "XGG", "U"] as const;
 const TEXT_ORDER_INDEX = new Map<string, number>(
   TEXT_SIZE_ORDER.map((size, idx) => [size, idx]),
 );
 
-const INVALID_SIZES = new Set(["", "U", "ÚNICO", "UNICO", "ÚNICA", "UNICA"]);
+const ONE_SIZE_ALIASES = new Set(["U", "ÚNICO", "UNICO", "ÚNICA", "UNICA"]);
 
 function normalizeSize(raw: string): string {
   return raw.trim().toUpperCase();
@@ -25,8 +25,15 @@ function normalizeSize(raw: string): string {
 export function isValidSize(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
   const norm = normalizeSize(raw);
-  if (norm === "") return false;
-  return !INVALID_SIZES.has(norm);
+  return norm !== "";
+}
+
+export function normalizeSizeLabel(raw: string): string {
+  const trimmed = raw.trim();
+  const norm = normalizeSize(trimmed);
+  if (ONE_SIZE_ALIASES.has(norm)) return "U";
+  const known = TEXT_SIZE_ORDER.find((size) => size === norm);
+  return known || trimmed;
 }
 
 /**
@@ -38,7 +45,7 @@ export function sortSizes(sizes: string[]): string[] {
   const unique: string[] = [];
   sizes.forEach((s) => {
     if (!isValidSize(s)) return;
-    const trimmed = s.trim();
+    const trimmed = normalizeSizeLabel(s);
     const key = normalizeSize(trimmed);
     if (seen.has(key)) return;
     seen.add(key);

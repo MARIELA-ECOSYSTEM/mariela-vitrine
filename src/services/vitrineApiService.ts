@@ -1,14 +1,15 @@
 import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
-import { isValidSize } from "@/lib/sizeUtils";
+import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v6";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v7";
 const LEGACY_CACHE_KEYS = [
+  "mariela_vitrine_api_cache_v6",
   "mariela_vitrine_api_cache_v5",
   "mariela_vitrine_api_cache_v4",
   "mariela_vitrine_api_cache_v3",
@@ -807,8 +808,7 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
         const quantidade = readNumber(tam, ["quantidade", "disponibilidade", "estoque", "available", "qty"], 0);
         const disponivel = readBoolean(tam, ["disponivel", "available", "ativo"], quantidade > 0);
         const tamanhoRaw = readString(tam, ["tamanho", "size", "nome"], "");
-        // Normaliza (trim) e descarta legados ("U", "Único", "Unica") e strings vazias.
-        const tamanho = tamanhoRaw.trim();
+        const tamanho = isValidSize(tamanhoRaw) ? normalizeSizeLabel(tamanhoRaw) : "";
         if (!isValidSize(tamanho)) return null;
         return {
           tamanho,
