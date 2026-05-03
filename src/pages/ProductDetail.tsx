@@ -197,7 +197,7 @@ const ProductDetail = () => {
     return Object.entries(map).map(([cor, tamanhos]) => ({
       produto_cor_id: cor,
       cor,
-      tamanhos,
+      tamanhos: sortSizes(tamanhos.map((tamanho) => normalizeSizeLabel(tamanho))),
       imagem_full: null,
       imagem_thumb: null,
       imagens: [],
