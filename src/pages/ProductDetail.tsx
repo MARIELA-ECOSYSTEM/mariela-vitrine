@@ -686,15 +686,13 @@ const ProductDetail = () => {
     );
   }
 
-  const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
+  const isAcessorio = (produto.categoria === "bolsas" || produto.categoria === "acessorios") && coresList.length === 0;
   const publicBadge = getPublicProductBadge(produto);
 
   // Estado seguro: produto sem variações reais (sem cores válidas para roupas
   // ou sem nenhum tamanho disponível) é tratado como indisponível.
-  const produtoIndisponivel = !isAcessorio && (
-    coresList.length === 0 ||
-    coresList.every((c) => c.tamanhos.length === 0)
-  );
+  const hasSizes = coresList.some((c) => c.tamanhos.length > 0);
+  const produtoIndisponivel = coresList.length === 0 && !isAcessorio;
 
   const promo = getPromoInfo(produto);
   const precoFormatado = formatBRL(getDisplayPrice(produto));
@@ -709,7 +707,7 @@ const ProductDetail = () => {
       });
       return;
     }
-    const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
+    const tamanhoParaAdicionar = !hasSizes ? "U" : tamanhoSelecionado;
     const corParaAdicionar = corSelecionada;
 
     // Valida cor real (precisa existir na lista atual de cores).
