@@ -823,7 +823,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               )}
             </div>
             {/* Mobile: cores com tamanhos */}
-            <div className="flex sm:hidden flex-col gap-1 mt-1.5">
+            <div className="flex sm:hidden flex-col gap-1 mt-1.5" role="group" aria-labelledby={mobileColorLabelId}>
+              <span id={mobileColorLabelId} className="sr-only">Cores disponíveis</span>
               {coresDisponiveis.slice(0, 2).map((cor) => {
                 const isSelected = corSelecionada === cor;
                 const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
@@ -831,7 +832,10 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                 return (
                   <button
                     key={cor}
+                    type="button"
                     onClick={() => handleSelectColor(cor)}
+                    aria-pressed={isSelected}
+                    aria-label={`Cor ${cor}${isSelected ? " selecionada" : ""}`}
                     className={cn(
                       "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left",
                       isSelected
@@ -868,10 +872,13 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               <div
                 data-size-section
                 tabIndex={-1}
+                role="group"
+                aria-labelledby={mobileSizeLabelId}
                 className={cn(
                   "flex sm:hidden flex-wrap gap-1.5 mt-1.5 animate-fade-in scroll-mt-24 rounded-md transition-all duration-300"
                 )}
               >
+                <span id={mobileSizeLabelId} className="sr-only">Tamanhos disponíveis</span>
                 {/* Apenas tamanhos com disponibilidade na cor atual. */}
                 {tamanhosDisponiveis.map((tamanho) => (
                   <button
@@ -879,6 +886,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                     type="button"
                     data-size-option
                     onClick={() => setTamanhoSelecionado(tamanho)}
+                    aria-pressed={tamanhoSelecionado === tamanho}
+                    aria-label={`Tamanho ${tamanho}${tamanhoSelecionado === tamanho ? " selecionado" : ""}`}
                     title={tamanho}
                     className={cn(
                       "min-w-[32px] h-8 px-2.5 rounded-lg text-xs font-semibold transition-all",
