@@ -617,8 +617,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               
               <div className="flex flex-col gap-2 md:min-w-[200px]">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Selecione a Cor:</p>
-                  <div className="flex flex-wrap gap-1">
+                  <p id={listColorLabelId} className="text-xs font-medium text-muted-foreground mb-1">Selecione a Cor:</p>
+                  <div className="flex flex-wrap gap-1" role="group" aria-labelledby={listColorLabelId}>
                     {coresDisponiveis.map((cor) => {
                       const isSelected = corSelecionada === cor;
                       const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
@@ -628,6 +628,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                           variant={isSelected || isHighlighted ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleSelectColor(cor)}
+                          aria-pressed={isSelected}
+                          aria-label={`Cor ${cor}${isSelected ? " selecionada" : ""}`}
                           className={cn(
                             "text-xs h-7 gap-1.5",
                             isHighlighted && !isSelected && "ring-2 ring-primary"
@@ -655,8 +657,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                       "scroll-mt-24 rounded-md transition-all duration-300"
                     )}
                   >
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
-                    <div className="flex flex-wrap gap-1">
+                    <p id={listSizeLabelId} className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
+                    <div className="flex flex-wrap gap-1" role="group" aria-labelledby={listSizeLabelId}>
                       {/* Renderizamos apenas os tamanhos disponíveis para a cor atual.
                           Tamanhos indisponíveis são omitidos (sem chip riscado). */}
                       {tamanhosDisponiveis.map((tamanho) => (
@@ -666,6 +668,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                           variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
                           size="sm"
                           onClick={() => setTamanhoSelecionado(tamanho)}
+                          aria-pressed={tamanhoSelecionado === tamanho}
+                          aria-label={`Tamanho ${tamanho}${tamanhoSelecionado === tamanho ? " selecionado" : ""}`}
                           title={tamanho}
                           className="text-xs h-7"
                         >
