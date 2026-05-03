@@ -900,7 +900,7 @@ const ProductDetail = () => {
                   {/* Seletor de Cor */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm md:text-base">
+                      <p id={colorLabelId} className="font-medium text-sm md:text-base">
                         Cor: <span className="text-primary font-semibold">{corSelecionada || "Selecione"}</span>
                       </p>
                       {corSelecionada && (
@@ -911,7 +911,7 @@ const ProductDetail = () => {
                     </div>
                     
                     {/* Grid de Cores com Tamanhos */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2" role="group" aria-labelledby={colorLabelId}>
                       {coresList.map((corItem) => {
                         const cor = corItem.cor;
                         const tamanhosDaCor = corItem.tamanhos;
@@ -925,6 +925,8 @@ const ProductDetail = () => {
                             onMouseEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onPointerEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onFocus={() => preloadColorNeighbors(corItem.produto_cor_id)}
+                            aria-pressed={isSelected}
+                            aria-label={`Cor ${cor}${isSelected ? " selecionada" : ""}. Tamanhos ${tamanhosDaCor.join(", ")}`}
                             onClick={() => {
                               const shouldManageSizeFocus = cor !== corSelecionada && tamanhosDaCor.length > 0;
                               setCorSelecionada(cor);
@@ -989,7 +991,7 @@ const ProductDetail = () => {
                       className="space-y-3 animate-fade-in scroll-mt-24 rounded-lg transition-all duration-300"
                     >
                       <div className="flex items-center justify-between">
-                        <p className="font-medium text-sm md:text-base">
+                        <p id={sizeLabelId} className="font-medium text-sm md:text-base">
                           Tamanho: <span className="text-primary font-semibold">{tamanhoSelecionado || "Selecione"}</span>
                         </p>
                         <span className="text-xs text-muted-foreground">
@@ -998,12 +1000,15 @@ const ProductDetail = () => {
                       </div>
                       
                       {/* Grid de Tamanhos - Mobile friendly */}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2" role="group" aria-labelledby={sizeLabelId}>
                         {tamanhosDisponiveis.map((tamanho) => (
                           <button
                             key={tamanho}
+                            type="button"
                             data-size-option
                             onClick={() => setTamanhoSelecionado(tamanho)}
+                            aria-pressed={tamanhoSelecionado === tamanho}
+                            aria-label={`Tamanho ${tamanho}${tamanhoSelecionado === tamanho ? " selecionado" : ""}`}
                             className={`min-w-[48px] h-12 px-4 rounded-lg border-2 font-semibold transition-all active:scale-95 ${
                               tamanhoSelecionado === tamanho
                                 ? "border-primary bg-primary text-primary-foreground shadow-md"
