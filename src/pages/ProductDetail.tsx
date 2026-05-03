@@ -873,8 +873,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Seleção de Variantes */}
-              {!isAcessorio && (
-                <div className="space-y-5 pt-2">
+              <div className="space-y-5 pt-2">
                   {/* Seletor de Cor */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
