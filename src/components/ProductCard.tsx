@@ -141,19 +141,18 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
         if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
       });
 
-    return Object.entries(map).map(([cor, tamanhos]) => ({
+    const result = Object.entries(map).map(([cor, tamanhos]) => ({
       produto_cor_id: cor,
       cor,
       tamanhos: sortSizes(tamanhos),
       imagem_full: null,
       imagem_thumb: null,
     }));
-  }, [produto.cores, produto.variants]);
 
     // Log em DEV quando produto tem cores mas nenhum tamanho válido — facilita
     // diagnóstico de payloads inconsistentes vindos da API. Silencioso em produção.
     if (import.meta.env.DEV) {
-      const todosVazios = mapped.length > 0 && mapped.every((c) => c.tamanhos.length === 0);
+      const todosVazios = result.length > 0 && result.every((c) => c.tamanhos.length === 0);
       if (todosVazios) {
         console.debug("[ProductCard] Produto com cores mas sem tamanhos válidos:", {
           produto_id: produto.produtoId || produto.id,
@@ -163,8 +162,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
       }
     }
 
-    return mapped;
-  }, [produto.cores]);
+    return result;
+  }, [produto.cores, produto.variants]);
 
   const primeiraCorDisponivel = coresList[0]?.cor || "";
   const primeiraCorIdDisponivel = coresList[0]?.produto_cor_id || "";
