@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, useId } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -23,6 +23,7 @@ import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/servi
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
 import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
+import { normalizeSizeLabel, sortSizes } from "@/lib/sizeUtils";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -54,6 +55,9 @@ const ProductDetail = () => {
   const { addToCart } = useCart();
   const { toast } = useToast();
   const { produtos, loading } = useProducts();
+  const accessibilityId = useId();
+  const colorLabelId = `${accessibilityId}-detail-color`;
+  const sizeLabelId = `${accessibilityId}-detail-size`;
   
   const productParam = id ?? slug;
   const produtoFromList = produtos.find(p => matchesProductSlug(p, productParam));
