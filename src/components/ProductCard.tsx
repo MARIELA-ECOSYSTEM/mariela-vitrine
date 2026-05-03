@@ -111,21 +111,44 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
 
   // Lista de cores: SOMENTE dados reais vindos da API em `produto.cores`.
   // Sem fallback "Única" — se a API não enviar cores, o card não exibe seletor.
-  const coresList = useMemo(() => {
-    if (!produto.cores || produto.cores.length === 0) return [];
-    const mapped = produto.cores.map((c) => ({
-      produto_cor_id: c.produto_cor_id,
-      cor: c.cor,
-      // Ordenar tamanhos naturalmente (PP, P, M, G, GG, XG... → numéricos)
-      // e descartar legados ("U", "Única") que nunca devem aparecer no card.
-      tamanhos: sortSizes(
-        c.tamanhos
-          .filter((t) => t.disponibilidade > 0 && isValidSize(t.tamanho))
-          .map((t) => t.tamanho),
-      ),
-      imagem_full: c.imagem_full,
-      imagem_thumb: c.imagem_thumb,
+  const coresList = useMemo<Array<{
+    produto_cor_id: string;
+    cor: string;
+    tamanhos: string[];
+    imagem_full: string | null;
+    imagem_thumb: string | null;
+  }>>(() => {
+    if (produto.cores && produto.cores.length > 0) {
+      return produto.cores.map((c) => ({
+        produto_cor_id: c.produto_cor_id,
+        cor: c.cor,
+        tamanhos: sortSizes(
+          c.tamanhos
+            .filter((t) => t.disponibilidade > 0 && isValidSize(t.tamanho))
+            .map((t) => t.tamanho),
+        ),
+        imagem_full: c.imagem_full,
+        imagem_thumb: c.imagem_thumb,
+      }));
+    }
+
+    // Fallback (legado): derivar de variants
+    const map: Record<string, string[]> = {};
+    produto.variants
+      .filter((v) => v.disponibilidade > 0 && isValidSize(v.tamanho))
+      .forEach((v) => {
+        if (!map[v.cor]) map[v.cor] = [];
+        if (!map[v.cor].includes(v.tamanho)) map[v.cor].push(v.tamanho);
+      });
+
+    return Object.entries(map).map(([cor, tamanhos]) => ({
+      produto_cor_id: cor,
+      cor,
+      tamanhos: sortSizes(tamanhos),
+      imagem_full: null,
+      imagem_thumb: null,
     }));
+  }, [produto.cores, produto.variants]);
 
     // Log em DEV quando produto tem cores mas nenhum tamanho válido — facilita
     // diagnóstico de payloads inconsistentes vindos da API. Silencioso em produção.
