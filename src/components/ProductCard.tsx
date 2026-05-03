@@ -417,6 +417,7 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
 
   const handleSelectColor = (cor: string) => {
     const corItem = coresList.find((c) => c.cor === cor);
+    const shouldManageSizeFocus = cor !== corSelecionada && (coresTamanhosMap[cor] || []).length > 0;
     // Localiza a imagem dessa cor com lookup O(1).
     const urlAlvo = imagemPorCor[cor];
     // Pré-carrega a imagem da cor de destino com prioridade alta ANTES de
@@ -434,7 +435,15 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     setCorSelecionada(cor);
     setCorSelecionadaId(corItem?.produto_cor_id || cor);
     reconcileSizeForColor(cor);
+    pendingSizeFocusRef.current = shouldManageSizeFocus;
   };
+
+  useEffect(() => {
+    if (!pendingSizeFocusRef.current || !corSelecionada || tamanhosDisponiveis.length === 0) return;
+    pendingSizeFocusRef.current = false;
+    const id = window.requestAnimationFrame(() => focusFirstVisibleSizeOption());
+    return () => window.cancelAnimationFrame(id);
+  }, [corSelecionada, tamanhosDisponiveis, focusFirstVisibleSizeOption]);
 
   const promo = getPromoInfo(produto);
   const precoFormatado = formatBRL(getDisplayPrice(produto));
