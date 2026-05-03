@@ -992,7 +992,6 @@ const ProductDetail = () => {
                     </div>
                   )}
                 </div>
-              )}
 
               {/* Botões de Ação */}
               <div className="space-y-3 pt-4">
