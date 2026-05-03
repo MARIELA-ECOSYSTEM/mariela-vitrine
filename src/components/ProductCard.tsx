@@ -206,7 +206,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   }, []);
   
   const whatsappNumber = "5583986567915";
-  const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
+  // Acessórios costumam ter tamanho único "U", mas permitimos seletor se a API trouxer variações reais.
+  const isAcessorio = (produto.categoria === "bolsas" || produto.categoria === "acessorios") && coresList.length === 0;
 
   const corSelecionadaObj = useMemo(
     () => coresList.find((c) => c.produto_cor_id === corSelecionadaId) || coresList.find((c) => c.cor === corSelecionada),
@@ -438,9 +439,7 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
    * Nunca mostra toast vermelho de erro.
    */
   const guiarSelecaoOuNavegar = (): boolean => {
-    if (isAcessorio) return true; // acessórios usam tamanho "U"
-    const temVariantesInline = coresList.length > 0;
-    if (!temVariantesInline) {
+    if (coresList.length === 0) {
       navigate(getProductPathWithSearch(produto));
       return false;
     }
@@ -458,10 +457,11 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   };
 
   const handleAdicionarCarrinho = () => {
-    const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
+    const hasSizes = coresList.some(c => c.tamanhos.length > 0);
+    const tamanhoParaAdicionar = !hasSizes ? "U" : tamanhoSelecionado;
     const corParaAdicionar = corSelecionada;
 
-    if (!isAcessorio && (!corParaAdicionar || !tamanhoParaAdicionar)) {
+    if (hasSizes && (!corParaAdicionar || !tamanhoParaAdicionar)) {
       guiarSelecaoOuNavegar();
       return;
     }
@@ -476,9 +476,10 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   };
 
   const handleWhatsApp = () => {
-    const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
+    const hasSizes = coresList.some(c => c.tamanhos.length > 0);
+    const tamanhoParaUsar = !hasSizes ? "U" : tamanhoSelecionado;
 
-    if (!isAcessorio && (!corSelecionada || !tamanhoParaUsar)) {
+    if (hasSizes && (!corSelecionada || !tamanhoParaUsar)) {
       guiarSelecaoOuNavegar();
       return;
     }
@@ -590,68 +591,64 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               </div>
               
               <div className="flex flex-col gap-2 md:min-w-[200px]">
-                {!isAcessorio && (
-                  <>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Selecione a Cor:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {coresDisponiveis.map((cor) => {
-                          const isSelected = corSelecionada === cor;
-                          const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
-                          return (
-                            <Button
-                              key={cor}
-                              variant={isSelected || isHighlighted ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => handleSelectColor(cor)}
-                              className={cn(
-                                "text-xs h-7 gap-1.5",
-                                isHighlighted && !isSelected && "ring-2 ring-primary"
-                              )}
-                            >
-                              <span 
-                                className="w-3 h-3 rounded-full border border-background shadow-sm flex-shrink-0"
-                                style={{ 
-                                  backgroundColor: COLOR_MAP[cor] || "#94A3B8",
-                                  boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
-                                }}
-                              />
-                              {cor}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    
-                    {corSelecionada && (
-                      <div
-                        data-size-section
-                        tabIndex={-1}
-                        className={cn(
-                          "scroll-mt-24 rounded-md transition-all duration-300"
-                        )}
-                      >
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {/* Renderizamos apenas os tamanhos disponíveis para a cor atual.
-                              Tamanhos indisponíveis são omitidos (sem chip riscado). */}
-                          {tamanhosDisponiveis.map((tamanho) => (
-                            <Button
-                              key={tamanho}
-                              data-size-option
-                              variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setTamanhoSelecionado(tamanho)}
-                              title={tamanho}
-                              className="text-xs h-7"
-                            >
-                              {tamanho}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Selecione a Cor:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {coresDisponiveis.map((cor) => {
+                      const isSelected = corSelecionada === cor;
+                      const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
+                      return (
+                        <Button
+                          key={cor}
+                          variant={isSelected || isHighlighted ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleSelectColor(cor)}
+                          className={cn(
+                            "text-xs h-7 gap-1.5",
+                            isHighlighted && !isSelected && "ring-2 ring-primary"
+                          )}
+                        >
+                          <span 
+                            className="w-3 h-3 rounded-full border border-background shadow-sm flex-shrink-0"
+                            style={{ 
+                              backgroundColor: COLOR_MAP[cor] || "#94A3B8",
+                              boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
+                            }}
+                          />
+                          {cor}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {corSelecionada && (
+                  <div
+                    data-size-section
+                    tabIndex={-1}
+                    className={cn(
+                      "scroll-mt-24 rounded-md transition-all duration-300"
                     )}
-                  </>
+                  >
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Selecione o Tamanho:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {/* Renderizamos apenas os tamanhos disponíveis para a cor atual.
+                          Tamanhos indisponíveis são omitidos (sem chip riscado). */}
+                      {tamanhosDisponiveis.map((tamanho) => (
+                        <Button
+                          key={tamanho}
+                          data-size-option
+                          variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setTamanhoSelecionado(tamanho)}
+                          title={tamanho}
+                          className="text-xs h-7"
+                        >
+                          {tamanho}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 )}
                 
                 <Button
@@ -881,68 +878,66 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
             </div>
             
             {/* Desktop: Seleção de cor e tamanho */}
-            {!isAcessorio && (
-              <div className="hidden sm:block min-h-[4.5rem]">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Cor:</p>
-                  <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-y-auto">
-                    {coresDisponiveis.map((cor) => {
-                      const isSelected = corSelecionada === cor;
-                      const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
-                      return (
-                        <Button
-                          key={cor}
-                          variant={isSelected || isHighlighted ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleSelectColor(cor)}
-                          className={cn(
-                            "text-xs h-7 gap-1.5 px-2.5",
-                            isHighlighted && !isSelected && "ring-2 ring-primary"
-                          )}
-                        >
-                          <span 
-                            className="w-3 h-3 rounded-full border border-background shadow-sm flex-shrink-0"
-                            style={{ 
-                              backgroundColor: COLOR_MAP[cor] || "#94A3B8",
-                              boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
-                            }}
-                          />
-                          {cor}
-                        </Button>
-                      );
-                    })}
+            <div className="hidden sm:block min-h-[4.5rem]">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Cor:</p>
+                <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-y-auto">
+                  {coresDisponiveis.map((cor) => {
+                    const isSelected = corSelecionada === cor;
+                    const isHighlighted = !corSelecionada && corDaImagemAtual === cor;
+                    return (
+                      <Button
+                        key={cor}
+                        variant={isSelected || isHighlighted ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleSelectColor(cor)}
+                        className={cn(
+                          "text-xs h-7 gap-1.5 px-2.5",
+                          isHighlighted && !isSelected && "ring-2 ring-primary"
+                        )}
+                      >
+                        <span 
+                          className="w-3 h-3 rounded-full border border-background shadow-sm flex-shrink-0"
+                          style={{ 
+                            backgroundColor: COLOR_MAP[cor] || "#94A3B8",
+                            boxShadow: cor === "Branco" || cor === "Off White" ? "0 0 0 1px #E2E8F0" : "none"
+                          }}
+                        />
+                        {cor}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {corSelecionada && (
+                <div
+                  data-size-section
+                  tabIndex={-1}
+                  className={cn(
+                    "mt-2 scroll-mt-24 rounded-md transition-all duration-300"
+                  )}
+                >
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {/* Apenas tamanhos disponíveis para a cor selecionada. */}
+                    {tamanhosDisponiveis.map((tamanho) => (
+                      <Button
+                        key={tamanho}
+                        data-size-option
+                        variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setTamanhoSelecionado(tamanho)}
+                        title={tamanho}
+                        className="text-xs h-7 px-2.5"
+                      >
+                        {tamanho}
+                      </Button>
+                    ))}
                   </div>
                 </div>
-                
-                {corSelecionada && (
-                  <div
-                    data-size-section
-                    tabIndex={-1}
-                    className={cn(
-                      "mt-2 scroll-mt-24 rounded-md transition-all duration-300"
-                    )}
-                  >
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Tam:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {/* Apenas tamanhos disponíveis para a cor selecionada. */}
-                      {tamanhosDisponiveis.map((tamanho) => (
-                        <Button
-                          key={tamanho}
-                          data-size-option
-                          variant={tamanhoSelecionado === tamanho ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setTamanhoSelecionado(tamanho)}
-                          title={tamanho}
-                          className="text-xs h-7 px-2.5"
-                        >
-                          {tamanho}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
             
             {/* Botões de ação */}
             <div className="flex gap-1 sm:gap-2 mt-auto">
