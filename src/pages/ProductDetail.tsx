@@ -710,20 +710,15 @@ const ProductDetail = () => {
     const tamanhoParaAdicionar = !hasSizes ? "U" : tamanhoSelecionado;
     const corParaAdicionar = corSelecionada;
 
-    // Valida cor real (precisa existir na lista atual de cores).
-    const corValida = !isAcessorio && !!corParaAdicionar
-      && coresList.some((c) => c.cor === corParaAdicionar);
-    if (!isAcessorio && !corValida) {
+    const corValida = !!corParaAdicionar && coresList.some((c) => c.cor === corParaAdicionar);
+    if (hasSizes && !corValida) {
       // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
       focarSelecaoTamanho();
       return;
     }
 
-    // Valida tamanho real (precisa existir nos tamanhos da cor selecionada).
-    const tamanhoValido = !!tamanhoParaAdicionar && (
-      isAcessorio || tamanhosDisponiveis.includes(tamanhoParaAdicionar)
-    );
-    if (!tamanhoValido) {
+    const tamanhoValido = !!tamanhoParaAdicionar && (!hasSizes || tamanhosDisponiveis.includes(tamanhoParaAdicionar));
+    if (hasSizes && !tamanhoValido) {
       // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
       focarSelecaoTamanho();
       return;
@@ -745,22 +740,17 @@ const ProductDetail = () => {
       });
       return;
     }
-    const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
+    const tamanhoParaUsar = !hasSizes ? "U" : tamanhoSelecionado;
 
-    // Valida cor real (precisa existir na lista atual).
-    const corValida = !isAcessorio && !!corSelecionada
-      && coresList.some((c) => c.cor === corSelecionada);
-    if (!isAcessorio && !corValida) {
+    const corValida = !!corSelecionada && coresList.some((c) => c.cor === corSelecionada);
+    if (hasSizes && !corValida) {
       // UX guiada: rola até a seção de variantes e destaca, sem toast agressivo.
       focarSelecaoTamanho();
       return;
     }
 
-    // Valida tamanho real para roupas; acessórios usam "U" interno.
-    const tamanhoValido = !!tamanhoParaUsar && (
-      isAcessorio || tamanhosDisponiveis.includes(tamanhoParaUsar)
-    );
-    if (!tamanhoValido) {
+    const tamanhoValido = !!tamanhoParaUsar && (!hasSizes || tamanhosDisponiveis.includes(tamanhoParaUsar));
+    if (hasSizes && !tamanhoValido) {
       // UX guiada: rola até a seleção de tamanhos e destaca a área.
       focarSelecaoTamanho();
       return;
