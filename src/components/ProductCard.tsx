@@ -177,6 +177,12 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   const { toast } = useToast();
   const navigate = useNavigate();
   const accessibilityId = useId();
+  const listColorLabelId = `${accessibilityId}-list-color`;
+  const listSizeLabelId = `${accessibilityId}-list-size`;
+  const mobileColorLabelId = `${accessibilityId}-mobile-color`;
+  const mobileSizeLabelId = `${accessibilityId}-mobile-size`;
+  const desktopColorLabelId = `${accessibilityId}-desktop-color`;
+  const desktopSizeLabelId = `${accessibilityId}-desktop-size`;
 
   // Hook compartilhado para guiar o usuário até o seletor de tamanho do card
   // (mesma UX do ProductDetail e Monte seu Look). Sem toast agressivo.
