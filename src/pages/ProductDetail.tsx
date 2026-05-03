@@ -550,6 +550,13 @@ const ProductDetail = () => {
     [galeriaUnificada, coresList, corSelecionada, tamanhoSelecionado],
   );
 
+  useEffect(() => {
+    if (!pendingSizeFocusRef.current || !corSelecionada || tamanhosDisponiveis.length === 0) return;
+    pendingSizeFocusRef.current = false;
+    const id = window.requestAnimationFrame(() => focusFirstSizeOption());
+    return () => window.cancelAnimationFrame(id);
+  }, [corSelecionada, tamanhosDisponiveis, focusFirstSizeOption]);
+
   // SEO/JSON-LD: só recalcula quando muda produto, cor ou tamanho REAIS
   // (chaves primitivas) — não a cada render por causa de arrays/objetos
   // recriados. Isso evita reescrever <title>, meta tags e <script type="ld+json">
