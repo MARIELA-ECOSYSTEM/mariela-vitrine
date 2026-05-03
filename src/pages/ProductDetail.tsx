@@ -686,15 +686,13 @@ const ProductDetail = () => {
     );
   }
 
-  const isAcessorio = produto.categoria === "bolsas" || produto.categoria === "acessorios";
+  const isAcessorio = (produto.categoria === "bolsas" || produto.categoria === "acessorios") && coresList.length === 0;
   const publicBadge = getPublicProductBadge(produto);
 
   // Estado seguro: produto sem variações reais (sem cores válidas para roupas
   // ou sem nenhum tamanho disponível) é tratado como indisponível.
-  const produtoIndisponivel = !isAcessorio && (
-    coresList.length === 0 ||
-    coresList.every((c) => c.tamanhos.length === 0)
-  );
+  const hasSizes = coresList.some((c) => c.tamanhos.length > 0);
+  const produtoIndisponivel = coresList.length === 0 && !isAcessorio;
 
   const promo = getPromoInfo(produto);
   const precoFormatado = formatBRL(getDisplayPrice(produto));
@@ -709,23 +707,18 @@ const ProductDetail = () => {
       });
       return;
     }
-    const tamanhoParaAdicionar = isAcessorio ? "U" : tamanhoSelecionado;
+    const tamanhoParaAdicionar = !hasSizes ? "U" : tamanhoSelecionado;
     const corParaAdicionar = corSelecionada;
 
-    // Valida cor real (precisa existir na lista atual de cores).
-    const corValida = !isAcessorio && !!corParaAdicionar
-      && coresList.some((c) => c.cor === corParaAdicionar);
-    if (!isAcessorio && !corValida) {
+    const corValida = !!corParaAdicionar && coresList.some((c) => c.cor === corParaAdicionar);
+    if (hasSizes && !corValida) {
       // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
       focarSelecaoTamanho();
       return;
     }
 
-    // Valida tamanho real (precisa existir nos tamanhos da cor selecionada).
-    const tamanhoValido = !!tamanhoParaAdicionar && (
-      isAcessorio || tamanhosDisponiveis.includes(tamanhoParaAdicionar)
-    );
-    if (!tamanhoValido) {
+    const tamanhoValido = !!tamanhoParaAdicionar && (!hasSizes || tamanhosDisponiveis.includes(tamanhoParaAdicionar));
+    if (hasSizes && !tamanhoValido) {
       // UX guiada: mesmo padrão do botão WhatsApp — scroll + destaque + aria-live.
       focarSelecaoTamanho();
       return;
@@ -747,22 +740,17 @@ const ProductDetail = () => {
       });
       return;
     }
-    const tamanhoParaUsar = isAcessorio ? "U" : tamanhoSelecionado;
+    const tamanhoParaUsar = !hasSizes ? "U" : tamanhoSelecionado;
 
-    // Valida cor real (precisa existir na lista atual).
-    const corValida = !isAcessorio && !!corSelecionada
-      && coresList.some((c) => c.cor === corSelecionada);
-    if (!isAcessorio && !corValida) {
+    const corValida = !!corSelecionada && coresList.some((c) => c.cor === corSelecionada);
+    if (hasSizes && !corValida) {
       // UX guiada: rola até a seção de variantes e destaca, sem toast agressivo.
       focarSelecaoTamanho();
       return;
     }
 
-    // Valida tamanho real para roupas; acessórios usam "U" interno.
-    const tamanhoValido = !!tamanhoParaUsar && (
-      isAcessorio || tamanhosDisponiveis.includes(tamanhoParaUsar)
-    );
-    if (!tamanhoValido) {
+    const tamanhoValido = !!tamanhoParaUsar && (!hasSizes || tamanhosDisponiveis.includes(tamanhoParaUsar));
+    if (hasSizes && !tamanhoValido) {
       // UX guiada: rola até a seleção de tamanhos e destaca a área.
       focarSelecaoTamanho();
       return;
@@ -881,12 +869,11 @@ const ProductDetail = () => {
                     {produto.categoria}
                   </Badge>
                 </div>
-                {!isAcessorio && <SizeGuide categoria={produto.categoria} />}
+                {hasSizes && <SizeGuide categoria={produto.categoria} />}
               </div>
 
               {/* Seleção de Variantes */}
-              {!isAcessorio && (
-                <div className="space-y-5 pt-2">
+              <div className="space-y-5 pt-2">
                   {/* Seletor de Cor */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -970,7 +957,7 @@ const ProductDetail = () => {
                   </div>
 
                   {/* Seletor de Tamanho */}
-                  {corSelecionada && (
+                  {corSelecionada && hasSizes && (
                     <div
                       ref={sizeGuide.sectionRef as React.RefObject<HTMLDivElement>}
                       tabIndex={-1}
@@ -1005,7 +992,6 @@ const ProductDetail = () => {
                     </div>
                   )}
                 </div>
-              )}
 
               {/* Botões de Ação */}
               <div className="space-y-3 pt-4">
@@ -1033,7 +1019,7 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  {!isAcessorio && !tamanhoSelecionado
+                  {hasSizes && !tamanhoSelecionado
                     ? "Selecione o tamanho"
                     : "Adicionar ao Carrinho"}
                 </Button>
@@ -1045,7 +1031,7 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] active:scale-[0.98] border-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  {!isAcessorio && !tamanhoSelecionado
+                  {hasSizes && !tamanhoSelecionado
                     ? "Selecione o tamanho"
                     : "Comprar pelo WhatsApp"}
                 </Button>
