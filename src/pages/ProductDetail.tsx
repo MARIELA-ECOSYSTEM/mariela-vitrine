@@ -869,7 +869,7 @@ const ProductDetail = () => {
                     {produto.categoria}
                   </Badge>
                 </div>
-                {!isAcessorio && <SizeGuide categoria={produto.categoria} />}
+                {hasSizes && <SizeGuide categoria={produto.categoria} />}
               </div>
 
               {/* Seleção de Variantes */}
@@ -957,7 +957,7 @@ const ProductDetail = () => {
                   </div>
 
                   {/* Seletor de Tamanho */}
-                  {corSelecionada && (
+                  {corSelecionada && hasSizes && (
                     <div
                       ref={sizeGuide.sectionRef as React.RefObject<HTMLDivElement>}
                       tabIndex={-1}
@@ -1019,7 +1019,7 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  {!isAcessorio && !tamanhoSelecionado
+                  {hasSizes && !tamanhoSelecionado
                     ? "Selecione o tamanho"
                     : "Adicionar ao Carrinho"}
                 </Button>
@@ -1031,7 +1031,7 @@ const ProductDetail = () => {
                   className="w-full gap-2 text-base md:text-lg h-12 md:h-14 transition-all hover:scale-[1.02] active:scale-[0.98] border-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  {!isAcessorio && !tamanhoSelecionado
+                  {hasSizes && !tamanhoSelecionado
                     ? "Selecione o tamanho"
                     : "Comprar pelo WhatsApp"}
                 </Button>
