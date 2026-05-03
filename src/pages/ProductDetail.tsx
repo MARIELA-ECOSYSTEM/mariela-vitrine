@@ -919,6 +919,7 @@ const ProductDetail = () => {
                             onPointerEnter={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onFocus={() => preloadColorNeighbors(corItem.produto_cor_id)}
                             onClick={() => {
+                              const shouldManageSizeFocus = cor !== corSelecionada && tamanhosDaCor.length > 0;
                               setCorSelecionada(cor);
                               setCorSelecionadaId(corItem.produto_cor_id);
                               // Mobile/desktop: ao escolher, antecipa as próximas
@@ -933,6 +934,7 @@ const ProductDetail = () => {
                               } else {
                                 setTamanhoSelecionado("");
                               }
+                              pendingSizeFocusRef.current = shouldManageSizeFocus;
                             }}
                             className={`group flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98] ${
                               isSelected
