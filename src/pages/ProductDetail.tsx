@@ -175,7 +175,11 @@ const ProductDetail = () => {
           return {
             produto_cor_id: c.produto_cor_id,
             cor: c.cor,
-            tamanhos: c.tamanhos.filter((t) => t.disponibilidade > 0).map((t) => t.tamanho),
+            tamanhos: sortSizes(
+              c.tamanhos
+                .filter((t) => t.disponibilidade > 0)
+                .map((t) => normalizeSizeLabel(t.tamanho)),
+            ),
             imagem_full: c.imagem_full,
             imagem_thumb: c.imagem_thumb,
             imagens: galeria,
