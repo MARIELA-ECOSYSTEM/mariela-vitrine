@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isValidSize, sortSizes } from "./sizeUtils";
+import { isValidSize, normalizeSizeLabel, sortSizes } from "./sizeUtils";
 
 describe("isValidSize", () => {
   it("rejeita string vazia e espaços", () => {
@@ -13,15 +13,23 @@ describe("isValidSize", () => {
     expect(isValidSize(38 as unknown)).toBe(false);
   });
 
-  it("rejeita legados (U, Único, Unico, única, Unica) em qualquer casing", () => {
+  it("aceita tamanho único (U, Único, Unico, única, Unica) em qualquer casing", () => {
     ["U", "u", "Único", "único", "UNICO", "Unico", "Unica", "única", "ÚNICA"].forEach((v) => {
-      expect(isValidSize(v)).toBe(false);
+      expect(isValidSize(v)).toBe(true);
     });
   });
 
   it("aceita tamanhos textuais e numéricos válidos", () => {
     ["PP", "P", "M", "G", "GG", "XG", "XGG", "34", "38", "44"].forEach((v) => {
       expect(isValidSize(v)).toBe(true);
+    });
+  });
+});
+
+describe("normalizeSizeLabel", () => {
+  it("normaliza aliases de tamanho único para U", () => {
+    ["U", "u", "Único", "unico", "ÚNICA", "Unica"].forEach((v) => {
+      expect(normalizeSizeLabel(v)).toBe("U");
     });
   });
 });
@@ -59,8 +67,8 @@ describe("sortSizes — deduplicação", () => {
     expect(out).toEqual(["P"]);
   });
 
-  it("descarta legados misturados com tamanhos válidos", () => {
+  it("mantém tamanho único normalizado junto com tamanhos válidos", () => {
     const out = sortSizes(["U", "Único", "P", "", "  ", "M"]);
-    expect(out).toEqual(["P", "M"]);
+    expect(out).toEqual(["P", "M", "U"]);
   });
 });
