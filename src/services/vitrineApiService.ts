@@ -1112,15 +1112,6 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
      }
      return null;
    }
-  const corRecords = getCorRecords(product);
-  const cores = extractCores(product);
-  // Ordem das cores conforme aparecem em `variants` (mantém alinhamento índice imagem ↔ cor).
-  const corOrder: string[] = [];
-  variants.forEach((v) => {
-    if (v.cor && !corOrder.includes(v.cor)) corOrder.push(v.cor);
-  });
-  const imagens = extractImages(product, variantRecords, corRecords, corOrder);
-  const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
 
