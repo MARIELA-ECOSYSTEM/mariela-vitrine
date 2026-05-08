@@ -191,9 +191,15 @@ export const FeaturedCollections = () => {
     return { hero: colecoes[0], restantes: colecoes.slice(1) };
   }, [colecoes]);
 
-  // Estado inicial / falha / lista vazia → não renderiza nada (sem espaço em branco).
-  if (failed || colecoes === null) return null;
-  if (colecoes.length === 0 || !hero) return null;
+   // Estado inicial / falha / lista vazia → não renderiza nada (sem espaço em branco).
+   if (failed || colecoes === null) return null;
+   
+   if (colecoes.length === 0 || !hero) {
+     if (import.meta.env.DEV) {
+       console.warn("[FeaturedCollections] Nenhuma coleção elegível encontrada para exibição na Home.");
+     }
+     return null;
+   }
 
   return (
     <section
