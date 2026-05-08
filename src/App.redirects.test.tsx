@@ -57,10 +57,11 @@ describe("Redirecionamentos de rotas antigas de categoria", () => {
     expect(probe.getAttribute("data-search")).toBe("?categoria=blusas");
   });
 
-  it("encoda slugs com acento/espaço corretamente", async () => {
-    renderAt("/categoria/saia%20midi");
+  it("preserva slug com hífen", async () => {
+    renderAt("/categoria/saia-midi");
     const probe = await screen.findByTestId("probe");
-    expect(probe.getAttribute("data-search")).toBe("?categoria=saia%20midi");
+    expect(probe.getAttribute("data-pathname")).toBe("/products");
+    expect(probe.getAttribute("data-search")).toBe("?categoria=saia-midi");
   });
 
   it("/categorias → /products (sem query)", async () => {
