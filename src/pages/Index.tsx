@@ -1,6 +1,5 @@
 import { Header } from "@/components/Header";
 import { HeroBannerCarousel } from "@/components/HeroBannerCarousel";
-import { CollectionShortcuts } from "@/components/CollectionShortcuts";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { FeaturedCollections } from "@/components/FeaturedCollections";
 import { QuickActions } from "@/components/QuickActions";
@@ -93,7 +92,6 @@ const Index = () => {
       <WelcomeDialog />
       <Header />
       <HeroBannerCarousel />
-      <CollectionShortcuts />
       <FeaturedCollections />
 
       <div id="products">
