@@ -12,6 +12,8 @@ import { vitrineApiService } from "@/services/vitrineApiService";
 import { useEffect, useMemo } from "react";
 import type { Produto } from "@/data/products";
 import { selectNovidades, HOME_NOVIDADES_LIMIT } from "@/lib/novidades";
+import { Button } from "@/components/ui/button";
+import { PackageOpen, RefreshCw } from "lucide-react";
 
 type HomeBadgeFilter = "em_alta" | "mais_procurado" | "queridinho_loja" | "destaque_colecao";
 
@@ -54,6 +56,8 @@ const Index = () => {
     }).filter((section) => section.products.length >= 1);
   }, [disponiveis, novidadesRecentes]);
 
+  const isEmpty = !loading && disponiveis.length === 0;
+
   useEffect(() => {
     vitrineApiService.getConfig().then((config) => {
       const instagramUrl = config.instagram
@@ -95,6 +99,32 @@ const Index = () => {
       <FeaturedCollections />
 
       <div id="products">
+      {isEmpty ? (
+        <section className="py-12 sm:py-20 bg-background">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="max-w-md mx-auto text-center animate-fade-in">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-secondary/40 flex items-center justify-center mx-auto mb-4">
+                <PackageOpen className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" aria-hidden />
+              </div>
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-2">
+                Em breve, novidades por aqui
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground mb-5">
+                Estamos preparando nossa próxima coleção. Volte em instantes para conferir as novas peças.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Atualizar
+              </Button>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <>
       <FeaturedProducts
         title="Novidades"
         subtitle="Recém-chegadas à coleção"
@@ -142,6 +172,8 @@ const Index = () => {
         linkTo="/products?filter=promocoes"
         linkLabel="Ver todas as promoções"
       />
+        </>
+      )}
       </div>
       <QuickActions />
       <Footer />
