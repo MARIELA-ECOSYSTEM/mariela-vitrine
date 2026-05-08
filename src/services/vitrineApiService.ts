@@ -1079,15 +1079,39 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
   });
 }
 
-function mapProduto(rawProduct: unknown): Produto | null {
-  const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
-  const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
-  if (!rawId) return null;
-
-  const variants = extractVariants(product);
-  if (variants.length === 0) return null;
-
-  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
+ function mapProduto(rawProduct: unknown): Produto | null {
+   const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
+   const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
+   if (!rawId) return null;
+ 
+   const variants = extractVariants(product);
+   const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
+   const corRecords = getCorRecords(product);
+   const cores = extractCores(product);
+   const corOrder: string[] = [];
+   variants.forEach((v) => {
+     if (v.cor && !corOrder.includes(v.cor)) corOrder.push(v.cor);
+   });
+   const imagens = extractImages(product, variantRecords, corRecords, corOrder);
+   const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
+ 
+   // Validação de elegibilidade (isProdutoPublicavel)
+   const { publicavel, motivos } = isProdutoPublicavel({
+     id: rawId,
+     nome: readString(product, ["nome", "name", "titulo", "title"]),
+     ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
+     arquivado: readBoolean(product, ["arquivado", "archived"], false),
+     variants,
+     imagens,
+     precoVenda
+   });
+ 
+   if (!publicavel) {
+     if (import.meta.env.DEV) {
+       console.warn(`[vitrine-api] Produto ${rawId} não é publicável:`, motivos);
+     }
+     return null;
+   }
   const corRecords = getCorRecords(product);
   const cores = extractCores(product);
   // Ordem das cores conforme aparecem em `variants` (mantém alinhamento índice imagem ↔ cor).
