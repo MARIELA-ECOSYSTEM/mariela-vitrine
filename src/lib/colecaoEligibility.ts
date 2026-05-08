@@ -15,8 +15,19 @@
    ativo?: boolean;
    data_inicio?: string | null;
    data_fim?: string | null;
-   quantidade_produtos?: number;
-   tem_produtos_invalidos?: boolean;
+    quantidade_produtos?: number;
+    tem_produtos_invalidos?: boolean;
+    imagem_capa_url?: string | null;
+  }
+  
+  export enum ColecaoExclusionReason {
+    ID_NOME_AUSENTE = "ID_NOME_AUSENTE",
+    NAO_DESTAQUE = "COLECAO_NAO_DESTAQUE",
+    INATIVA = "COLECAO_INATIVA",
+    FORA_PERIODO = "COLECAO_FORA_PERIODO",
+    SEM_PRODUTOS = "COLECAO_SEM_PRODUTOS",
+    PRODUTOS_NAO_PUBLICAVEIS = "PRODUTOS_NAO_PUBLICAVEIS",
+    SEM_IMAGEM_CAPA = "COLECAO_SEM_IMAGEM_CAPA"
  }
  
  export interface ElegibilidadeResult {
@@ -72,18 +83,23 @@
      motivos.push(ColecaoExclusionReason.SEM_PRODUTOS);
    }
  
-   if (colecao.tem_produtos_invalidos === true) {
-     motivos.push(ColecaoExclusionReason.PRODUTOS_NAO_PUBLICAVEIS);
-   }
- 
+    if (colecao.tem_produtos_invalidos === true) {
+      motivos.push(ColecaoExclusionReason.PRODUTOS_NAO_PUBLICAVEIS);
+    }
+
+    if (!colecao.imagem_capa_url || colecao.imagem_capa_url.trim() === "") {
+      motivos.push(ColecaoExclusionReason.SEM_IMAGEM_CAPA);
+    }
+
    let status: "HEALTHY" | "WARNING" | "INVALID" = "HEALTHY";
    
    if (motivos.length > 0) {
      const criticos = [
-       ColecaoExclusionReason.ID_NOME_AUSENTE,
-       ColecaoExclusionReason.NAO_DESTAQUE,
-       ColecaoExclusionReason.INATIVA,
-       ColecaoExclusionReason.SEM_PRODUTOS
+        ColecaoExclusionReason.ID_NOME_AUSENTE,
+        ColecaoExclusionReason.NAO_DESTAQUE,
+        ColecaoExclusionReason.INATIVA,
+        ColecaoExclusionReason.SEM_PRODUTOS,
+        ColecaoExclusionReason.SEM_IMAGEM_CAPA
      ];
      
      const temCritico = motivos.some(m => criticos.includes(m));
