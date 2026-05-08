@@ -220,13 +220,13 @@ export const FeaturedCollections = () => {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-          {gridColecoes.map((colecao) => (
-              <CollectionCard
-                key={colecao.id}
-                colecao={colecao}
-                href={buildCollectionHref(search, colecao)}
-                variant="grid"
-              />
+          {colecoes.map((colecao) => (
+            <CollectionCard
+              key={colecao.id}
+              colecao={colecao}
+              href={buildCollectionHref(search, colecao)}
+              variant="grid"
+            />
           ))}
         </div>
       </div>
