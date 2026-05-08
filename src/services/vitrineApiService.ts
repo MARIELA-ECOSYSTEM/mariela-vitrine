@@ -986,10 +986,18 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
          ativo: readBoolean(item, ["ativo", "active", "enabled", "publicada"], true),
          data_inicio: readOptionalString(item, ["data_inicio", "dataInicio", "inicio", "start_date", "starts_at"]),
          data_fim: readOptionalString(item, ["data_fim", "dataFim", "fim", "end_date", "ends_at"]),
-         quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
+    quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count", "quantidadeProdutos"], -1),
+    imagem_capa_url: readOptionalString(item, [
+      "imagem_capa_url",
+      "imagemCapaUrl",
+      "imagem_capa",
+      "capa_url",
+      "imagem_url",
+      "imagem",
+    ]),
        };
  
-       const { elegivel, motivos, status } = isColecaoElegivelParaHome(rawData);
+  const { elegivel, motivos, status } = isColecaoElegivelParaHome(rawData);
  
        if (!elegivel) {
          if (isDev && isDebugEnabled) {
@@ -998,15 +1006,7 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
          return null;
        }
  
-       const imagemCapa = readOptionalString(item, [
-         "imagem_capa_url",
-         "imagemCapaUrl",
-         "imagem_capa",
-         "capa_url",
-         "imagem_url",
-         "imagem",
-       ]);
-       const imagemCapaValida = imagemCapa && isValidImageUrl(imagemCapa) ? imagemCapa : null;
+        const imagemCapaValida = rawData.imagem_capa_url && isValidImageUrl(rawData.imagem_capa_url) ? rawData.imagem_capa_url : null;
  
        const corDestaqueRaw = readOptionalString(item, [
          "cor_destaque",
