@@ -1284,6 +1284,12 @@ export const vitrineApiService = {
  
      const params: QueryParams = { detalhes: 1, destaque: 1 };
      const url = buildUrl("/colecoes", params);
+     
+     // Recupera info do cache para o diagnóstico
+     const cacheEntry = getStaleCachedEntry<unknown>(url);
+     const now = Date.now();
+     const ttlRemaining = cacheEntry ? Math.max(0, (cacheEntry.timestamp + CACHE_TTL.colecoes) - now) : 0;
+ 
      const response = await fetch(url, { headers: { Accept: "application/json" } });
      const payload = await response.json();
      const rawItems = unwrapList(payload).map(asRecord);
@@ -1310,8 +1316,7 @@ export const vitrineApiService = {
          motivos_exclusao: motivos,
          quantidade_produtos: rawData.quantidade_produtos,
          periodo_valido: !motivos.some(m => m.includes("período")),
-         cache_status: "Bypassed for diagnostic",
-         timestamp: new Date().toISOString()
+         timestamp_validacao: new Date().toISOString()
        };
      });
  
@@ -1319,8 +1324,13 @@ export const vitrineApiService = {
        source_url: url,
        total_recebido: rawItems.length,
        total_elegivel: diagnosis.filter(d => d.elegivel).length,
-       items: diagnosis,
-       cache_v: LOCAL_STORAGE_CACHE_KEY
+       cache: {
+         etag: cacheEntry?.etag || "None",
+         ttl_restante_ms: ttlRemaining,
+         timestamp_cache: cacheEntry ? new Date(cacheEntry.timestamp).toISOString() : "None",
+         version: LOCAL_STORAGE_CACHE_KEY
+       },
+       items: diagnosis
      };
    }
  };
