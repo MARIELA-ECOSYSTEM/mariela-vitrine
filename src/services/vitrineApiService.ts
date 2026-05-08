@@ -1263,5 +1263,54 @@ export const vitrineApiService = {
       .filter((categoria): categoria is FilterOption => Boolean(categoria));
   },
 
-  isValidBrandingUrl: isValidUrl,
-};
+   isValidBrandingUrl: isValidUrl,
+ 
+   /**
+    * Endpoint de diagnóstico interno (DEV ONLY).
+    * Retorna o status detalhado de todas as coleções candidatas a destaque.
+    */
+   async getDiagnosticColecoesDestaque(): Promise<unknown> {
+     if (!import.meta.env.DEV) return { error: "Diagnostic only available in development mode" };
+ 
+     const params: QueryParams = { detalhes: 1, destaque: 1 };
+     const url = buildUrl("/colecoes", params);
+     const response = await fetch(url, { headers: { Accept: "application/json" } });
+     const payload = await response.json();
+     const rawItems = unwrapList(payload).map(asRecord);
+     
+     const diagnosis = rawItems.map((item) => {
+       const id = readString(item, ["id", "colecao_id", "colecaoId", "_id"]);
+       const nome = readString(item, ["nome", "name", "titulo", "title"]);
+       const rawData: ColecaoElegibilidadeRaw = {
+         id,
+         nome,
+         destaque: readBoolean(item, ["destaque", "em_destaque", "featured", "highlight"], false),
+         ativo: readBoolean(item, ["ativo", "active", "enabled", "publicada"], true),
+         data_inicio: readOptionalString(item, ["data_inicio", "dataInicio", "inicio", "start_date", "starts_at"]),
+         data_fim: readOptionalString(item, ["data_fim", "dataFim", "fim", "end_date", "ends_at"]),
+         quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
+       };
+ 
+       const { elegivel, motivos } = isColecaoElegivelParaHome(rawData);
+       
+       return {
+         colecao: nome,
+         id,
+         elegivel,
+         motivos_exclusao: motivos,
+         quantidade_produtos: rawData.quantidade_produtos,
+         periodo_valido: !motivos.some(m => m.includes("período")),
+         cache_status: "Bypassed for diagnostic",
+         timestamp: new Date().toISOString()
+       };
+     });
+ 
+     return {
+       source_url: url,
+       total_recebido: rawItems.length,
+       total_elegivel: diagnosis.filter(d => d.elegivel).length,
+       items: diagnosis,
+       cache_v: LOCAL_STORAGE_CACHE_KEY
+     };
+   }
+ };
