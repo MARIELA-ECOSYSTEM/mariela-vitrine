@@ -1352,9 +1352,17 @@ export const vitrineApiService = {
          destaque: readBoolean(item, ["destaque", "em_destaque", "featured", "highlight"], false),
          ativo: readBoolean(item, ["ativo", "active", "enabled", "publicada"], true),
          data_inicio: readOptionalString(item, ["data_inicio", "dataInicio", "inicio", "start_date", "starts_at"]),
-         data_fim: readOptionalString(item, ["data_fim", "dataFim", "fim", "end_date", "ends_at"]),
-         quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
-       };
+          data_fim: readOptionalString(item, ["data_fim", "dataFim", "fim", "end_date", "ends_at"]),
+          quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count", "quantidadeProdutos"], -1),
+          imagem_capa_url: readOptionalString(item, [
+            "imagem_capa_url",
+            "imagemCapaUrl",
+            "imagem_capa",
+            "capa_url",
+            "imagem_url",
+            "imagem",
+          ]),
+        };
  
        const { elegivel, motivos, status } = isColecaoElegivelParaHome(rawData);
        
