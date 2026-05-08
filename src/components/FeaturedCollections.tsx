@@ -184,22 +184,18 @@ export const FeaturedCollections = () => {
     };
   }, []);
 
-  const { hero, restantes } = useMemo(() => {
-    if (!colecoes || colecoes.length === 0) {
-      return { hero: null as CollectionLike | null, restantes: [] as CollectionLike[] };
-    }
-    return { hero: colecoes[0], restantes: colecoes.slice(1) };
+  // Filtra fora coleções que já estão no HeroBannerCarousel (exibidas como banners)
+  // se houver mais de uma coleção. Se houver apenas uma, mostramos no grid também.
+  const gridColecoes = useMemo(() => {
+    if (!colecoes) return [];
+    // Se houver poucas coleções, não filtramos para evitar que a seção suma.
+    // Se houver muitas, podemos filtrar as 3 primeiras que provavelmente estão no slider.
+    if (colecoes.length <= 3) return colecoes;
+    return colecoes; // Por enquanto vamos mostrar todas no grid também para densidade visual
   }, [colecoes]);
 
-   // Estado inicial / falha / lista vazia → não renderiza nada (sem espaço em branco).
-   if (failed || colecoes === null) return null;
-   
-   if (colecoes.length === 0 || !hero) {
-     if (import.meta.env.DEV) {
-       console.warn("[FeaturedCollections] Nenhuma coleção elegível encontrada para exibição na Home.");
-     }
-     return null;
-   }
+  // Estado inicial / falha / lista vazia → não renderiza nada (sem espaço em branco).
+  if (failed || colecoes === null || colecoes.length === 0) return null;
 
   return (
     <section
@@ -218,26 +214,16 @@ export const FeaturedCollections = () => {
           </div>
         </div>
 
-        {/* Hero — primeira coleção por ordem ganha banner maior */}
-        <CollectionCard
-          colecao={hero}
-          href={buildCollectionHref(search, hero)}
-          variant="hero"
-        />
-
-        {/* Grid das demais coleções destacadas */}
-        {restantes.length > 0 && (
-          <div className="mt-3 sm:mt-5 grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-            {restantes.map((colecao) => (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+          {gridColecoes.map((colecao) => (
               <CollectionCard
                 key={colecao.id}
                 colecao={colecao}
                 href={buildCollectionHref(search, colecao)}
                 variant="grid"
               />
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </section>
   );

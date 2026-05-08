@@ -6,13 +6,14 @@
    const yesterday = new Date(now - 24 * 60 * 60 * 1000).toISOString();
    const tomorrow = new Date(now + 24 * 60 * 60 * 1000).toISOString();
  
-   it("deve aceitar coleção destaque válida", () => {
+    it("deve aceitar coleção destaque válida com imagem", () => {
      const result = isColecaoElegivelParaHome({
        id: "1",
        nome: "Coleção Válida",
        destaque: true,
        ativo: true,
-       quantidade_produtos: 5
+        quantidade_produtos: 5,
+        imagem_capa_url: "https://example.com/banner.jpg"
      });
      expect(result.elegivel).toBe(true);
      expect(result.motivos).toHaveLength(0);
@@ -62,7 +63,18 @@
      expect(result.motivos).toContain(ColecaoExclusionReason.INATIVA);
    });
  
-   it("deve rejeitar coleção que não é destaque", () => {
+    it("deve rejeitar coleção sem imagem de capa", () => {
+      const result = isColecaoElegivelParaHome({
+        id: "7",
+        nome: "Coleção Sem Banner",
+        destaque: true,
+        imagem_capa_url: null
+      });
+      expect(result.elegivel).toBe(false);
+      expect(result.motivos).toContain(ColecaoExclusionReason.SEM_IMAGEM_CAPA);
+    });
+
+    it("deve rejeitar coleção que não é destaque", () => {
      const result = isColecaoElegivelParaHome({
        id: "6",
        nome: "Coleção Comum",
