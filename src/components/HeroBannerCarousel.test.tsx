@@ -24,12 +24,11 @@ describe("HeroBannerCarousel — integridade e robustez", () => {
   beforeEach(() => {
     clearVitrineCache();
     fetchSpy = vi.spyOn(globalThis, "fetch");
-    vi.useFakeTimers();
+    // Não usamos fake timers por padrão para não travar microtasks do useEffect
   });
 
   afterEach(() => {
     fetchSpy.mockRestore();
-    vi.useRealTimers();
     clearVitrineCache();
   });
 
