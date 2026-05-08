@@ -1,6 +1,7 @@
 import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
-import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
+ import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
+ import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw } from "@/lib/colecaoEligibility";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
@@ -96,20 +97,16 @@ export interface ColecaoResponse {
  * `/colecoes?detalhes=1&destaque=1`. A Vitrine usa APENAS estes campos do
  * contrato — não depende de campos internos do PDV.
  */
-export interface ColecaoDestaque {
-  id: string;
-  nome: string;
-  descricao: string | null;
-  imagem_capa_url: string | null;
-  destaque: boolean;
-  ordem: number;
-  /** Hex (#rrggbb) opcional, usado como acento visual no banner. */
-  cor_destaque: string | null;
-  /** ISO date opcional — campanha só aparece a partir desta data. */
-  data_inicio: string | null;
-  /** ISO date opcional — campanha some após esta data. */
-  data_fim: string | null;
-}
+ export interface ColecaoDestaque extends ColecaoElegibilidadeRaw {
+   id: string;
+   nome: string;
+   descricao: string | null;
+   imagem_capa_url: string | null;
+   destaque: boolean;
+   ordem: number;
+   /** Hex (#rrggbb) opcional, usado como acento visual no banner. */
+   cor_destaque: string | null;
+ }
 
 export interface FilterOption {
   value: string;
@@ -940,90 +937,99 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
  *  - Preserva apenas os campos do contrato público; nada mais.
  *  - Ordena por (`ordem` ASC, `nome` ASC) para layout estável.
  */
-function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
-  const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-  const now = Date.now();
-
-  const parseDate = (raw: string | null): number | null => {
-    if (!raw) return null;
-    const t = Date.parse(raw);
-    return Number.isFinite(t) ? t : null;
-  };
-
-  const items = unwrapList(payload)
-    .map(asRecord)
-    .map((item): ColecaoDestaque | null => {
-      const id = readString(item, ["id", "colecao_id", "colecaoId", "_id"]);
-      const nome = readString(item, ["nome", "name", "titulo", "title"]);
-      if (!id || !nome) return null;
-
-      const destaque = readBoolean(item, ["destaque", "em_destaque", "featured", "highlight"], false);
-      // `ativo` é opcional: quando ausente assumimos `true` para não
-      // ocultar coleções legacy; quando presente respeitamos o PDV.
-      const ativo = readBoolean(item, ["ativo", "active", "enabled", "publicada"], true);
-      if (!ativo) return null;
-
-      const imagemCapa = readOptionalString(item, [
-        "imagem_capa_url",
-        "imagemCapaUrl",
-        "imagem_capa",
-        "capa_url",
-        "imagem_url",
-        "imagem",
-      ]);
-      const imagemCapaValida = imagemCapa && isValidImageUrl(imagemCapa) ? imagemCapa : null;
-
-      const corDestaqueRaw = readOptionalString(item, [
-        "cor_destaque",
-        "corDestaque",
-        "cor",
-        "accent_color",
-        "accentColor",
-      ]);
-      const corDestaque = corDestaqueRaw && HEX_RE.test(corDestaqueRaw) ? corDestaqueRaw : null;
-
-      const dataInicio = readOptionalString(item, [
-        "data_inicio",
-        "dataInicio",
-        "inicio",
-        "start_date",
-        "starts_at",
-      ]);
-      const dataFim = readOptionalString(item, [
-        "data_fim",
-        "dataFim",
-        "fim",
-        "end_date",
-        "ends_at",
-      ]);
-      const inicioMs = parseDate(dataInicio);
-      const fimMs = parseDate(dataFim);
-      // Janela de campanha (defesa em camadas — backend já deveria filtrar):
-      // se houver data_inicio futura ou data_fim passada, descartar.
-      if (inicioMs !== null && now < inicioMs) return null;
-      if (fimMs !== null && now > fimMs) return null;
-
-      return {
-        id,
-        nome,
-        descricao: readOptionalString(item, ["descricao", "description", "subtitulo", "subtitle"]),
-        imagem_capa_url: imagemCapaValida,
-        destaque,
-        ordem: readNumber(item, ["ordem", "order", "posicao", "position"], 0),
-        cor_destaque: corDestaque,
-        data_inicio: dataInicio,
-        data_fim: dataFim,
-      };
-    })
-    .filter((item): item is ColecaoDestaque => item !== null && item.destaque === true);
-
-  items.sort((a, b) => {
-    if (a.ordem !== b.ordem) return a.ordem - b.ordem;
-    return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
-  });
-
-  return items;
-}
+ /**
+  * Valida e normaliza a resposta de `/colecoes?detalhes=1&destaque=1`.
+  * Implementa diagnóstico seguro e robusto para rastreabilidade do fluxo.
+  */
+ function validateColecoesDestaqueResponse(payload: unknown): ColecaoDestaque[] {
+   const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+   const isDev = import.meta.env.DEV;
+   const isDebugEnabled = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugColecoes") === "1";
+ 
+   const rawItems = unwrapList(payload).map(asRecord);
+ 
+   if (isDev && isDebugEnabled) {
+     console.group("[ColecoesDebug] Diagnóstico de Coleções Recebidas");
+     console.info(`Total de coleções no payload: ${rawItems.length}`);
+   }
+ 
+   const validatedItems = rawItems
+     .map((item): ColecaoDestaque | null => {
+       const id = readString(item, ["id", "colecao_id", "colecaoId", "_id"]);
+       const nome = readString(item, ["nome", "name", "titulo", "title"]);
+       
+       if (!id || !nome) {
+         if (isDev && isDebugEnabled) console.warn(`Excluída: ID (${id}) ou Nome (${nome}) inválidos`);
+         return null;
+       }
+ 
+       const rawData: ColecaoElegibilidadeRaw = {
+         id,
+         nome,
+         destaque: readBoolean(item, ["destaque", "em_destaque", "featured", "highlight"], false),
+         ativo: readBoolean(item, ["ativo", "active", "enabled", "publicada"], true),
+         data_inicio: readOptionalString(item, ["data_inicio", "dataInicio", "inicio", "start_date", "starts_at"]),
+         data_fim: readOptionalString(item, ["data_fim", "dataFim", "fim", "end_date", "ends_at"]),
+         quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
+       };
+ 
+       const { elegivel, motivos } = isColecaoElegivelParaHome(rawData);
+ 
+       if (!elegivel) {
+         if (isDev && isDebugEnabled) {
+           console.warn(`Excluída: "${nome}" (${id})`, { motivos, dados: rawData });
+         }
+         return null;
+       }
+ 
+       const imagemCapa = readOptionalString(item, [
+         "imagem_capa_url",
+         "imagemCapaUrl",
+         "imagem_capa",
+         "capa_url",
+         "imagem_url",
+         "imagem",
+       ]);
+       const imagemCapaValida = imagemCapa && isValidImageUrl(imagemCapa) ? imagemCapa : null;
+ 
+       const corDestaqueRaw = readOptionalString(item, [
+         "cor_destaque",
+         "corDestaque",
+         "cor",
+         "accent_color",
+         "accentColor",
+       ]);
+       const corDestaque = corDestaqueRaw && HEX_RE.test(corDestaqueRaw) ? corDestaqueRaw : null;
+ 
+       if (isDev && isDebugEnabled) {
+         console.info(`✅ Elegível: "${nome}"`, { id, destaque: rawData.destaque, ativo: rawData.ativo });
+       }
+ 
+       return {
+         ...rawData,
+         id,
+         nome,
+         descricao: readOptionalString(item, ["descricao", "description", "subtitulo", "subtitle"]),
+         imagem_capa_url: imagemCapaValida,
+         destaque: rawData.destaque!,
+         ordem: readNumber(item, ["ordem", "order", "posicao", "position"], 0),
+         cor_destaque: corDestaque,
+       };
+     })
+     .filter((item): item is ColecaoDestaque => item !== null);
+ 
+   if (isDev && isDebugEnabled) {
+     console.info(`Total de coleções elegíveis: ${validatedItems.length}`);
+     console.groupEnd();
+   }
+ 
+   validatedItems.sort((a, b) => {
+     if (a.ordem !== b.ordem) return a.ordem - b.ordem;
+     return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
+   });
+ 
+   return validatedItems;
+ }
 
 function validateDestaquesResponse(payload: unknown): RespostaDestaques {
   const items = unwrapList(payload)
