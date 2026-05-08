@@ -1265,6 +1265,16 @@ export const vitrineApiService = {
 
    isValidBrandingUrl: isValidUrl,
  
+   // Expõe diagnóstico no window para facilitar auditoria em tempo real (DEV ONLY)
+   _setupDiagnostic(): void {
+     if (import.meta.env.DEV && typeof window !== "undefined") {
+       (window as any).diagnosticoVitrine = () => {
+         console.info("Iniciando diagnóstico de coleções...");
+         this.getDiagnosticColecoesDestaque().then(console.table);
+       };
+     }
+   },
+ 
    /**
     * Endpoint de diagnóstico interno (DEV ONLY).
     * Retorna o status detalhado de todas as coleções candidatas a destaque.
