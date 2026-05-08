@@ -77,10 +77,24 @@
    }
  
    let status: "HEALTHY" | "WARNING" | "INVALID" = "HEALTHY";
+   
    if (motivos.length > 0) {
-     // Se o motivo for apenas produtos inválidos ou aviso de período próximo, poderia ser WARNING.
-     // Mas para a Home, qualquer motivo técnico torna a coleção inelegível (INVALID para Home).
-     status = "INVALID";
+     const criticos = [
+       ColecaoExclusionReason.ID_NOME_AUSENTE,
+       ColecaoExclusionReason.NAO_DESTAQUE,
+       ColecaoExclusionReason.INATIVA,
+       ColecaoExclusionReason.SEM_PRODUTOS
+     ];
+     
+     const temCritico = motivos.some(m => criticos.includes(m));
+     
+     if (temCritico) {
+       status = "INVALID";
+     } else {
+       // Ex: FORA_PERIODO ou PRODUTOS_NAO_PUBLICAVEIS podem ser avisos se a coleção ainda for "exibível" mas com ressalvas.
+       // No entanto, para a Home, FORA_PERIODO é impeditivo.
+       status = motivos.includes(ColecaoExclusionReason.FORA_PERIODO) ? "INVALID" : "WARNING";
+     }
    }
  
    return {
