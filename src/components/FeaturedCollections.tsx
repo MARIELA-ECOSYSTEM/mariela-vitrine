@@ -164,16 +164,28 @@ const CollectionCard = ({ colecao, href, variant }: CardProps) => {
   );
 };
 
-interface FeaturedCollectionsProps {
-  colecoes: ColecaoDestaque[] | null;
-  loading?: boolean;
-}
-
-export const FeaturedCollections = ({ colecoes, loading }: FeaturedCollectionsProps) => {
+export const FeaturedCollections = () => {
+  const [colecoes, setColecoes] = useState<CollectionLike[] | null>(null);
+  const [failed, setFailed] = useState(false);
   const { search } = useLocation();
 
+  useEffect(() => {
+    let cancelled = false;
+    vitrineApiService
+      .getColecoesDestaque()
+      .then((items) => {
+        if (!cancelled) setColecoes(items);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Loading state (Skeleton)
-  if (loading || (colecoes === null)) {
+  if (colecoes === null && !failed) {
     return (
       <section className="py-10 sm:py-14 bg-background">
         <div className="container mx-auto px-4 sm:px-6">
@@ -188,7 +200,7 @@ export const FeaturedCollections = ({ colecoes, loading }: FeaturedCollectionsPr
     );
   }
 
-  if (!colecoes || colecoes.length === 0) return null;
+  if (failed || !colecoes || colecoes.length === 0) return null;
 
   return (
     <section
@@ -207,30 +219,15 @@ export const FeaturedCollections = ({ colecoes, loading }: FeaturedCollectionsPr
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 sm:gap-8">
-          {/* Destaque inteligente: se houver apenas uma, é Hero. 
-              Se houver várias, a primeira é Hero e as outras vão para o grid.
-              Isso mantém a consistência visual "Premium" da Mariela. */}
-          {colecoes.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+          {colecoes.map((colecao) => (
             <CollectionCard
-              colecao={colecoes[0]}
-              href={buildCollectionHref(search, colecoes[0])}
-              variant="hero"
+              key={colecao.id}
+              colecao={colecao}
+              href={buildCollectionHref(search, colecao)}
+              variant="grid"
             />
-          )}
-
-          {colecoes.length > 1 && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-              {colecoes.slice(1).map((colecao) => (
-                <CollectionCard
-                  key={colecao.id}
-                  colecao={colecao}
-                  href={buildCollectionHref(search, colecao)}
-                  variant="grid"
-                />
-              ))}
-            </div>
-          )}
+          ))}
         </div>
       </div>
     </section>

@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-async function renderFresh(props: { colecoes?: any; loading?: boolean } = {}) {
+async function renderFresh() {
   vi.resetModules();
   const mod = await import("./HeroBannerCarousel");
   return render(
     <MemoryRouter>
-      <mod.HeroBannerCarousel colecoes={props.colecoes ?? null} loading={props.loading} />
+      <mod.HeroBannerCarousel />
     </MemoryRouter>
   );
 }
@@ -39,35 +39,54 @@ describe("HeroBannerCarousel — integridade e robustez", () => {
     clearVitrineCache();
   });
 
-  it("Estado de loading=true → renderiza skeleton", async () => {
-    await renderFresh({ loading: true });
+  it("Inicialmente renderiza estado de loading (skeleton)", async () => {
+    fetchSpy.mockReturnValue(new Promise(() => {})); // Suspensa
+    await renderFresh();
     expect(document.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
-  it("Lista vazia → não renderiza nada", async () => {
-    const { container } = await renderFresh({ colecoes: [] });
-    expect(container.firstChild).toBeNull();
+  it("API retorna lista vazia → não renderiza nada após carregar", async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: [] }, { etag: 'W/"empty"' }));
+    const { container } = await renderFresh();
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    // Aguarda o estado interno atualizar
+    await waitFor(() => expect(container.firstChild).toBeNull());
   });
 
-  it("Dados válidos → renderiza slides", async () => {
-    const colecoes = [
+  it("API retorna erro → não renderiza nada e não quebra a Home", async () => {
+    fetchSpy.mockResolvedValue(new Response("error", { status: 500 }));
+    const { container } = await renderFresh();
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    await waitFor(() => expect(container.firstChild).toBeNull());
+  });
+
+  it("API retorna dados válidos → renderiza slides e link de navegação", async () => {
+    fetchSpy.mockResolvedValue(jsonResponse(
       {
-        id: "col-123",
-        nome: "Coleção de Inverno",
-        descricao: "Moda fria",
-        imagem_capa_url: "https://example.com/winter.jpg",
-        destaque: true,
-        ordem: 0,
+        data: [
+          {
+            id: "col-123",
+            nome: "Coleção de Inverno",
+            descricao: "Moda fria",
+            imagem_capa_url: "https://example.com/winter.jpg",
+            destaque: true,
+            ordem: 0,
+          },
+        ],
       },
-    ];
+      { etag: 'W/"ok"' }
+    ));
 
-    await renderFresh({ colecoes });
+    await renderFresh();
 
-    expect(screen.getByText("Coleção de Inverno")).toBeInTheDocument();
-    expect(screen.getByText("Moda fria")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Coleção de Inverno")).toBeInTheDocument();
+      expect(screen.getByText("Moda fria")).toBeInTheDocument();
+    });
 
     const section = document.getElementById("home");
     expect(section).toBeInTheDocument();
+    // Verifica se a imagem está presente
     const img = screen.getByRole("img", { name: /Coleção de Inverno/i });
     expect(img).toHaveAttribute("src", "https://example.com/winter.jpg");
   });

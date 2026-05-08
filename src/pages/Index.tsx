@@ -9,8 +9,8 @@ import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useProducts } from "@/hooks/useProducts";
 import { absoluteUrl, updateSeo } from "@/lib/seo";
-import { vitrineApiService, type ColecaoDestaque } from "@/services/vitrineApiService";
-import { useEffect, useMemo, useState } from "react";
+import { vitrineApiService } from "@/services/vitrineApiService";
+import { useEffect, useMemo } from "react";
 import type { Produto } from "@/data/products";
 import { selectNovidades, HOME_NOVIDADES_LIMIT } from "@/lib/novidades";
 
@@ -32,15 +32,6 @@ function isAvailable(produto: Produto) {
 }
 
 const Index = () => {
-  const [colecoesDestaque, setColecoesDestaque] = useState<ColecaoDestaque[] | null>(null);
-  useEffect(() => {
-    vitrineApiService.getColecoesDestaque().then(setColecoesDestaque).catch(() => setColecoesDestaque([]));
-  }, []);
-
-  // Divide coleções entre o carrossel (primeiras 3) e o grid (o restante)
-  const carouselCollections = useMemo(() => (colecoesDestaque || []).slice(0, 3), [colecoesDestaque]);
-  const gridCollections = useMemo(() => (colecoesDestaque || []).slice(3), [colecoesDestaque]);
-
   const { loading, produtos } = useProducts();
 
   const disponiveis = useMemo(() => produtos.filter(isAvailable), [produtos]);
@@ -101,9 +92,9 @@ const Index = () => {
       {loading && <LoadingOverlay />}
       <WelcomeDialog />
       <Header />
-      <HeroBannerCarousel colecoes={carouselCollections} loading={colecoesDestaque === null} />
+      <HeroBannerCarousel />
       <CategoryNav />
-      <FeaturedCollections colecoes={gridCollections} loading={colecoesDestaque === null} />
+      <FeaturedCollections />
 
       <div id="products">
       <FeaturedProducts

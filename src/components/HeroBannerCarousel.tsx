@@ -7,17 +7,26 @@ import { cn } from "@/lib/utils";
 import { ImageOff, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface HeroBannerCarouselProps {
-  colecoes: ColecaoDestaque[] | null;
-  loading?: boolean;
-}
-
-export const HeroBannerCarousel = ({ colecoes, loading }: HeroBannerCarouselProps) => {
+export const HeroBannerCarousel = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const { setBannerImage } = useHeaderOverlay();
+  const [colecoes, setColecoes] = useState<ColecaoDestaque[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [failed, setFailed] = useState(false);
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    vitrineApiService.getColecoesDestaque()
+      .then(items => {
+        if (!cancelled) setColecoes(items);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const currentBanner = colecoes?.[currentIndex];
   const bannerImage = currentBanner?.imagem_capa_url;
@@ -61,8 +70,8 @@ export const HeroBannerCarousel = ({ colecoes, loading }: HeroBannerCarouselProp
     navigate(`/products?${params.toString()}`);
   };
 
-  // Loading state com Skeleton
-  if (loading || (colecoes === null)) {
+  // Loading state com Skeleton para evitar layout shift
+  if (colecoes === null && !failed) {
     return (
       <div 
         className="w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] bg-muted animate-pulse"
@@ -71,7 +80,7 @@ export const HeroBannerCarousel = ({ colecoes, loading }: HeroBannerCarouselProp
     );
   }
 
-  if (!colecoes || colecoes.length === 0) return null;
+  if (failed || !colecoes || colecoes.length === 0) return null;
 
   return (
     <section

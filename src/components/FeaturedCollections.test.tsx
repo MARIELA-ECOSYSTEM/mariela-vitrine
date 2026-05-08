@@ -25,12 +25,12 @@ function clearVitrineCache() {
   }
 }
 
-async function renderFresh(props: { colecoes?: any; loading?: boolean } = {}) {
+async function renderFresh() {
   vi.resetModules();
   const mod = await import("./FeaturedCollections");
   return render(
     <MemoryRouter>
-      <mod.FeaturedCollections colecoes={props.colecoes ?? null} loading={props.loading} />
+      <mod.FeaturedCollections />
     </MemoryRouter>,
   );
 }
@@ -60,13 +60,27 @@ describe("FeaturedCollections — robustez de produção", () => {
     clearVitrineCache();
   });
 
-  it("Lista nula e loading=false → não renderiza nada", async () => {
-    const { container } = await renderFresh({ colecoes: null, loading: false });
-    expect(container.querySelector("section")).toBeNull();
+  it("API retorna erro 500 → não renderiza nada (sem espaço em branco)", async () => {
+    fetchSpy.mockResolvedValue(new Response("fail", { status: 500 }));
+
+    const { container } = await renderFresh();
+    // Aguarda o useEffect resolver a Promise rejeitada.
+    await waitFor(() => {
+      // `fetch` foi chamado
+      expect(fetchSpy).toHaveBeenCalled();
+    });
+    // Após resolver, container deve continuar vazio.
+    await waitFor(() => {
+      expect(container.querySelector("section")).toBeNull();
+    });
   });
 
-  it("Lista vazia → não renderiza nada", async () => {
-    const { container } = await renderFresh({ colecoes: [], loading: false });
+  it("API responde 200 com lista vazia → não renderiza nada", async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: [] }, { etag: 'W/"empty"' }));
+
+    const { container } = await renderFresh();
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
     expect(container.querySelector("section")).toBeNull();
   });
 
@@ -117,18 +131,27 @@ describe("FeaturedCollections — robustez de produção", () => {
   });
 
   it("Payload válido → renderiza a seção com o nome da coleção", async () => {
-    const colecoes = [
-      {
-        id: "col-1",
-        nome: "Verão 2026",
-        descricao: "Peças leves",
-        imagem_capa_url: "https://cdn.example/cover.webp",
-        destaque: true,
-        ordem: 0,
-      },
-    ];
+    fetchSpy.mockResolvedValue(
+      jsonResponse(
+        {
+          data: [
+            {
+              id: "col-1",
+              nome: "Verão 2026",
+              descricao: "Peças leves",
+              imagem_capa_url: "https://cdn.example/cover.webp",
+              destaque: true,
+              ordem: 0,
+            },
+          ],
+        },
+        { etag: 'W/"ok"' },
+      ),
+    );
 
-    await renderFresh({ colecoes });
-    expect(screen.getByText("Verão 2026")).toBeInTheDocument();
+    await renderFresh();
+    await waitFor(() => {
+      expect(screen.getByText("Verão 2026")).toBeInTheDocument();
+    });
   });
 });
