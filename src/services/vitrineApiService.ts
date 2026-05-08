@@ -1338,15 +1338,16 @@ export const vitrineApiService = {
          quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
        };
  
-       const { elegivel, motivos } = isColecaoElegivelParaHome(rawData);
+       const { elegivel, motivos, status } = isColecaoElegivelParaHome(rawData);
        
        return {
          colecao: nome,
          id,
          elegivel,
+         health: status,
          motivos_exclusao: motivos,
          quantidade_produtos: rawData.quantidade_produtos,
-         periodo_valido: !motivos.some(m => m.includes("período")),
+         periodo_valido: !motivos.some(m => m === ColecaoExclusionReason.FORA_PERIODO),
          timestamp_validacao: new Date().toISOString()
        };
      });
