@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import logoSimple from "@/assets/logo-simple.png";
 import { useHeaderOverlay } from "@/contexts/HeaderOverlayContext";
@@ -70,7 +70,17 @@ export const HeroBannerCarousel = () => {
     navigate(`/products?${params.toString()}`);
   };
 
-  if (failed || colecoes === null || colecoes.length === 0) return null;
+  // Loading state com Skeleton para evitar layout shift
+  if (colecoes === null && !failed) {
+    return (
+      <div 
+        className="w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] bg-muted animate-pulse"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  if (failed || !colecoes || colecoes.length === 0) return null;
 
   return (
     <section

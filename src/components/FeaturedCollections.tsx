@@ -184,18 +184,23 @@ export const FeaturedCollections = () => {
     };
   }, []);
 
-  // Filtra fora coleções que já estão no HeroBannerCarousel (exibidas como banners)
-  // se houver mais de uma coleção. Se houver apenas uma, mostramos no grid também.
-  const gridColecoes = useMemo(() => {
-    if (!colecoes) return [];
-    // Se houver poucas coleções, não filtramos para evitar que a seção suma.
-    // Se houver muitas, podemos filtrar as 3 primeiras que provavelmente estão no slider.
-    if (colecoes.length <= 3) return colecoes;
-    return colecoes; // Por enquanto vamos mostrar todas no grid também para densidade visual
-  }, [colecoes]);
+  // Loading state (Skeleton)
+  if (colecoes === null && !failed) {
+    return (
+      <section className="py-10 sm:py-14 bg-background">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="h-8 w-48 bg-muted rounded animate-pulse mb-8" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="aspect-[4/5] sm:aspect-[3/4] bg-muted rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
-  // Estado inicial / falha / lista vazia → não renderiza nada (sem espaço em branco).
-  if (failed || colecoes === null || colecoes.length === 0) return null;
+  if (failed || !colecoes || colecoes.length === 0) return null;
 
   return (
     <section
@@ -215,13 +220,13 @@ export const FeaturedCollections = () => {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-          {gridColecoes.map((colecao) => (
-              <CollectionCard
-                key={colecao.id}
-                colecao={colecao}
-                href={buildCollectionHref(search, colecao)}
-                variant="grid"
-              />
+          {colecoes.map((colecao) => (
+            <CollectionCard
+              key={colecao.id}
+              colecao={colecao}
+              href={buildCollectionHref(search, colecao)}
+              variant="grid"
+            />
           ))}
         </div>
       </div>
