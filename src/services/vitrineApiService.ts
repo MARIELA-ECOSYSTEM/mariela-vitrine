@@ -989,11 +989,11 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
          quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
        };
  
-       const { elegivel, motivos } = isColecaoElegivelParaHome(rawData);
+       const { elegivel, motivos, status } = isColecaoElegivelParaHome(rawData);
  
        if (!elegivel) {
          if (isDev && isDebugEnabled) {
-           console.warn(`Excluída: "${nome}" (${id})`, { motivos, dados: rawData });
+           console.warn(`Excluída: "${nome}" (${id})`, { motivos, status, dados: rawData });
          }
          return null;
        }
@@ -1018,7 +1018,7 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
        const corDestaque = corDestaqueRaw && HEX_RE.test(corDestaqueRaw) ? corDestaqueRaw : null;
  
        if (isDev && isDebugEnabled) {
-         console.info(`✅ Elegível: "${nome}"`, { id, destaque: rawData.destaque, ativo: rawData.ativo });
+         console.info(`✅ Elegível [${status}]: "${nome}"`, { id, destaque: rawData.destaque, ativo: rawData.ativo });
        }
  
        return {
