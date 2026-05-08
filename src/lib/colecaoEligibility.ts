@@ -1,34 +1,25 @@
 
- export enum ColecaoExclusionReason {
-   ID_NOME_AUSENTE = "ID_NOME_AUSENTE",
-   NAO_DESTAQUE = "COLECAO_NAO_DESTAQUE",
-   INATIVA = "COLECAO_INATIVA",
-   FORA_PERIODO = "COLECAO_FORA_PERIODO",
-   SEM_PRODUTOS = "COLECAO_SEM_PRODUTOS",
-   PRODUTOS_NAO_PUBLICAVEIS = "PRODUTOS_NAO_PUBLICAVEIS"
- }
- 
- export interface ColecaoElegibilidadeRaw {
-   id?: string;
-   nome?: string;
-   destaque?: boolean;
-   ativo?: boolean;
-   data_inicio?: string | null;
-   data_fim?: string | null;
-    quantidade_produtos?: number;
-    tem_produtos_invalidos?: boolean;
-    imagem_capa_url?: string | null;
-  }
-  
-  export enum ColecaoExclusionReason {
-    ID_NOME_AUSENTE = "ID_NOME_AUSENTE",
-    NAO_DESTAQUE = "COLECAO_NAO_DESTAQUE",
-    INATIVA = "COLECAO_INATIVA",
-    FORA_PERIODO = "COLECAO_FORA_PERIODO",
-    SEM_PRODUTOS = "COLECAO_SEM_PRODUTOS",
-    PRODUTOS_NAO_PUBLICAVEIS = "PRODUTOS_NAO_PUBLICAVEIS",
-    SEM_IMAGEM_CAPA = "COLECAO_SEM_IMAGEM_CAPA"
- }
+export enum ColecaoExclusionReason {
+  ID_NOME_AUSENTE = "ID_NOME_AUSENTE",
+  NAO_DESTAQUE = "COLECAO_NAO_DESTAQUE",
+  INATIVA = "COLECAO_INATIVA",
+  FORA_PERIODO = "COLECAO_FORA_PERIODO",
+  SEM_PRODUTOS = "COLECAO_SEM_PRODUTOS",
+  PRODUTOS_NAO_PUBLICAVEIS = "PRODUTOS_NAO_PUBLICAVEIS",
+  SEM_IMAGEM_CAPA = "COLECAO_SEM_IMAGEM_CAPA"
+}
+
+export interface ColecaoElegibilidadeRaw {
+  id?: string;
+  nome?: string;
+  destaque?: boolean;
+  ativo?: boolean;
+  data_inicio?: string | null;
+  data_fim?: string | null;
+  quantidade_produtos?: number;
+  tem_produtos_invalidos?: boolean;
+  imagem_capa_url?: string | null;
+}
  
  export interface ElegibilidadeResult {
    elegivel: boolean;
