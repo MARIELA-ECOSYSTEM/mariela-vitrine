@@ -92,7 +92,6 @@ const Index = () => {
       <WelcomeDialog />
       <Header />
       <HeroBannerCarousel />
-      <CategoryNav />
       <FeaturedCollections />
 
       <div id="products">
