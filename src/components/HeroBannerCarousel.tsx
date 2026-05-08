@@ -80,32 +80,7 @@ export const HeroBannerCarousel = () => {
     );
   }
 
-  if (failed || !colecoes || colecoes.length === 0) {
-    return (
-      <section
-        id="home"
-        aria-label="Boas-vindas"
-        className="relative w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] overflow-hidden bg-gradient-to-br from-secondary/40 via-background to-muted flex items-center justify-center"
-      >
-        <div className="text-center px-6 max-w-xl animate-fade-in">
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-primary uppercase tracking-wider mb-3">
-            <Sparkles className="w-3 h-3" /> Mariela Moda Feminina
-          </span>
-          <h1 className="font-serif text-foreground text-2xl sm:text-4xl md:text-5xl font-bold leading-tight">
-            Bem-vinda à nossa vitrine
-          </h1>
-          <p className="text-muted-foreground text-xs sm:text-base mt-2 sm:mt-3">
-            Em breve novas coleções por aqui. Confira nossos produtos enquanto isso.
-          </p>
-        </div>
-        <img
-          src={logoSimple}
-          alt=""
-          className="absolute top-4 right-4 h-10 sm:h-14 md:h-16 opacity-30 pointer-events-none"
-        />
-      </section>
-    );
-  }
+  if (failed || !colecoes || colecoes.length === 0) return null;
 
   return (
     <section
