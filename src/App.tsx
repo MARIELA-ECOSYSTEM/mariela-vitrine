@@ -30,6 +30,25 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/products" element={<Products />} />
           <Route path="/catalogo" element={<Navigate to={`/products${location.search}`} replace />} />
+          <Route
+            path="/categoria/:slug"
+            element={
+              <Navigate
+                to={`/products?categoria=${encodeURIComponent(location.pathname.split('/').pop() || '')}`}
+                replace
+              />
+            }
+          />
+          <Route
+            path="/categorias/:slug"
+            element={
+              <Navigate
+                to={`/products?categoria=${encodeURIComponent(location.pathname.split('/').pop() || '')}`}
+                replace
+              />
+            }
+          />
+          <Route path="/categorias" element={<Navigate to="/products" replace />} />
           <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/produtos/:slug" element={<Navigate to={`/products/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
           <Route path="/produto/:slug" element={<Navigate to={`/products/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
