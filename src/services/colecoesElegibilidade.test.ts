@@ -1,10 +1,10 @@
  import { describe, it, expect } from "vitest";
- import { isColecaoElegivelParaHome } from "@/lib/colecaoEligibility";
+ import { isColecaoElegivelParaHome, ColecaoExclusionReason, getSaoPauloNow } from "@/lib/colecaoEligibility";
  
  describe("isColecaoElegivelParaHome", () => {
-   const now = new Date();
-   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+   const now = getSaoPauloNow();
+   const yesterday = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+   const tomorrow = new Date(now + 24 * 60 * 60 * 1000).toISOString();
  
    it("deve aceitar coleção destaque válida", () => {
      const result = isColecaoElegivelParaHome({
@@ -26,7 +26,7 @@
        data_inicio: tomorrow
      });
      expect(result.elegivel).toBe(false);
-     expect(result.motivos).toContainEqual(expect.stringContaining("Fora do período"));
+     expect(result.motivos).toContain(ColecaoExclusionReason.FORA_PERIODO);
    });
  
    it("deve rejeitar coleção fora do período (fim passado)", () => {
@@ -37,7 +37,7 @@
        data_fim: yesterday
      });
      expect(result.elegivel).toBe(false);
-     expect(result.motivos).toContainEqual(expect.stringContaining("Fora do período"));
+     expect(result.motivos).toContain(ColecaoExclusionReason.FORA_PERIODO);
    });
  
    it("deve rejeitar coleção sem produtos", () => {
@@ -48,7 +48,7 @@
        quantidade_produtos: 0
      });
      expect(result.elegivel).toBe(false);
-     expect(result.motivos).toContain("Sem produtos disponíveis");
+     expect(result.motivos).toContain(ColecaoExclusionReason.SEM_PRODUTOS);
    });
  
    it("deve rejeitar coleção inativa", () => {
@@ -59,7 +59,7 @@
        ativo: false
      });
      expect(result.elegivel).toBe(false);
-     expect(result.motivos).toContain("Inativa (ativo = false)");
+     expect(result.motivos).toContain(ColecaoExclusionReason.INATIVA);
    });
  
    it("deve rejeitar coleção que não é destaque", () => {
@@ -69,6 +69,6 @@
        destaque: false
      });
      expect(result.elegivel).toBe(false);
-     expect(result.motivos).toContain("Não é destaque (destaque != true)");
+     expect(result.motivos).toContain(ColecaoExclusionReason.NAO_DESTAQUE);
    });
  });

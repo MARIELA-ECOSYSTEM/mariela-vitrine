@@ -1,7 +1,8 @@
 import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
- import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw } from "@/lib/colecaoEligibility";
+ import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
+ import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
@@ -36,7 +37,9 @@ const CACHE_TTL = {
   destaques: 5 * 60 * 1000,
 } as const;
 
-const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
+ const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
+ /** Proteção contra stale eterno: se a entrada tiver mais de 12h, forçamos revalidação completa ignorando ETag. */
+ const STALE_MAX_AGE = 12 * 60 * 60 * 1000;
 
 // Mapa de requisições em andamento para deduplicar fetches concorrentes
 const inflightRequests = new Map<string, Promise<unknown>>();
@@ -251,19 +254,28 @@ function getCached<T>(key: string, maxAge: number): T | null {
   return entry ? entry.value : null;
 }
 
-function getCachedEntry<T>(key: string, maxAge: number): CacheEntry<T> | null {
-  const now = Date.now();
-  const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
-  if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry;
-
-  const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
-  if (storageEntry && now - storageEntry.timestamp <= maxAge) {
-    memoryCache.set(key, storageEntry);
-    return storageEntry;
-  }
-
-  return null;
-}
+ function getCachedEntry<T>(key: string, maxAge: number): CacheEntry<T> | null {
+   const now = Date.now();
+   const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
+   
+   // Verifica TTL normal
+   if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry;
+ 
+   const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
+   if (storageEntry) {
+     // Proteção contra stale eterno
+     if (now - storageEntry.timestamp > STALE_MAX_AGE) {
+       return null;
+     }
+ 
+     if (now - storageEntry.timestamp <= maxAge) {
+       memoryCache.set(key, storageEntry);
+       return storageEntry;
+     }
+   }
+ 
+   return null;
+ }
 
 function getStaleCachedEntry<T>(key: string): CacheEntry<T> | null {
   const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
@@ -378,68 +390,72 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
   throw new VitrineApiError("A vitrine está temporariamente indisponível. Tente novamente em instantes.");
 }
 
-async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number, validate?: ResponseValidator<T>): Promise<T> {
-  const url = buildUrl(path, params);
-  const freshEntry = getCachedEntry<unknown>(url, ttl);
-  if (freshEntry) {
-    try {
-      return validate ? validate(freshEntry.value) : (freshEntry.value as T);
-    } catch (error) {
-      logVitrineWarning(`Cache inválido em ${url}`, error);
-    }
-  }
-
-  // Para revalidação condicional, considerar entrada stale com ETag salvo.
-  const staleEntry = getStaleCachedEntry<unknown>(url);
-  const ifNoneMatch = staleEntry?.etag;
-
-  // Dedupe de chamadas concorrentes para a mesma URL
-  const existing = inflightRequests.get(url);
-  const promise = existing ?? requestJson<unknown>(url, ifNoneMatch);
-  if (!existing) inflightRequests.set(url, promise);
-
-  try {
-    const result = await promise as RequestResult<unknown>;
-    if (result.notModified && staleEntry) {
-      // Servidor confirmou que payload não mudou — reutiliza cache e renova timestamp.
-      refreshCachedTimestamp(url);
-      try {
-        return validate ? validate(staleEntry.value) : (staleEntry.value as T);
-      } catch (error) {
-        logVitrineWarning(`Cache stale inválido após 304 em ${url}`, error);
-        // cai para tratar como erro abaixo
-        throw error;
-      }
-    }
-    if (result.notModified) {
-      // 304 sem entrada local — força nova requisição sem ETag.
-      const retry = await requestJson<unknown>(url) as RequestResult<unknown>;
-      if (retry.notModified === true) {
-        throw new VitrineApiError("Resposta inesperada (304) sem cache local.");
-      }
-      const validatedRetry = validate ? validate(retry.data) : (retry.data as T);
-      setCached(url, validatedRetry, retry.etag);
-      return validatedRetry;
-    }
-    // result aqui é { notModified: false; data; etag? }
-    const fresh = result as Extract<RequestResult<unknown>, { notModified: false }>;
-    const validated = validate ? validate(fresh.data) : (fresh.data as T);
-    setCached(url, validated, fresh.etag);
-    return validated;
-  } catch (error) {
-    const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
-    if (fallback) {
-      try {
-        return validate ? validate(fallback) : fallback as T;
-      } catch (fallbackError) {
-        logVitrineWarning(`Fallback de cache inválido em ${url}`, fallbackError);
-      }
-    }
-    throw error;
-  } finally {
-    if (inflightRequests.get(url) === promise) inflightRequests.delete(url);
-  }
-}
+ async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number, validate?: ResponseValidator<T>): Promise<T> {
+   const url = buildUrl(path, params);
+   const freshEntry = getCachedEntry<unknown>(url, ttl);
+   if (freshEntry) {
+     try {
+       return validate ? validate(freshEntry.value) : (freshEntry.value as T);
+     } catch (error) {
+       logVitrineWarning(`Cache inválido em ${url}`, error);
+     }
+   }
+ 
+   // Para revalidação condicional, considerar entrada stale com ETag salvo.
+   const staleEntry = getStaleCachedEntry<unknown>(url);
+   let ifNoneMatch = staleEntry?.etag;
+ 
+   // Se o cache stale for antigo demais (STALE_MAX_AGE), ignoramos o ETag para forçar fetch full.
+   if (staleEntry && (Date.now() - staleEntry.timestamp > STALE_MAX_AGE)) {
+     ifNoneMatch = undefined;
+   }
+ 
+   // Dedupe de chamadas concorrentes para a mesma URL
+   const existing = inflightRequests.get(url);
+   const promise = existing ?? requestJson<unknown>(url, ifNoneMatch);
+   if (!existing) inflightRequests.set(url, promise);
+ 
+   try {
+     const result = await promise as RequestResult<unknown>;
+     if (result.notModified && staleEntry) {
+       // Servidor confirmou que payload não mudou — reutiliza cache e renova timestamp.
+       refreshCachedTimestamp(url);
+       try {
+         return validate ? validate(staleEntry.value) : (staleEntry.value as T);
+       } catch (error) {
+         logVitrineWarning(`Cache stale inválido após 304 em ${url}`, error);
+         throw error;
+       }
+     }
+     if (result.notModified) {
+       // 304 sem entrada local — força nova requisição sem ETag.
+       const retry = await requestJson<unknown>(url) as RequestResult<unknown>;
+       if (retry.notModified === true) {
+         throw new VitrineApiError("Resposta inesperada (304) sem cache local.");
+       }
+       const validatedRetry = validate ? validate(retry.data) : (retry.data as T);
+       setCached(url, validatedRetry, retry.etag);
+       return validatedRetry;
+     }
+     // result aqui é { notModified: false; data; etag? }
+     const fresh = result as Extract<RequestResult<unknown>, { notModified: false }>;
+     const validated = validate ? validate(fresh.data) : (fresh.data as T);
+     setCached(url, validated, fresh.etag);
+     return validated;
+   } catch (error) {
+     const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
+     if (fallback) {
+       try {
+         return validate ? validate(fallback) : fallback as T;
+       } catch (fallbackError) {
+         logVitrineWarning(`Fallback de cache inválido em ${url}`, fallbackError);
+       }
+     }
+     throw error;
+   } finally {
+     if (inflightRequests.get(url) === promise) inflightRequests.delete(url);
+   }
+ }
 
 function asRecord(value: unknown): ApiRecord {
   return value && typeof value === "object" && !Array.isArray(value) ? value as ApiRecord : {};
@@ -973,11 +989,11 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
          quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
        };
  
-       const { elegivel, motivos } = isColecaoElegivelParaHome(rawData);
+       const { elegivel, motivos, status } = isColecaoElegivelParaHome(rawData);
  
        if (!elegivel) {
          if (isDev && isDebugEnabled) {
-           console.warn(`Excluída: "${nome}" (${id})`, { motivos, dados: rawData });
+           console.warn(`Excluída: "${nome}" (${id})`, { motivos, status, dados: rawData });
          }
          return null;
        }
@@ -1002,7 +1018,7 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
        const corDestaque = corDestaqueRaw && HEX_RE.test(corDestaqueRaw) ? corDestaqueRaw : null;
  
        if (isDev && isDebugEnabled) {
-         console.info(`✅ Elegível: "${nome}"`, { id, destaque: rawData.destaque, ativo: rawData.ativo });
+         console.info(`✅ Elegível [${status}]: "${nome}"`, { id, destaque: rawData.destaque, ativo: rawData.ativo });
        }
  
        return {
@@ -1063,24 +1079,39 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
   });
 }
 
-function mapProduto(rawProduct: unknown): Produto | null {
-  const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
-  const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
-  if (!rawId) return null;
-
-  const variants = extractVariants(product);
-  if (variants.length === 0) return null;
-
-  const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
-  const corRecords = getCorRecords(product);
-  const cores = extractCores(product);
-  // Ordem das cores conforme aparecem em `variants` (mantém alinhamento índice imagem ↔ cor).
-  const corOrder: string[] = [];
-  variants.forEach((v) => {
-    if (v.cor && !corOrder.includes(v.cor)) corOrder.push(v.cor);
-  });
-  const imagens = extractImages(product, variantRecords, corRecords, corOrder);
-  const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
+ function mapProduto(rawProduct: unknown): Produto | null {
+   const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
+   const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
+   if (!rawId) return null;
+ 
+   const variants = extractVariants(product);
+   const variantRecords = asArray(product.variantes_disponiveis ?? product.variantesDisponiveis ?? product.variantes ?? product.variants).map(asRecord);
+   const corRecords = getCorRecords(product);
+   const cores = extractCores(product);
+   const corOrder: string[] = [];
+   variants.forEach((v) => {
+     if (v.cor && !corOrder.includes(v.cor)) corOrder.push(v.cor);
+   });
+   const imagens = extractImages(product, variantRecords, corRecords, corOrder);
+   const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
+ 
+   // Validação de elegibilidade (isProdutoPublicavel)
+   const { publicavel, motivos } = isProdutoPublicavel({
+     id: rawId,
+     nome: readString(product, ["nome", "name", "titulo", "title"]),
+     ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
+     arquivado: readBoolean(product, ["arquivado", "archived"], false),
+     variants,
+     imagens,
+     precoVenda
+   });
+ 
+   if (!publicavel) {
+     if (import.meta.env.DEV) {
+       console.warn(`[vitrine-api] Produto ${rawId} não é publicável:`, motivos);
+     }
+     return null;
+   }
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
 
@@ -1209,24 +1240,42 @@ export const vitrineApiService = {
     return (await this.attachDestaquesToProdutos([produto]))[0] ?? produto;
   },
 
-  /**
-   * Invalida o cache (memória + localStorage) do detalhe de um produto.
-   * Usado ao abrir /products/{slug} para garantir contrato novo (cores reais).
-   */
-  invalidateProdutoCache(id: string | number): void {
-    const url = buildUrl(`/produto/${encodeURIComponent(String(id))}`);
-    memoryCache.delete(url);
-    inflightRequests.delete(url);
-    try {
-      const cache = readLocalStorageCache();
-      if (cache[url]) {
-        delete cache[url];
-        writeLocalStorageCache(cache);
-      }
-    } catch {
-      /* cache opcional */
-    }
-  },
+   /**
+    * Invalida o cache (memória + localStorage) do detalhe de um produto.
+    */
+   invalidateProdutoCache(id: string | number): void {
+     const url = buildUrl(`/produto/${encodeURIComponent(String(id))}`);
+     this._clearCacheKey(url);
+   },
+ 
+   /**
+    * Invalida caches relacionados a coleções.
+    */
+   invalidateColecoesCache(): void {
+     this._clearCacheKey(buildUrl("/colecoes", { detalhes: 1, destaque: 1 }));
+     this._clearCacheKey(buildUrl("/colecoes"));
+   },
+ 
+   /**
+    * Invalida caches relacionados a categorias.
+    */
+   invalidateCategoriasCache(): void {
+     this._clearCacheKey(buildUrl("/categorias"));
+   },
+ 
+   _clearCacheKey(url: string): void {
+     memoryCache.delete(url);
+     inflightRequests.delete(url);
+     try {
+       const cache = readLocalStorageCache();
+       if (cache[url]) {
+         delete cache[url];
+         writeLocalStorageCache(cache);
+       }
+     } catch {
+       /* cache opcional */
+     }
+   },
 
   async getColecoes(): Promise<FilterOption[]> {
     const response = await fetchCachedJson<ColecaoResponse>("/colecoes", undefined, CACHE_TTL.colecoes, validateColecaoResponse);
@@ -1307,15 +1356,16 @@ export const vitrineApiService = {
          quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count"], -1),
        };
  
-       const { elegivel, motivos } = isColecaoElegivelParaHome(rawData);
+       const { elegivel, motivos, status } = isColecaoElegivelParaHome(rawData);
        
        return {
          colecao: nome,
          id,
          elegivel,
+         health: status,
          motivos_exclusao: motivos,
          quantidade_produtos: rawData.quantidade_produtos,
-         periodo_valido: !motivos.some(m => m.includes("período")),
+         periodo_valido: !motivos.some(m => m === ColecaoExclusionReason.FORA_PERIODO),
          timestamp_validacao: new Date().toISOString()
        };
      });
