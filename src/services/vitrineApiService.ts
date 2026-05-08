@@ -1,7 +1,8 @@
 import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
- import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw } from "@/lib/colecaoEligibility";
+ import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
+ import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
@@ -36,7 +37,9 @@ const CACHE_TTL = {
   destaques: 5 * 60 * 1000,
 } as const;
 
-const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
+ const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
+ /** Proteção contra stale eterno: se a entrada tiver mais de 12h, forçamos revalidação completa ignorando ETag. */
+ const STALE_MAX_AGE = 12 * 60 * 60 * 1000;
 
 // Mapa de requisições em andamento para deduplicar fetches concorrentes
 const inflightRequests = new Map<string, Promise<unknown>>();
@@ -251,19 +254,28 @@ function getCached<T>(key: string, maxAge: number): T | null {
   return entry ? entry.value : null;
 }
 
-function getCachedEntry<T>(key: string, maxAge: number): CacheEntry<T> | null {
-  const now = Date.now();
-  const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
-  if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry;
-
-  const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
-  if (storageEntry && now - storageEntry.timestamp <= maxAge) {
-    memoryCache.set(key, storageEntry);
-    return storageEntry;
-  }
-
-  return null;
-}
+ function getCachedEntry<T>(key: string, maxAge: number): CacheEntry<T> | null {
+   const now = Date.now();
+   const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
+   
+   // Verifica TTL normal
+   if (memoryEntry && now - memoryEntry.timestamp <= maxAge) return memoryEntry;
+ 
+   const storageEntry = readLocalStorageCache()[key] as CacheEntry<T> | undefined;
+   if (storageEntry) {
+     // Proteção contra stale eterno
+     if (now - storageEntry.timestamp > STALE_MAX_AGE) {
+       return null;
+     }
+ 
+     if (now - storageEntry.timestamp <= maxAge) {
+       memoryCache.set(key, storageEntry);
+       return storageEntry;
+     }
+   }
+ 
+   return null;
+ }
 
 function getStaleCachedEntry<T>(key: string): CacheEntry<T> | null {
   const memoryEntry = memoryCache.get(key) as CacheEntry<T> | undefined;
@@ -378,68 +390,72 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
   throw new VitrineApiError("A vitrine está temporariamente indisponível. Tente novamente em instantes.");
 }
 
-async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number, validate?: ResponseValidator<T>): Promise<T> {
-  const url = buildUrl(path, params);
-  const freshEntry = getCachedEntry<unknown>(url, ttl);
-  if (freshEntry) {
-    try {
-      return validate ? validate(freshEntry.value) : (freshEntry.value as T);
-    } catch (error) {
-      logVitrineWarning(`Cache inválido em ${url}`, error);
-    }
-  }
-
-  // Para revalidação condicional, considerar entrada stale com ETag salvo.
-  const staleEntry = getStaleCachedEntry<unknown>(url);
-  const ifNoneMatch = staleEntry?.etag;
-
-  // Dedupe de chamadas concorrentes para a mesma URL
-  const existing = inflightRequests.get(url);
-  const promise = existing ?? requestJson<unknown>(url, ifNoneMatch);
-  if (!existing) inflightRequests.set(url, promise);
-
-  try {
-    const result = await promise as RequestResult<unknown>;
-    if (result.notModified && staleEntry) {
-      // Servidor confirmou que payload não mudou — reutiliza cache e renova timestamp.
-      refreshCachedTimestamp(url);
-      try {
-        return validate ? validate(staleEntry.value) : (staleEntry.value as T);
-      } catch (error) {
-        logVitrineWarning(`Cache stale inválido após 304 em ${url}`, error);
-        // cai para tratar como erro abaixo
-        throw error;
-      }
-    }
-    if (result.notModified) {
-      // 304 sem entrada local — força nova requisição sem ETag.
-      const retry = await requestJson<unknown>(url) as RequestResult<unknown>;
-      if (retry.notModified === true) {
-        throw new VitrineApiError("Resposta inesperada (304) sem cache local.");
-      }
-      const validatedRetry = validate ? validate(retry.data) : (retry.data as T);
-      setCached(url, validatedRetry, retry.etag);
-      return validatedRetry;
-    }
-    // result aqui é { notModified: false; data; etag? }
-    const fresh = result as Extract<RequestResult<unknown>, { notModified: false }>;
-    const validated = validate ? validate(fresh.data) : (fresh.data as T);
-    setCached(url, validated, fresh.etag);
-    return validated;
-  } catch (error) {
-    const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
-    if (fallback) {
-      try {
-        return validate ? validate(fallback) : fallback as T;
-      } catch (fallbackError) {
-        logVitrineWarning(`Fallback de cache inválido em ${url}`, fallbackError);
-      }
-    }
-    throw error;
-  } finally {
-    if (inflightRequests.get(url) === promise) inflightRequests.delete(url);
-  }
-}
+ async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number, validate?: ResponseValidator<T>): Promise<T> {
+   const url = buildUrl(path, params);
+   const freshEntry = getCachedEntry<unknown>(url, ttl);
+   if (freshEntry) {
+     try {
+       return validate ? validate(freshEntry.value) : (freshEntry.value as T);
+     } catch (error) {
+       logVitrineWarning(`Cache inválido em ${url}`, error);
+     }
+   }
+ 
+   // Para revalidação condicional, considerar entrada stale com ETag salvo.
+   const staleEntry = getStaleCachedEntry<unknown>(url);
+   let ifNoneMatch = staleEntry?.etag;
+ 
+   // Se o cache stale for antigo demais (STALE_MAX_AGE), ignoramos o ETag para forçar fetch full.
+   if (staleEntry && (Date.now() - staleEntry.timestamp > STALE_MAX_AGE)) {
+     ifNoneMatch = undefined;
+   }
+ 
+   // Dedupe de chamadas concorrentes para a mesma URL
+   const existing = inflightRequests.get(url);
+   const promise = existing ?? requestJson<unknown>(url, ifNoneMatch);
+   if (!existing) inflightRequests.set(url, promise);
+ 
+   try {
+     const result = await promise as RequestResult<unknown>;
+     if (result.notModified && staleEntry) {
+       // Servidor confirmou que payload não mudou — reutiliza cache e renova timestamp.
+       refreshCachedTimestamp(url);
+       try {
+         return validate ? validate(staleEntry.value) : (staleEntry.value as T);
+       } catch (error) {
+         logVitrineWarning(`Cache stale inválido após 304 em ${url}`, error);
+         throw error;
+       }
+     }
+     if (result.notModified) {
+       // 304 sem entrada local — força nova requisição sem ETag.
+       const retry = await requestJson<unknown>(url) as RequestResult<unknown>;
+       if (retry.notModified === true) {
+         throw new VitrineApiError("Resposta inesperada (304) sem cache local.");
+       }
+       const validatedRetry = validate ? validate(retry.data) : (retry.data as T);
+       setCached(url, validatedRetry, retry.etag);
+       return validatedRetry;
+     }
+     // result aqui é { notModified: false; data; etag? }
+     const fresh = result as Extract<RequestResult<unknown>, { notModified: false }>;
+     const validated = validate ? validate(fresh.data) : (fresh.data as T);
+     setCached(url, validated, fresh.etag);
+     return validated;
+   } catch (error) {
+     const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
+     if (fallback) {
+       try {
+         return validate ? validate(fallback) : fallback as T;
+       } catch (fallbackError) {
+         logVitrineWarning(`Fallback de cache inválido em ${url}`, fallbackError);
+       }
+     }
+     throw error;
+   } finally {
+     if (inflightRequests.get(url) === promise) inflightRequests.delete(url);
+   }
+ }
 
 function asRecord(value: unknown): ApiRecord {
   return value && typeof value === "object" && !Array.isArray(value) ? value as ApiRecord : {};
