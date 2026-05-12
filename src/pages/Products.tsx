@@ -97,8 +97,13 @@ function resolveCategoriaApiValue(categorias: CatalogFilterOption[], selected: s
 }
 
 const Products = () => {
-  const { produtos, loading, isFromCache, forceRefresh } = useProducts();
+  const { produtos, loading, isFromCache, forceRefresh, error: productsError } = useProducts();
   const { toast } = useToast();
+  const isDebugIntegracao = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("debugIntegracao") === "1";
+  }, []);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todas");
   const [mostrarPromocao, setMostrarPromocao] = useState<boolean>(false);
@@ -533,7 +538,26 @@ const Products = () => {
   return (
     <PullToRefresh onRefresh={handlePullRefresh} disabled={loading}>
       <div className="min-h-screen pt-[60px] sm:pt-[68px]">
-        <Header />
+      <Header />
+
+      {isDebugIntegracao && (
+        <div className="bg-black text-green-400 p-4 font-mono text-xs overflow-auto max-h-60 border-b border-green-900/30 sticky top-16 z-50">
+          <h3 className="font-bold border-b border-green-900/50 mb-2 pb-1 flex justify-between">
+            <span>DIAGNÓSTICO DE INTEGRAÇÃO (PRODUTOS)</span>
+            <span className="text-[10px] opacity-50 cursor-pointer" onClick={() => window.location.reload()}>RECARREGAR</span>
+          </h3>
+          <div className="space-y-1">
+            <p>Status: {catalogLoading ? 'carregando...' : (produtosCatalogo.length > 0 ? 'OK' : 'Vazio ou Erro')}</p>
+            <p>Total API: {totalProdutos}</p>
+            <p>Total exibido: {produtosCatalogo.length}</p>
+            {productsError && <p className="text-red-400">Erro: {productsError.message}</p>}
+            <details className="mt-2">
+              <summary className="cursor-pointer hover:underline text-[10px]">Ver query params</summary>
+              <pre className="mt-1 p-2 bg-black/50 rounded">{JSON.stringify(getProdutosQuery(0), null, 2)}</pre>
+            </details>
+          </div>
+        </div>
+      )}
         <main className="bg-background">
           <PageContainer>
             <Breadcrumbs currentPage="Todos os Produtos" />
