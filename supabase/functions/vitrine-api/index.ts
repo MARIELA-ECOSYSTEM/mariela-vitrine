@@ -13,7 +13,7 @@
    const url = new URL(req.url);
    const pathname = url.pathname;
  
-   console.log(`[vitrine-api] Request: ${req.method} ${pathname}`);
+   console.info(`[vitrine-api] Request: ${req.method} ${pathname}`);
  
    try {
      // Rota: /home/blocks
