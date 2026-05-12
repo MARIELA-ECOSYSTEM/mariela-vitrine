@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import MonteSeuLook from "@/pages/MonteSeuLook";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductImageByColor } from "@/lib/productImage";
+
+// Polyfills
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
+window.HTMLMediaElement.prototype.pause = vi.fn();
+window.HTMLMediaElement.prototype.play = vi.fn(async () => {});
 
 // Mocks
 vi.mock("@/services/vitrineApiService", () => ({
