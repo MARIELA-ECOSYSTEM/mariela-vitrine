@@ -29,16 +29,19 @@
          // Se for lista manual e ainda não temos os produtos, não renderiza (espera o fetch principal)
          if (hasManualList && !blockManualProducts) return null;
  
+         const blockLimit = block.config?.limit || block.config?.max_items || 4;
+         const blockLayout = block.config?.estilo || "grade";
+ 
          return (
            <FeaturedProducts
              title={block.titulo || ""}
              subtitle={block.subtitulo || undefined}
              filter={(block.config?.filter as any) || "destaque"}
-             limit={block.config?.limit || 4}
+             limit={blockLimit}
              linkTo={block.config?.linkTo || "/products"}
              linkLabel={block.config?.linkLabel || "Ver tudo"}
              products={blockManualProducts}
-             layoutMode={block.config?.estilo === "lista" ? "lista" : "grade"}
+             layoutMode={blockLayout as any}
            />
          );
        }
@@ -116,15 +119,24 @@
    // Busca produtos para blocos com listas manuais (evita N+1 agregando em lote)
    useEffect(() => {
      const manualBlocks = blocks.filter(b => b.tipo === "produtos" && b.config?.produtos && b.config.produtos.length > 0);
-     if (manualBlocks.length === 0) return;
- 
+     
      manualBlocks.forEach(async (block) => {
-       if (manualProducts[block.id]) return; // Já carregado
+       // Só busca se ainda não temos no estado manualProducts para evitar refetch desnecessário
+       if (manualProducts[block.id]) return; 
+       
        const ids = block.config?.produtos || [];
-       const items = await vitrineApiService.getProdutosByIds(ids);
-       setManualProducts(prev => ({ ...prev, [block.id]: items }));
+       try {
+         const items = await vitrineApiService.getProdutosByIds(ids);
+         // Memoização simples via estado para evitar refetch no mesmo ciclo de vida
+         setManualProducts(prev => {
+           if (prev[block.id]) return prev;
+           return { ...prev, [block.id]: items };
+         });
+       } catch (err) {
+         // Silencioso, vitrineApiService já loga em DEV se falhar
+       }
      });
-   }, [blocks]);
+   }, [blocks, manualProducts]);
  
    if (loading) {
      return (
