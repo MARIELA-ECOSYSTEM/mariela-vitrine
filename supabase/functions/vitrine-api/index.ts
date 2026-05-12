@@ -40,6 +40,14 @@ serve(async (req) => {
          JSON.stringify({
             data: [
               {
+                id: "colecoes_destaque",
+                tipo: "colecoes",
+                titulo: "Coleções em Destaque",
+                subtitulo: "Confira nossas últimas campanhas",
+                prioridade: 5,
+                config: { style: "grid" }
+              },
+              {
                 id: "novidades",
                 tipo: "produtos",
                 titulo: "Novidades",
@@ -48,19 +56,11 @@ serve(async (req) => {
                 config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
               },
               {
-                id: "colecoes_destaque",
-                tipo: "colecoes",
-                titulo: "Coleções em Destaque",
-                subtitulo: "Confira nossas últimas campanhas",
-                prioridade: 15,
-                config: { style: "grid" }
-              },
-              {
                 id: "promocoes",
                 tipo: "produtos",
                 titulo: "Promoções",
                 subtitulo: "Peças com descontos especiais",
-                prioridade: 30,
+                prioridade: 20,
                 config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
               }
             ]
