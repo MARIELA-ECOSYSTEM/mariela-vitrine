@@ -64,7 +64,9 @@ describe("HeroBannerCarousel — Refinamento de Mídias e Fallbacks", () => {
       const video = document.querySelector("video");
       expect(video).toBeInTheDocument();
       expect(video).toHaveAttribute("src", "https://example.com/promo.mp4");
-      expect(video).toHaveAttribute("muted");
+      expect(video).toBeDefined();
+      // JSDOM sometimes doesn't reflect 'muted' as an attribute but as a property
+      expect((video as HTMLVideoElement).muted).toBe(true);
       expect(video).toHaveAttribute("preload", "metadata");
     });
   });
