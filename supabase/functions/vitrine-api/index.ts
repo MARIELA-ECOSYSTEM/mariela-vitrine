@@ -25,30 +25,63 @@ serve(async (req) => {
 
   console.log(`[vitrine-api] Request: ${req.method} ${path}`);
 
-  /**
-   * Função 'vitrine-api' (Preview).
-   * Esta função foi detectada como causa de regressão ao tentar mockar dados de catálogo.
-   * Restauramos para um comportamento neutro: se for uma rota editorial nova, 
-   * retorna vazio. Se for catálogo, retorna erro para forçar o frontend a usar
-   * o endpoint de produção real configurado no vitrineApiService.ts.
-   */
-  try {
-    const editorialPaths = ['/home/blocks', '/monte-seu-look', '/config'];
-    if (editorialPaths.some(p => path === p || path === `${p}/`)) {
-      return new Response(
-        JSON.stringify({ 
-          data: path.includes('blocks') ? [] : { sugestoes: [], looks_manuais: [] },
-          status: "preview_mode" 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Não mockamos /produtos nem /colecoes aqui para não quebrar a vitrine de produção.
-    return new Response(
-      JSON.stringify({ error: `Recurso não implementado no mock: ${path}. Use o endpoint de produção.` }),
-      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+   try {
+     // Rota de Configurações
+     if (path === '/config' || path === '/config/') {
+       return new Response(
+         JSON.stringify({ data: { nome: "Mariela Vitrine (Preview)", features: { monte_seu_look: true } } }),
+         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+       );
+     }
+ 
+     // Rota de Blocos da Home
+     if (path === '/home/blocks' || path === '/home/blocks/') {
+       return new Response(
+         JSON.stringify({
+           data: [
+             {
+               id: "novidades",
+               tipo: "produtos",
+               titulo: "Novidades",
+               subtitulo: "Recém-chegadas à coleção",
+               prioridade: 10,
+               config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+             },
+             {
+               id: "em_alta",
+               tipo: "produtos",
+               titulo: "Em alta",
+               subtitulo: "Peças em destaque na vitrine",
+               prioridade: 20,
+               config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
+             }
+           ]
+         }),
+         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+       );
+     }
+ 
+     // Rota do Monte Seu Look
+     if (path === '/monte-seu-look' || path === '/monte-seu-look/') {
+       return new Response(
+         JSON.stringify({
+           data: {
+             sugestoes: [],
+             looks_manuais: []
+           }
+         }),
+         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+       );
+     }
+ 
+     // Catch-all para rotas não implementadas no mock
+     return new Response(
+       JSON.stringify({ 
+         error: `Recurso '${path}' não implementado no mock local.`,
+         hint: "Esta rota deve ser consumida do endpoint de produção." 
+       }),
+       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+     );
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
