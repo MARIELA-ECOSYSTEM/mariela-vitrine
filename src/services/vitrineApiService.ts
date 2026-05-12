@@ -401,7 +401,13 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
         throw createApiError(response.status, url);
       }
 
-      const data = await response.json() as T;
+      let data: T;
+      try {
+        data = await response.json() as T;
+      } catch (jsonError) {
+        logVitrineWarning(`JSON inválido em ${url}`, jsonError);
+        throw createInvalidPayloadError(url);
+      }
       const etag = response.headers.get("ETag") ?? response.headers.get("etag") ?? undefined;
       return { notModified: false, data, etag };
     } catch (error) {
