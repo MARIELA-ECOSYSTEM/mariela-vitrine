@@ -5,7 +5,7 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
 import { z } from "zod";
 
-const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
+const VITRINE_API_BASE_URL = "https://zbmdrncgsuvjexpiezbr.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;

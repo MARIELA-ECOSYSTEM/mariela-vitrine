@@ -23,7 +23,9 @@
       const headers = new Headers();
       headers.set("Accept", "application/json");
       
-      const response = await fetch("https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api/home/blocks", {
+      // Usa variável de ambiente para garantir que aponte para o projeto correto
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "https://zbmdrncgsuvjexpiezbr.supabase.co";
+      const response = await fetch(`${supabaseUrl}/functions/v1/vitrine-api/home/blocks`, {
         method: "GET",
         headers,
       });
