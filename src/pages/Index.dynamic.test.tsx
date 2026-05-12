@@ -45,29 +45,9 @@
        }),
         getProdutos: vi.fn().mockResolvedValue([]),
         getProdutosByIds: vi.fn().mockResolvedValue([]),
-   it("renders banner blocks with valid media", async () => {
-     const mockBlocks = [
-       {
-         id: "banner-1",
-         tipo: "banner",
-         titulo: "Promoção de Verão",
-         subtitulo: "Confira as ofertas",
-         prioridade: 1,
-         config: { 
-           mediaUrl: "banner.jpg", 
-           mediaType: "image",
-           ctaLabel: "Ver Ofertas",
-           ctaUrl: "/products?filter=promocoes"
-         },
-       },
-     ];
-     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
- 
-     render(
-       <MemoryRouter>
-         <Index />
-       </MemoryRouter>
-     );
+      },
+    };
+  });
  
      await waitFor(() => {
        expect(screen.getByText("Promoção de Verão")).toBeInTheDocument();
