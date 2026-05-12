@@ -16,8 +16,9 @@ import ProductDetail from "./pages/ProductDetail";
 import MonteSeuLook from "./pages/MonteSeuLook";
  import CollectionDetail from "./pages/CollectionDetail";
  import Cart from "./pages/Cart";
- import Instalar from "./pages/Instalar";
- import NotFound from "./pages/NotFound";
+import Instalar from "./pages/Instalar";
+import Health from "./pages/Health";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -56,8 +57,9 @@ const AppContent = () => {
           <Route path="/monte-seu-look" element={<MonteSeuLook />} />
            <Route path="/collections/:id" element={<CollectionDetail />} />
            <Route path="/colecoes/:id" element={<Navigate to={`/collections/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
-           <Route path="/cart" element={<Cart />} />
+          <Route path="/cart" element={<Cart />} />
           <Route path="/instalar" element={<Instalar />} />
+          <Route path="/health" element={<Health />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
