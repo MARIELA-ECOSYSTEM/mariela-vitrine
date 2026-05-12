@@ -17,7 +17,7 @@ export const HeroBannerCarousel = () => {
   const [mediaErrors, setMediaErrors] = useState<Record<string, { error: boolean; reason?: string }>>({});
   const [loadTimes, setLoadTimes] = useState<Record<string, number>>({});
   const loadStartTimes = useRef<Record<string, number>>({});
-  const isDebug = new URLSearchParams(search).get("debugColecoes") === "1";
+  const isDebug = import.meta.env.DEV && new URLSearchParams(search).get("debugColecoes") === "1";
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -156,18 +156,21 @@ export const HeroBannerCarousel = () => {
                 loop
                 playsInline
                 preload="metadata"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
                 onLoadStart={() => { loadStartTimes.current[colecao.id] = performance.now(); }}
                 onLoadedData={() => handleMediaLoad(colecao.id)}
                 onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: { error: true, reason: "Erro de decodificação ou rede" } }))}
                 ref={(el) => {
                   if (!el) return;
                   if (isActive && isVisible) {
-                    const playPromise = el.play();
-                    if (playPromise !== undefined) {
-                      playPromise.catch(() => {});
+                    // Evita múltiplos play() e trata bloqueio de autoplay silenciosamente
+                    if (el.paused) {
+                      el.play().catch(() => {
+                        // Falha silenciosa em produção; opcionalmente log em DEV via isDebug
+                        if (isDebug) console.warn("[HeroBannerCarousel] Autoplay bloqueado pelo navegador");
+                      });
                     }
-                  } else {
+                  } else if (!el.paused) {
                     el.pause();
                   }
                 }}
@@ -176,7 +179,7 @@ export const HeroBannerCarousel = () => {
               <img
                 src={media.url}
                 alt={colecao.nome}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
                 onLoadStart={() => { 
                   const key = media.url === colecao.home_destaque_url ? colecao.id : 
                              media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
