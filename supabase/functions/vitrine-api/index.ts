@@ -23,130 +23,49 @@ serve(async (req) => {
   // Removemos query strings codificadas que podem vir no pathname em alguns ambientes
   path = path.split('?')[0].split('%3F')[0] || '/';
 
-   const queryParams = Object.fromEntries(url.searchParams.entries());
-   console.log(`[vitrine-api] Request: ${req.method} ${path}`, queryParams);
+    const queryParams = Object.fromEntries(url.searchParams.entries());
+    console.log(`[vitrine-api] Forwarding to production: ${req.method} ${path}`, queryParams);
 
-   try {
-      // Rota de Produtos (Mock para Preview)
-      if (path === '/produtos' || path === '/produtos/') {
-        const colecaoFiltro = queryParams.colecao;
-        const produtosMock = [
-          {
-            id: "p1",
-            nome: `Vestido Elegante ${colecaoFiltro || ''}`,
-            descricao: "Um vestido sofisticado para ocasiões especiais.",
-            categoria: "Vestidos",
-            colecao: colecaoFiltro || "Nova Coleção",
-            preco_venda: 299.90,
-            imagem_principal: "https://images.unsplash.com/photo-1539008835154-33321e17c76a?auto=format&fit=crop&q=80&w=800",
-            imagem_thumb: "https://images.unsplash.com/photo-1539008835154-33321e17c76a?auto=format&fit=crop&q=80&w=300",
-            cores: [{ cor: "Preto", tamanhos: [{ tamanho: "P", disponibilidade: 5 }] }]
-          },
-          {
-            id: "p2",
-            nome: `Blusa de Seda ${colecaoFiltro || ''}`,
-            descricao: "Blusa leve e elegante em seda pura.",
-            categoria: "Blusas",
-            colecao: colecaoFiltro || "Nova Coleção",
-            preco_venda: 189.90,
-            imagem_principal: "https://images.unsplash.com/photo-1564252234230-c859f733ee91?auto=format&fit=crop&q=80&w=800",
-            imagem_thumb: "https://images.unsplash.com/photo-1564252234230-c859f733ee91?auto=format&fit=crop&q=80&w=300",
-            cores: [{ cor: "Branco", tamanhos: [{ tamanho: "M", disponibilidade: 3 }] }]
-          }
-        ];
-
+    try {
+      // Rota de Healthcheck
+      if (path === '/health' || path === '/') {
         return new Response(
-          JSON.stringify({
-            items: produtosMock,
-            limit: 12,
-            offset: 0,
-            total: produtosMock.length,
-            hasMore: false
+          JSON.stringify({ status: "ok", mode: "proxy", timestamp: new Date().toISOString() }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const PRODUCTION_API_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
+      const targetUrl = new URL(`${PRODUCTION_API_URL}${path}${url.search}`);
+      
+      console.log(`[vitrine-api] Proxying to: ${targetUrl.toString()}`);
+
+      const response = await fetch(targetUrl.toString(), {
+        method: req.method,
+        headers: {
+          'Accept': 'application/json',
+          // Não repassamos autorização do ambiente local para produção para evitar conflitos de projeto
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`[vitrine-api] Production API error: ${response.status}`, errorBody);
+        return new Response(
+          JSON.stringify({ 
+            error: "Erro na API de Produção", 
+            status: response.status,
+            details: errorBody.slice(0, 200) 
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Rota de Coleções (Mock para Preview)
-      if (path === '/colecoes' || path === '/colecoes/') {
-        return new Response(
-          JSON.stringify({ data: [] }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Rota de Categorias (Mock para Preview)
-      if (path === '/categorias' || path === '/categorias/') {
-        return new Response(
-          JSON.stringify({ data: ["Vestidos", "Blusas", "Calças", "Saias"] }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-     // Rota de Configurações
-     if (path === '/config' || path === '/config/') {
-       return new Response(
-         JSON.stringify({ data: { nome: "Mariela Vitrine (Preview)", features: { monte_seu_look: true } } }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } }
-       );
-     }
- 
-     // Rota de Blocos da Home
-     if (path === '/home/blocks' || path === '/home/blocks/') {
-       return new Response(
-         JSON.stringify({
-            data: [
-              {
-                id: "colecoes_destaque",
-                tipo: "colecoes",
-                titulo: "Coleções em Destaque",
-                subtitulo: "Confira nossas últimas campanhas",
-                prioridade: 5,
-                config: { estilo: "grade" }
-              },
-              {
-                id: "novidades",
-                tipo: "produtos",
-                titulo: "Novidades",
-                subtitulo: "Recém-chegadas à coleção",
-                prioridade: 10,
-                config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-              },
-              {
-                id: "promocoes",
-                tipo: "produtos",
-                titulo: "Promoções",
-                subtitulo: "Peças com descontos especiais",
-                prioridade: 20,
-                config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
-              }
-            ]
-         }),
-         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-       );
-     }
- 
-     // Rota do Monte Seu Look
-     if (path === '/monte-seu-look' || path === '/monte-seu-look/') {
-       return new Response(
-         JSON.stringify({
-           data: {
-             sugestoes: [],
-             looks_manuais: []
-           }
-         }),
-         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-       );
-     }
- 
-     // Catch-all para rotas não implementadas no mock
-     return new Response(
-       JSON.stringify({ 
-         error: `Recurso '${path}' não implementado no mock local.`,
-         hint: "Esta rota deve ser consumida do endpoint de produção." 
-       }),
-       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-     );
+      const data = await response.json();
+      return new Response(
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),

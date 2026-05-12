@@ -54,9 +54,14 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         setLoading(true);
       }
 
-      const data = await fetchProdutos();
+      let data: Produto[] = [];
+      try {
+        data = await fetchProdutos();
+      } catch (err) {
+        console.error('Erro direto no fetchProdutos:', err);
+      }
       
-      if (data && data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         setProdutos(data);
         saveToCache(data);
         setIsFromCache(false);

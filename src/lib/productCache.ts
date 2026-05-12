@@ -1,27 +1,23 @@
 import { Produto } from "@/data/products";
 
-const CACHE_KEY = "mariela_products_cache_v9";
-const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v9";
-const LEGACY_KEYS = [
-  "mariela_products_cache_v8",
-  "mariela_products_cache_timestamp_v8",
-  "mariela_products_cache_v7",
-  "mariela_products_cache_timestamp_v7",
-  "mariela_products_cache_v6",
-  "mariela_products_cache_timestamp_v6",
-  "mariela_products_cache_v5",
-  "mariela_products_cache_timestamp_v5",
-  "mariela_products_cache_v4",
-  "mariela_products_cache_timestamp_v4",
-  "mariela_products_cache_v3",
-  "mariela_products_cache_timestamp_v3",
-];
+const CACHE_KEY = "mariela_products_cache_v10";
+const CACHE_TIMESTAMP_KEY = "mariela_products_cache_timestamp_v10";
 
-// Limpa entradas antigas para evitar consumir listagens sem `cores` reais.
-try {
-  LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
-} catch {
-  // ignore
+/**
+ * Limpa todos os caches de versões anteriores para garantir que
+ * nenhum dado mockado ou inconsistente permaneça no navegador.
+ */
+if (typeof localStorage !== 'undefined') {
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("mariela_") && key !== CACHE_KEY && key !== CACHE_TIMESTAMP_KEY) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch { /* ignore */ }
 }
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 

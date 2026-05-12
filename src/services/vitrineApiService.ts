@@ -9,29 +9,12 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  // Em produção, ambos serão o mesmo projeto. Em preview, isso permite testar novos contratos.
  const VITRINE_API_LOCAL_URL = `${import.meta.env.VITE_SUPABASE_URL || 'https://zbmdrncgsuvjexpiezbr.supabase.co'}/functions/v1/vitrine-api`;
  
-  const EDITORIAL_PATHS = ['/home/blocks', '/monte-seu-look', '/config', '/produtos'];
+  const EDITORIAL_PATHS = ['/home/blocks', '/monte-seu-look', '/config'];
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v8";
-const LEGACY_CACHE_KEYS = [
-  "mariela_vitrine_api_cache_v6",
-  "mariela_vitrine_api_cache_v5",
-  "mariela_vitrine_api_cache_v4",
-  "mariela_vitrine_api_cache_v3",
-  "mariela_vitrine_api_cache_v2",
-  "mariela_vitrine_api_cache_v1",
-];
-
-// Limpa caches antigos para forçar reload do novo contrato com `cores` na listagem.
-if (typeof localStorage !== "undefined") {
-  try {
-    LEGACY_CACHE_KEYS.forEach((key) => localStorage.removeItem(key));
-  } catch {
-    /* cache opcional */
-  }
-}
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v10";
 
 const CACHE_TTL = {
   config: 5 * 60 * 1000,
@@ -218,40 +201,7 @@ const DEFAULT_CONFIG: VitrineConfig = {
   instagram: null,
 };
 
-  const DEFAULT_HOME_BLOCKS: HomeBlock[] = [
-    {
-      id: "colecoes_destaque",
-      tipo: "colecoes",
-      titulo: "Coleções em Destaque",
-      subtitulo: "Confira nossas últimas campanhas",
-      prioridade: 5,
-      config: { estilo: "grade" }
-    },
-    {
-      id: "novidades",
-      tipo: "produtos",
-      titulo: "Novidades",
-      subtitulo: "Recém-chegadas à coleção",
-      prioridade: 10,
-      config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-    },
-    {
-      id: "em_alta",
-      tipo: "produtos",
-      titulo: "Em alta",
-      subtitulo: "Peças em destaque na vitrine",
-      prioridade: 20,
-      config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-    },
-    {
-      id: "promocoes",
-      tipo: "produtos",
-      titulo: "Promoções",
-      subtitulo: "Descontos em peças selecionadas",
-      prioridade: 30,
-      config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
-    }
-  ];
+  const DEFAULT_HOME_BLOCKS: HomeBlock[] = [];
  
 const memoryCache = new Map<string, CacheEntry<unknown>>();
 const inFlightDestaques = new Map<string, Promise<ProdutoDestaquePublico[]>>();
@@ -264,7 +214,7 @@ function buildUrl(path: string, params?: QueryParams): string {
    // Rotas editoriais novas usam o Supabase local (preview) para permitir testes sem quebrar o catálogo real.
    // Rotas de catálogo (produtos, colecoes) sempre usam a URL de produção para garantir dados reais.
    const isEditorial = EDITORIAL_PATHS.some(p => path === p || path.startsWith(`${p}/`));
-   const baseUrl = isEditorial ? VITRINE_API_LOCAL_URL : VITRINE_API_PRODUCTION_URL;
+   const baseUrl = (isEditorial && import.meta.env.DEV) ? VITRINE_API_LOCAL_URL : VITRINE_API_PRODUCTION_URL;
    
    const url = new URL(`${baseUrl}${path}`);
   if (params) {
@@ -451,7 +401,13 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
         throw createApiError(response.status, url);
       }
 
-      const data = await response.json() as T;
+      let data: T;
+      try {
+        data = await response.json() as T;
+      } catch (jsonError) {
+        logVitrineWarning(`JSON inválido em ${url}`, jsonError);
+        throw createInvalidPayloadError(url);
+      }
       const etag = response.headers.get("ETag") ?? response.headers.get("etag") ?? undefined;
       return { notModified: false, data, etag };
     } catch (error) {
@@ -1362,7 +1318,7 @@ export const vitrineApiService = {
         return sorted;
      } catch (error) {
        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
-       return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
+       return [];
      }
     },
  
