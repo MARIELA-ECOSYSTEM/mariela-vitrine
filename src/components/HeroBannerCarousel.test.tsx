@@ -81,6 +81,15 @@ describe("HeroBannerCarousel — Integridade, Mídias e Fallbacks", () => {
       ativo: true,
       quantidade_produtos: 1,
       ordem: 0
+    }, {
+      id: "video-2",
+      nome: "Campanha Video 2",
+      home_destaque_url: "https://example.com/promo2.mp4",
+      home_destaque_tipo: "video",
+      destaque: true,
+      ativo: true,
+      quantidade_produtos: 1,
+      ordem: 1
     }]);
 
     render(<MemoryRouter><HeroBannerCarousel /></MemoryRouter>);
@@ -91,6 +100,55 @@ describe("HeroBannerCarousel — Integridade, Mídias e Fallbacks", () => {
       expect(video).toHaveAttribute("src", "https://example.com/promo.mp4");
       expect((video as HTMLVideoElement).muted).toBe(true);
       expect(video).toHaveAttribute("preload", "metadata");
+    });
+
+    // Verifica se o play foi chamado para o primeiro vídeo
+    expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
+  });
+
+  it("Trata falha de autoplay silenciosamente", async () => {
+    // Simula falha de play()
+    window.HTMLMediaElement.prototype.play = vi.fn().mockRejectedValue(new Error("Autoplay blocked"));
+    
+    (vitrineApiService.getColecoesDestaque as any).mockResolvedValue([{
+      id: "video-fail",
+      nome: "Campanha Video Fail",
+      home_destaque_url: "https://example.com/promo.mp4",
+      home_destaque_tipo: "video",
+      destaque: true,
+      ativo: true,
+      quantidade_produtos: 1,
+      ordem: 0
+    }]);
+
+    render(<MemoryRouter><HeroBannerCarousel /></MemoryRouter>);
+
+    await waitFor(() => {
+      const video = document.querySelector("video");
+      expect(video).toBeInTheDocument();
+    });
+
+    // Não deve quebrar o componente
+    expect(screen.getByText("Campanha Video Fail")).toBeInTheDocument();
+  });
+
+  it("GIF e imagens mantêm aspect ratio estável", async () => {
+    (vitrineApiService.getColecoesDestaque as any).mockResolvedValue([{
+      id: "gif-stable",
+      nome: "Campanha GIF Stable",
+      home_destaque_url: "https://example.com/stable.gif",
+      home_destaque_tipo: "gif",
+      destaque: true,
+      ativo: true,
+      quantidade_produtos: 1,
+      ordem: 0
+    }]);
+
+    render(<MemoryRouter><HeroBannerCarousel /></MemoryRouter>);
+
+    await waitFor(() => {
+      const img = screen.getByRole("img", { name: /Campanha GIF Stable/i });
+      expect(img).toHaveClass("aspect-[16/7]");
     });
   });
 
