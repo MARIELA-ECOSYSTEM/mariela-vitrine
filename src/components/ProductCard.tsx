@@ -246,8 +246,7 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   );
 
   // Filtra apenas URLs de imagem não vazias/válidas (string não-vazia).
-  // Evita índices "fantasmas" no carrossel quando a API envia entradas vazias.
-  const imagensValidas = useMemo(
+  const imagensValidasBase = useMemo(
     () => (produto.imagens || []).filter((u): u is string => typeof u === "string" && u.trim().length > 0),
     [produto.imagens],
   );
@@ -271,6 +270,18 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     });
     return map;
   }, [imagemPorCor]);
+
+  // Filtra a galeria do card para a cor selecionada (não misturar cores)
+  const imagensValidas = useMemo(() => {
+    if (corSelecionada && Object.keys(corPorImagem).length > 0) {
+      const filtradas = imagensValidasBase.filter(url => {
+        const corDaFoto = corPorImagem[url];
+        return !corDaFoto || corDaFoto === corSelecionada;
+      });
+      if (filtradas.length > 0) return filtradas;
+    }
+    return imagensValidasBase;
+  }, [imagensValidasBase, corSelecionada, corPorImagem]);
 
   // Mapa pré-computado URL → índice para lookup O(1) (evita indexOf em handlers).
   const indicePorUrl = useMemo(() => {
