@@ -29,6 +29,8 @@ export interface ProdutoCor {
   cor: string;
   imagem_thumb: string | null;
   imagem_full: string | null;
+  imagem_card_url?: string | null;
+  imagem_look_url?: string | null;
   tamanhos: ProdutoCorTamanho[];
   /**
    * Galeria completa da cor — vem somente no endpoint de detalhe
