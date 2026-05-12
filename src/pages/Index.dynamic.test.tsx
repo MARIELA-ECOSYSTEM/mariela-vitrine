@@ -13,7 +13,10 @@
  vi.mock("@/components/QuickActions", () => ({ QuickActions: () => <div data-testid="quick-actions" /> }));
  
  vi.mock("@/hooks/useProducts", () => ({
-   useProducts: vi.fn().mockReturnValue({ loading: false, produtos: [] }),
+   useProducts: vi.fn().mockReturnValue({ 
+     loading: false, 
+     produtos: [{ id: 1, nome: "Produto Teste", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: false, isNovidade: true }] 
+   }),
  }));
  
  // Mock vitrineApiService
