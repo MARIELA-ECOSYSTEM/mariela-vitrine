@@ -10,9 +10,10 @@
    block: HomeBlock;
    debug?: boolean;
    manualProducts?: Record<string, Produto[]>;
+   index: number;
  }
  
- const BlockRenderer = memo(({ block, debug, manualProducts }: BlockRendererProps) => {
+ const BlockRenderer = memo(({ block, debug, manualProducts, index }: BlockRendererProps) => {
    // Validade temporal controlada pelo PDV
    const now = useMemo(() => new Date(), []);
    if (block.validade) {
@@ -58,8 +59,10 @@
              subtitulo={block.subtitulo}
              mediaUrl={block.config.mediaUrl}
              mediaType={block.config.mediaType}
+             posterUrl={block.config.posterUrl}
              ctaLabel={block.config.ctaLabel}
              ctaUrl={block.config.ctaUrl}
+             priority={index === 0}
            />
          );
        case "instagram":
@@ -167,6 +170,7 @@
            block={block} 
            debug={debug} 
            manualProducts={manualProducts}
+           index={idx}
          />
        ))}
      </div>
