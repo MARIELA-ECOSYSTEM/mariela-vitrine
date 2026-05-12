@@ -60,20 +60,26 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {sugestoes.map((sugestao) => (
-              <Card key={sugestao.id} className="group overflow-hidden border-primary/10 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md bg-card flex flex-col">
-                <div className="relative aspect-[4/5] bg-muted overflow-hidden">
+            {sugestoes.map((sugestao, index) => (
+              <Card 
+                key={sugestao.id} 
+                className="group overflow-hidden border-primary/10 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md bg-card flex flex-col"
+              >
+                <div 
+                  className="relative aspect-[4/5] bg-muted overflow-hidden"
+                  style={{ containIntrinsicSize: 'auto 400px', contentVisibility: 'auto' }}
+                >
                   {sugestao.mediaType === "video" ? (
                     <div className="relative w-full h-full">
-                      <video
-                        {...applyMediaProps(sugestao.mediaUrl, true, "high")}
-                        poster={sugestao.posterUrl}
-                        autoPlay
-                        loop
-                        muted={muted}
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
+                    <video
+                      {...applyMediaProps(sugestao.mediaUrl, index === 0, index === 0 ? "high" : "auto")}
+                      poster={sugestao.posterUrl}
+                      autoPlay
+                      loop
+                      muted={muted}
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
                       <Button
                         variant="ghost"
                         size="icon"
@@ -87,12 +93,12 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
                       </Button>
                     </div>
                   ) : (
-                    <img
-                      src={sugestao.mediaUrl}
-                      alt={sugestao.titulo}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
+                  <img
+                    src={sugestao.mediaUrl}
+                    alt={sugestao.titulo}
+                    {...applyMediaProps(sugestao.mediaUrl, index === 0, index === 0 ? "high" : "auto")}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
                   )}
                   
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
@@ -148,13 +154,14 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
                 key={look.id}
                 onClick={() => onSelectLook(look.produtos)}
                 className="group relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-primary/5 hover:border-primary/20 transition-all text-left outline-none focus-visible:ring-2 ring-primary"
+                style={{ containIntrinsicSize: 'auto 200px', contentVisibility: 'auto' }}
               >
                 {look.mediaUrl ? (
                   <img
                     src={look.mediaUrl}
                     alt={look.nome}
+                    {...applyMediaProps(look.mediaUrl, false)}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center p-4 text-center bg-secondary/20">

@@ -1022,10 +1022,13 @@ const PreviewPanel = ({
   return (
     <div className="bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 border border-primary/20 shadow-lg">
       {/* Look Preview Area - Improved layout */}
-      <div className={cn(
-        "relative mx-auto mb-4 rounded-2xl overflow-hidden bg-gradient-to-b from-secondary/20 via-background to-secondary/30",
-        isMobile ? "aspect-square max-w-[320px]" : "aspect-[3/4] max-w-sm"
-      )}>
+      <div 
+        className={cn(
+          "relative mx-auto mb-4 rounded-2xl overflow-hidden bg-gradient-to-b from-secondary/20 via-background to-secondary/30",
+          isMobile ? "aspect-square max-w-[320px]" : "aspect-[3/4] max-w-sm"
+        )}
+        style={{ minHeight: isMobile ? '320px' : '400px' }}
+      >
         {/* Spotlight Effect */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-gradient-radial from-primary/15 to-transparent" />
         
