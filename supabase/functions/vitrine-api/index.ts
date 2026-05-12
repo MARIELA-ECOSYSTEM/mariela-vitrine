@@ -17,7 +17,7 @@
  
    try {
      // Rota: /home/blocks
-     if (pathname.endsWith("/home/blocks") || pathname.endsWith("/home/blocks/")) {
+     if (pathname.includes("/home/blocks")) {
        const blocks = [
          {
            id: "banner-principal",
@@ -55,7 +55,7 @@
      }
  
      // Rota: /config
-     if (pathname.endsWith("/config") || pathname.endsWith("/config/")) {
+     if (pathname.includes("/config")) {
        return new Response(JSON.stringify({
          data: {
            nome_loja: "Mariela Moda Feminina",
@@ -72,28 +72,28 @@
      }
  
      // Rota: /destaques
-     if (pathname.endsWith("/destaques") || pathname.endsWith("/destaques/")) {
+     if (pathname.includes("/destaques")) {
        return new Response(JSON.stringify({ items: [] }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
      }
  
      // Rota: /colecoes
-     if (pathname.endsWith("/colecoes") || pathname.endsWith("/colecoes/")) {
+     if (pathname.includes("/colecoes")) {
        return new Response(JSON.stringify({ data: [] }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
      }
  
      // Rota: /categorias
-     if (pathname.endsWith("/categorias") || pathname.endsWith("/categorias/")) {
+     if (pathname.includes("/categorias")) {
        return new Response(JSON.stringify({ data: ["Blusas", "Vestidos", "Calças", "Acessórios"] }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
      }
  
      // Rota: /produtos
-     if (pathname.endsWith("/produtos") || pathname.endsWith("/produtos/")) {
+     if (pathname.includes("/produtos")) {
        return new Response(JSON.stringify({ data: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
