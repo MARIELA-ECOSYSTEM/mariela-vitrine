@@ -71,7 +71,9 @@ interface CardProps {
 
 const CollectionCard = ({ colecao, href, variant }: CardProps) => {
   const [imgFailed, setImgFailed] = useState(false);
-  const showFallback = !colecao.imagem_capa_url || imgFailed;
+  // Nunca usar home_destaque_url aqui. Prioridade: banner_url > imagem_capa_url
+  const displayImageUrl = (colecao.banner_url && !imgFailed) ? colecao.banner_url : colecao.imagem_capa_url;
+  const showFallback = !displayImageUrl || imgFailed;
 
   return (
     <Link
@@ -90,7 +92,7 @@ const CollectionCard = ({ colecao, href, variant }: CardProps) => {
         </div>
       ) : (
         <img
-          src={colecao.imagem_capa_url ?? undefined}
+          src={displayImageUrl ?? undefined}
           alt={colecao.nome}
           loading="lazy"
           decoding="async"
