@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import logoSimple from "@/assets/logo-simple.png";
 import { useHeaderOverlay } from "@/contexts/HeaderOverlayContext";
@@ -14,7 +14,20 @@ export const HeroBannerCarousel = () => {
   const [colecoes, setColecoes] = useState<ColecaoDestaque[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [failed, setFailed] = useState(false);
-  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
+  const [mediaErrors, setMediaErrors] = useState<Record<string, boolean>>({});
+  const isDebug = new URLSearchParams(search).get("debugColecoes") === "1";
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,8 +41,24 @@ export const HeroBannerCarousel = () => {
     return () => { cancelled = true; };
   }, []);
 
-  const currentBanner = colecoes?.[currentIndex];
-  const bannerImage = currentBanner?.imagem_capa_url;
+  const currentColecao = colecoes?.[currentIndex];
+  
+  // Fallback priority: home_destaque_url > banner_url > imagem_capa_url
+  const getBestMedia = (col: ColecaoDestaque) => {
+    if (col.home_destaque_url && !mediaErrors[col.id]) {
+      return { url: col.home_destaque_url, type: col.home_destaque_tipo || "image" };
+    }
+    if (col.banner_url && !mediaErrors[`${col.id}-banner`]) {
+      return { url: col.banner_url, type: "image" as const };
+    }
+    if (col.imagem_capa_url && !mediaErrors[`${col.id}-capa`]) {
+      return { url: col.imagem_capa_url, type: "image" as const };
+    }
+    return null;
+  };
+
+  const currentMedia = currentColecao ? getBestMedia(currentColecao) : null;
+  const bannerImage = currentMedia?.type !== "video" ? currentMedia?.url : (currentColecao?.banner_url || currentColecao?.imagem_capa_url);
 
   useEffect(() => {
     setBannerImage(bannerImage || null);
@@ -85,29 +114,69 @@ export const HeroBannerCarousel = () => {
   return (
     <section
       id="home"
+      ref={containerRef}
       className="relative w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] overflow-hidden cursor-pointer"
       onClick={handleBannerClick}
     >
       {colecoes.map((colecao, idx) => (
-        <div
-          key={colecao.id}
-          className={cn(
-            "absolute inset-0 transition-opacity duration-1000",
-            idx === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-          )}
-        >
-          {colecao.imagem_capa_url && !imgErrors[colecao.id] ? (
-            <img
-              src={colecao.imagem_capa_url}
-              alt={colecao.nome}
-              className="w-full h-full object-cover"
-              onError={() => setImgErrors(prev => ({ ...prev, [colecao.id]: true }))}
-            />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              <ImageOff className="w-12 h-12 text-muted-foreground/30" />
-            </div>
-          )}
+        const media = getBestMedia(colecao);
+        const isActive = idx === currentIndex;
+
+        return (
+          <div
+            key={colecao.id}
+            className={cn(
+              "absolute inset-0 transition-opacity duration-1000",
+              isActive ? "opacity-100 z-10" : "opacity-0 z-0"
+            )}
+          >
+            {media?.type === "video" ? (
+              <video
+                src={media.url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+                onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: true }))}
+                ref={(el) => {
+                  if (!el) return;
+                  if (isActive && isVisible) {
+                    el.play().catch(() => {});
+                  } else {
+                    el.pause();
+                  }
+                }}
+              />
+            ) : media?.url ? (
+              <img
+                src={media.url}
+                alt={colecao.nome}
+                className="w-full h-full object-cover"
+                onError={() => {
+                  const key = media.url === colecao.home_destaque_url ? colecao.id : 
+                             media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
+                  setMediaErrors(prev => ({ ...prev, [key]: true }));
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <ImageOff className="w-12 h-12 text-muted-foreground/30" />
+              </div>
+            )}
+            
+            {isDebug && (
+              <div className="absolute top-4 left-4 z-50 bg-black/80 text-white p-2 text-[10px] rounded font-mono">
+                <p>Tipo: {media?.type || "N/A"}</p>
+                <p>URL: {media?.url?.split('/').pop() || "N/A"}</p>
+                <p>Origem: {media?.url === colecao.home_destaque_url ? "home_destaque" : 
+                           media?.url === colecao.banner_url ? "banner" : 
+                           media?.url === colecao.imagem_capa_url ? "capa" : "fallback"}</p>
+              </div>
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
           
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
           
