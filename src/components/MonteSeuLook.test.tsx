@@ -15,6 +15,10 @@ vi.mock("@/services/vitrineApiService", () => ({
   }
 }));
 
+vi.mock("@/contexts/CartContext", () => ({
+  useCart: () => ({ addToCart: vi.fn(), cartCount: 0 }),
+}));
+
 vi.mock("@/hooks/useProducts", () => ({
   useProducts: () => ({
     produtos: [
