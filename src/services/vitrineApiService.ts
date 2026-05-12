@@ -103,9 +103,8 @@ export interface ColecaoResponse {
    subtitulo: string | null;
    prioridade: number;
    config: {
-     filter?: string;
-     limit?: number;
-     colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
+      filter?: string;
+      colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
       produtos?: string[];
       linkLabel?: string;
       linkTo?: string;
