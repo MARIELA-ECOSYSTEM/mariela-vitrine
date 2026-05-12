@@ -27,8 +27,8 @@ vi.mock("@/contexts/CartContext", () => ({
 vi.mock("@/hooks/useProducts", () => ({
   useProducts: () => ({
     produtos: [
-      { id: 1, produtoId: "P1", nome: "Blusa", categoria: "blusas", imagens: ["img1.jpg"] },
-      { id: 2, produtoId: "P2", nome: "Saia", categoria: "saias", imagens: ["img2.jpg"] }
+      { id: 1, produtoId: "P1", nome: "Blusa", categoria: "blusas", imagens: ["img1.jpg"], variants: [] },
+      { id: 2, produtoId: "P2", nome: "Saia", categoria: "saias", imagens: ["img2.jpg"], variants: [] }
     ],
     loading: false
   })
