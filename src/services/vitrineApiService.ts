@@ -948,25 +948,31 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
  * `thumb/full`. Filtra entradas inválidas (sem nenhuma URL utilizável) e ordena
  * por `principal` desc → `ordem` asc, mantendo estabilidade.
  */
-function extractCorImagens(corRec: ApiRecord): ProdutoCorImagem[] | undefined {
+function extractCorImagens(corRec: ApiRecord): ProdutoMidia[] | undefined {
   const arr = asArray(corRec.imagens ?? corRec.fotos ?? corRec.images);
   if (arr.length === 0) return undefined;
 
-  const mapped: ProdutoCorImagem[] = arr
+  const mapped: ProdutoMidia[] = arr
     .map(asRecord)
-    .map((rec, idx): ProdutoCorImagem | null => {
+    .map((rec, idx): ProdutoMidia | null => {
+      const tipo = readString(rec, ["tipo", "type"], "image").toLowerCase() as "image" | "video";
+      const url = readString(rec, ["url", "src", "url_full", "imagem_full", "full"]) || "";
       const urlFull = readString(rec, ["url_full", "imagem_full", "full", "url", "src"]) || null;
       const urlThumb = readString(rec, ["url_thumb", "imagem_thumb", "thumb", "thumbnail"]) || urlFull;
-      if (!urlFull && !urlThumb) return null;
+      if (!url && !urlFull && !urlThumb) return null;
+
       return {
         id: readString(rec, ["id", "uuid"]) || undefined,
+        url: url || urlFull || urlThumb || "",
+        tipo: tipo === "video" ? "video" : "image",
         url_thumb: urlThumb && isValidImageUrl(urlThumb) ? urlThumb : null,
         url_full: urlFull && isValidImageUrl(urlFull) ? urlFull : (urlThumb && isValidImageUrl(urlThumb) ? urlThumb : null),
+        poster_url: readString(rec, ["poster_url", "posterUrl", "poster", "thumb", "imagem_thumb"]),
         principal: readBoolean(rec, ["principal", "main", "primary"], false),
         ordem: readNumber(rec, ["ordem", "order", "posicao", "position"], idx),
       };
     })
-    .filter((img): img is ProdutoCorImagem => !!img && (!!img.url_full || !!img.url_thumb));
+    .filter((img): img is ProdutoMidia => !!img && (!!img.url || !!img.url_full || !!img.url_thumb));
 
   if (mapped.length === 0) return undefined;
 
