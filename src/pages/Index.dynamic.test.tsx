@@ -12,6 +12,10 @@
  vi.mock("@/components/LoadingOverlay", () => ({ LoadingOverlay: () => <div data-testid="loading-overlay" /> }));
  vi.mock("@/components/QuickActions", () => ({ QuickActions: () => <div data-testid="quick-actions" /> }));
  
+ vi.mock("@/hooks/useProducts", () => ({
+   useProducts: vi.fn().mockReturnValue({ loading: false, produtos: [] }),
+ }));
+ 
  // Mock vitrineApiService
  vi.mock("@/services/vitrineApiService", async () => {
    const actual = await vi.importActual("@/services/vitrineApiService");
