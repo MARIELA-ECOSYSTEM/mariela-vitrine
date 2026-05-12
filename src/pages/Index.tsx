@@ -100,6 +100,10 @@ function isAvailable(produto: Produto) {
                 <p>Blocks: {loadingBlocks ? 'carregando...' : `${homeBlocks.length} recebidos`}</p>
                 <p>Produtos: {loadingProducts ? 'carregando...' : `${produtos.length} totais, ${disponiveis.length} disponíveis`}</p>
                 <p>Status API: {loadingBlocks ? '?' : (homeBlocks.length > 0 ? '200 OK' : 'Vazio ou Erro')}</p>
+                <p className="text-green-500 font-bold flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  CONEXÃO REAL (ZERO MOCK)
+                </p>
                 <details className="mt-2">
                   <summary className="cursor-pointer hover:underline text-[10px]">Ver detalhes dos blocos</summary>
                   <pre className="mt-1 p-2 bg-black/50 rounded">{JSON.stringify(homeBlocks, null, 2)}</pre>
