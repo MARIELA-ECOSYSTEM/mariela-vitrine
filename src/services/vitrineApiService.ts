@@ -1023,7 +1023,7 @@ function unwrapList(response: unknown): unknown[] {
      const data = asRecord(asRecord(payload).data ?? payload);
      return { data: data as ConfigResponse["data"] };
    }
-   return result.data;
+    return result.data as ConfigResponse;
  }
 
  function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
@@ -1037,7 +1037,7 @@ function unwrapList(response: unknown): unknown[] {
      const data = asArray(asRecord(payload).data ?? payload);
      return { data: data as HomeBlock[] };
    }
-   return result.data;
+    return result.data as HomeBlocksResponse;
  }
 
 function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
