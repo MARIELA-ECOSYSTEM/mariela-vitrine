@@ -110,8 +110,9 @@ export const HeroBannerCarousel = () => {
         if (key.toLowerCase().startsWith("utm_")) params.set(key, value);
       });
     } catch {}
-    params.set("colecaoId", currentColecao.id);
-    navigate(`/products?${params.toString()}`);
+     const baseUrl = `/collections/${currentColecao.id}`;
+     const queryString = params.toString();
+     navigate(queryString ? `${baseUrl}?${queryString}` : baseUrl);
   };
 
   // Loading state com Skeleton para evitar layout shift
