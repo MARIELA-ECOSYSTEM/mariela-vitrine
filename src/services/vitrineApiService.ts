@@ -4,7 +4,11 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
  import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
 
-const isLocal = window.location.hostname === "localhost" || window.location.hostname.includes("lovable.app") || window.location.hostname.includes("preview");
+const isLocal = 
+  window.location.hostname === "localhost" || 
+  window.location.hostname.includes("lovable.app") || 
+  window.location.hostname.includes("lovableproject.com") || 
+  window.location.hostname.includes("preview");
 const LOCAL_PROJECT_ID = "zbmdrncgsuvjexpiezbr";
 const VITRINE_API_BASE_URL = isLocal && LOCAL_PROJECT_ID
   ? `https://${LOCAL_PROJECT_ID}.supabase.co/functions/v1/vitrine-api`
