@@ -52,13 +52,6 @@ const ManualLookCard = ({ look, allProducts, muted, onToggleMute }: ManualLookCa
   const isDev = import.meta.env.DEV;
   const isDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugLooks") === "1";
 
-  if (mediaError) {
-    if (isDev && isDebug) {
-      console.warn(`[MonteSeuLook] Look Manual "${look.nome}" (${look.id}): Mídia editorial falhou ao carregar. Item omitido.`);
-    }
-    return null;
-  }
-
   const linkedProducts = look.produtos_vinculados
     .map((pid) => {
       const p = allProducts.find((p) => p.produtoId === pid || String(p.id) === pid);
@@ -69,15 +62,22 @@ const ManualLookCard = ({ look, allProducts, muted, onToggleMute }: ManualLookCa
     })
     .filter((p): p is Produto => !!p);
 
-  useEffect(() => {
-    if (look.midia_editorial_tipo === "video" && videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.play().catch(() => setIsPlaying(false));
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isPlaying, look.midia_editorial_tipo]);
+   useEffect(() => {
+     if (look.midia_editorial_tipo === "video" && videoRef.current) {
+       if (isPlaying) {
+         videoRef.current.play().catch(() => setIsPlaying(false));
+       } else {
+         videoRef.current.pause();
+       }
+     }
+   }, [isPlaying, look.midia_editorial_tipo]);
+
+   if (mediaError) {
+     if (isDev && isDebug) {
+       console.warn(`[MonteSeuLook] Look Manual "${look.nome}" (${look.id}): Mídia editorial falhou ao carregar. Item omitido.`);
+     }
+     return null;
+   }
 
   const handleSelectLook = () => {
     const event = new CustomEvent("monte-seu-look:select-products", {
