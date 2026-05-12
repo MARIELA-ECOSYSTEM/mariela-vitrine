@@ -28,11 +28,12 @@ serve(async (req) => {
       }
 
       // 2. Mapeamento Inteligente Real (Home Blocks)
-      if (path === '/home/blocks') {
-        const [configResp, colecoesResp, destaquesResp] = await Promise.all([
+      if (path === '/home/blocks' || path === '/blocks') {
+        const [configResp, colecoesResp, destaquesResp, promocoesResp] = await Promise.all([
           fetch(`${PRODUCTION_API_URL}/config`),
           fetch(`${PRODUCTION_API_URL}/colecoes`),
-          fetch(`${PRODUCTION_API_URL}/destaques`)
+          fetch(`${PRODUCTION_API_URL}/destaques`),
+          fetch(`${PRODUCTION_API_URL}/produtos?limit=1&em_promocao=true`)
         ]);
 
         const blocks = [];
@@ -52,7 +53,22 @@ serve(async (req) => {
           }
         }
 
-        blocks.push({ id: "latest-products", tipo: "produtos", titulo: "Novidades", prioridade: 10, config: { filter: "novidades", limit: 8, estilo: "grade" } });
+        
+        if (promocoesResp.ok) {
+          const promocoesData = await promocoesResp.json();
+          const items = promocoesData.data || promocoesData.items || [];
+          if (items.length > 0) {
+            blocks.push({ 
+              id: "featured-promotions", 
+              tipo: "produtos", 
+              titulo: "Promoções Imperdíveis", 
+              prioridade: 5, 
+              config: { filter: "promocoes", limit: 4, estilo: "grade", linkLabel: "Ver todas as ofertas", linkTo: "/products?filter=promocoes" } 
+            });
+          }
+        }
+
+        blocks.push({ id: "latest-products", tipo: "produtos", titulo: "Novidades", prioridade: 10, config: { filter: "novidades", limit: 8, estilo: "grade", linkLabel: "Ver tudo", linkTo: "/products?filter=novidades" } });
 
         return new Response(JSON.stringify({ data: blocks }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
