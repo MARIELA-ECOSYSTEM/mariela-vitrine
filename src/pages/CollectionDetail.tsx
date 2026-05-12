@@ -1,12 +1,12 @@
-  import { useEffect, useState, useMemo, useCallback } from "react";
-  import { useParams, useLocation, Link, useSearchParams } from "react-router-dom";
+  import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+  import { useParams, Link, useSearchParams } from "react-router-dom";
  import { Header } from "@/components/Header";
  import { Footer } from "@/components/Footer";
   import { Breadcrumbs } from "@/components/Breadcrumbs";
  import { PageContainer } from "@/components/PageContainer";
  import { ProductCard } from "@/components/ProductCard";
   import { ProductsLoadingSkeleton, ProductSkeleton } from "@/components/ProductSkeleton";
-  import { ProductFilters } from "@/components/ProductFilters";
+  import { ProductFilters, FiltersContent } from "@/components/ProductFilters";
  import { 
    vitrineApiService, 
     type ColecaoDestaque,
@@ -54,7 +54,20 @@
     const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
     const [faixaPreco, setFaixaPreco] = useState<[number, number]>([0, 0]);
     const [precoAlterado, setPrecoAlterado] = useState(false);
-    const [paginaAtual, setPaginaAtual] = useState(1);
+    const [paginaAtual, setPaginaAtual] = useState(() => {
+      return Number(searchParams.get("page")) || 1;
+    });
+    const [loadingMore, setLoadingMore] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Estado "rascunho" para filtros mobile
+    const [draftFilters, setDraftFilters] = useState<{
+      categoria?: string;
+      cores?: string[];
+      tamanhos?: string[];
+      preco?: [number, number];
+      precoAlterado?: boolean;
+    }>({});
  
    useEffect(() => {
      if (!id) return;
@@ -82,29 +95,69 @@
            limit: 50
          });
  
-         if (active) {
-           setProdutos(productsPage.items);
-           setLoading(false);
-         }
- 
-       } catch (err) {
-         console.error("[CollectionDetail] Error fetching data:", err);
-         if (active) {
-           setError(true);
-           setLoading(false);
-         }
-       }
-     };
- 
-     fetchData();
- 
-     return () => {
-       active = false;
-     };
+          if (active) {
+            setProdutos(productsPage.items);
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error("[CollectionDetail] Error fetching data:", err);
+          if (active) {
+            setError(true);
+            setLoading(false);
+          }
+        }
+      };
+  
+      fetchData();
+  
+      return () => {
+        active = false;
+      };
     }, [id]);
 
+    // Sincronizar filtros com URL
+    useEffect(() => {
+      const params = new URLSearchParams();
+      if (categoriaSelecionada !== "todas") params.set("categoria", categoriaSelecionada);
+      if (coresSelecionadas.length > 0) params.set("cores", coresSelecionadas.join(","));
+      if (tamanhosSelecionados.length > 0) params.set("tamanhos", tamanhosSelecionados.join(","));
+      if (precoAlterado) {
+        params.set("min", faixaPreco[0].toString());
+        params.set("max", faixaPreco[1].toString());
+      }
+      if (ordenarPor !== "padrao") params.set("sort", ordenarPor);
+      if (paginaAtual > 1) params.set("page", paginaAtual.toString());
+
+      const currentParams = searchParams.toString();
+      const nextParams = params.toString();
+      if (currentParams !== nextParams) {
+        setSearchParams(params, { replace: true });
+      }
+    }, [categoriaSelecionada, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado, ordenarPor, paginaAtual, setSearchParams]);
+
+    // Carregar filtros da URL no mount
+    useEffect(() => {
+      const cat = searchParams.get("categoria");
+      const cores = searchParams.get("cores");
+      const tams = searchParams.get("tamanhos");
+      const min = searchParams.get("min");
+      const max = searchParams.get("max");
+      const sort = searchParams.get("sort");
+      const page = searchParams.get("page");
+
+      if (cat) setCategoriaSelecionada(cat);
+      if (cores) setCoresSelecionadas(cores.split(","));
+      if (tams) setTamanhosSelecionados(tams.split(","));
+      if (min && max) {
+        setFaixaPreco([Number(min), Number(max)]);
+        setPrecoAlterado(true);
+      }
+      if (sort) setOrdenarPor(sort);
+      if (page) setPaginaAtual(Number(page));
+    }, []); // Só no mount
+
     // Filtragem e Ordenação local (Premium Feel)
-    const produtosFiltrados = useMemo(() => {
+    const produtosFiltradosFull = useMemo(() => {
       let filtrados = [...produtos];
 
       // Filtro de categoria
@@ -137,6 +190,37 @@
 
       return filtrados;
     }, [produtos, categoriaSelecionada, ordenarPor, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado]);
+
+    // Paginação
+    const produtosFiltrados = useMemo(() => {
+      return produtosFiltradosFull.slice(0, paginaAtual * produtosPorPagina);
+    }, [produtosFiltradosFull, paginaAtual]);
+
+    const hasMore = produtosFiltrados.length < produtosFiltradosFull.length;
+
+    const carregarMais = useCallback(() => {
+      if (!hasMore || loadingMore) return;
+      setLoadingMore(true);
+      setTimeout(() => {
+        setPaginaAtual(prev => prev + 1);
+        setLoadingMore(false);
+      }, 600); // Shimmer feel
+    }, [hasMore, loadingMore]);
+
+    // Handler para aplicar filtros mobile (Delayed update)
+    const applyMobileFilters = useCallback(() => {
+      if (draftFilters.categoria !== undefined) setCategoriaSelecionada(draftFilters.categoria);
+      if (draftFilters.cores !== undefined) setCoresSelecionadas(draftFilters.cores);
+      if (draftFilters.tamanhos !== undefined) setTamanhosSelecionados(draftFilters.tamanhos);
+      if (draftFilters.preco !== undefined) setFaixaPreco(draftFilters.preco);
+      if (draftFilters.precoAlterado !== undefined) setPrecoAlterado(draftFilters.precoAlterado);
+      
+      setPaginaAtual(1);
+      setDraftFilters({});
+      // Close sheet logic is handled by the Button click usually if we wrap it, 
+      // but here we rely on the component's internal state if we had it.
+      // For now, we just update the actual states.
+    }, [draftFilters]);
 
     // SEO Dinâmico
     useEffect(() => {
@@ -308,26 +392,26 @@
               <aside className="hidden lg:block w-64 space-y-8 shrink-0">
                 <div className="sticky top-24">
                   <h3 className="font-serif text-xl mb-6 border-b pb-2">Filtros</h3>
-                  <ProductFilters 
-                    categoriaSelecionada={categoriaSelecionada}
-                    setCategoriaSelecionada={setCategoriaSelecionada}
-                    coresSelecionadas={coresSelecionadas}
-                    setCoresSelecionadas={setCoresSelecionadas}
-                    tamanhosSelecionados={tamanhosSelecionados}
-                    setTamanhosSelecionados={setTamanhosSelecionados}
-                    faixaPreco={faixaPreco}
-                    setFaixaPreco={setFaixaPreco}
-                    setPrecoAlterado={setPrecoAlterado}
-                    precoAlterado={precoAlterado}
-                    coresDisponiveis={coresDisponiveis}
-                    tamanhosDisponiveis={tamanhosDisponiveis}
-                    precoMin={precoMinMax.min}
-                    precoMax={precoMinMax.max}
-                    onLimparFiltros={handleLimparFiltros}
-                    setPaginaAtual={setPaginaAtual}
-                    activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
-                    produtosFiltradosParcial={produtos}
-                  />
+                    <ProductFilters 
+                      categoriaSelecionada={categoriaSelecionada}
+                      setCategoriaSelecionada={setCategoriaSelecionada}
+                      coresSelecionadas={coresSelecionadas}
+                      setCoresSelecionadas={setCoresSelecionadas}
+                      tamanhosSelecionados={tamanhosSelecionados}
+                      setTamanhosSelecionados={setTamanhosSelecionados}
+                      faixaPreco={faixaPreco}
+                      setFaixaPreco={setFaixaPreco}
+                      setPrecoAlterado={setPrecoAlterado}
+                      precoAlterado={precoAlterado}
+                      coresDisponiveis={coresDisponiveis}
+                      tamanhosDisponiveis={tamanhosDisponiveis}
+                      precoMin={precoMinMax.min}
+                      precoMax={precoMinMax.max}
+                      onLimparFiltros={handleLimparFiltros}
+                      setPaginaAtual={setPaginaAtual}
+                      activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
+                      produtosFiltradosParcial={produtos}
+                    />
                 </div>
               </aside>
 
@@ -341,24 +425,33 @@
                     {/* Mobile Filter Trigger */}
                     <div className="lg:hidden">
                       <ProductFilters 
-                        categoriaSelecionada={categoriaSelecionada}
-                        setCategoriaSelecionada={setCategoriaSelecionada}
-                        coresSelecionadas={coresSelecionadas}
-                        setCoresSelecionadas={setCoresSelecionadas}
-                        tamanhosSelecionados={tamanhosSelecionados}
-                        setTamanhosSelecionados={setTamanhosSelecionados}
-                        faixaPreco={faixaPreco}
-                        setFaixaPreco={setFaixaPreco}
-                        setPrecoAlterado={setPrecoAlterado}
-                        precoAlterado={precoAlterado}
+                        categoriaSelecionada={draftFilters.categoria ?? categoriaSelecionada}
+                        setCategoriaSelecionada={(val) => setDraftFilters(prev => ({ ...prev, categoria: val }))}
+                        coresSelecionadas={draftFilters.cores ?? coresSelecionadas}
+                        setCoresSelecionadas={(val) => setDraftFilters(prev => ({ ...prev, cores: val }))}
+                        tamanhosSelecionados={draftFilters.tamanhos ?? tamanhosSelecionados}
+                        setTamanhosSelecionados={(val) => setDraftFilters(prev => ({ ...prev, tamanhos: val }))}
+                        faixaPreco={draftFilters.preco ?? faixaPreco}
+                        setFaixaPreco={(val) => setDraftFilters(prev => ({ ...prev, preco: val }))}
+                        setPrecoAlterado={(val) => setDraftFilters(prev => ({ ...prev, precoAlterado: val }))}
+                        precoAlterado={draftFilters.precoAlterado ?? precoAlterado}
                         coresDisponiveis={coresDisponiveis}
                         tamanhosDisponiveis={tamanhosDisponiveis}
                         precoMin={precoMinMax.min}
                         precoMax={precoMinMax.max}
-                        onLimparFiltros={handleLimparFiltros}
+                        onLimparFiltros={() => {
+                          setDraftFilters({
+                            categoria: "todas",
+                            cores: [],
+                            tamanhos: [],
+                            preco: [precoMinMax.min, precoMinMax.max],
+                            precoAlterado: false
+                          });
+                        }}
                         setPaginaAtual={setPaginaAtual}
                         activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
                         produtosFiltradosParcial={produtos}
+                        onApplyFilters={applyMobileFilters}
                       />
                     </div>
                   </div>
@@ -380,11 +473,33 @@
                 {loading ? (
                   <ProductsLoadingSkeleton count={6} />
                 ) : produtosFiltrados.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-12">
-                    {produtosFiltrados.map((produto) => (
-                      <ProductCard key={produto.id} produto={produto} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-12">
+                      {produtosFiltrados.map((produto) => (
+                        <ProductCard key={produto.id} produto={produto} />
+                      ))}
+                    </div>
+                    
+                    {hasMore && (
+                      <div className="mt-16 text-center">
+                        <Button 
+                          variant="outline" 
+                          size="lg" 
+                          onClick={carregarMais}
+                          disabled={loadingMore}
+                          className="min-w-[200px] uppercase tracking-widest text-xs border-primary/20 hover:bg-primary/5"
+                        >
+                          {loadingMore ? (
+                            <span className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
+                            </span>
+                          ) : "Carregar Mais Peças"}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="py-24 text-center">
                     <p className="text-muted-foreground font-light italic text-lg">
