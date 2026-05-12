@@ -1042,27 +1042,31 @@ interface PreviewPanelProps {
   onWhatsApp: () => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
   isMobile?: boolean;
-  missingSize?: boolean;
-  /** Categorias que exigem tamanho. Usado para destacar items sem tamanho na prévia. */
-  sizedCategories?: CategoryKey[];
-  /** Acionado quando o usuário toca num item incompleto na prévia. */
-  onPickSize?: (category: CategoryKey) => void;
+   missingSize?: boolean;
+   /** Categorias que exigem tamanho. Usado para destacar items sem tamanho na prévia. */
+   sizedCategories?: CategoryKey[];
+   /** Acionado quando o usuário toca num item incompleto na prévia. */
+   onPickSize?: (category: CategoryKey) => void;
+   relatedSuggestions?: Produto[];
+   onSelectItem?: (category: CategoryKey, productId: number, clearCategories?: CategoryKey[]) => void;
 }
 
-const PreviewPanel = ({
-  selectedProducts,
-  selectedColors,
-  selectedSizes,
-  totalValue,
-  hasAnySelection,
-  onClear,
-  onWhatsApp,
-  getImageForColor,
-  isMobile = false,
-  missingSize = false,
-  sizedCategories = ["blusa", "bottom", "vestido", "conjunto"],
-  onPickSize,
-}: PreviewPanelProps) => {
+ const PreviewPanel = ({
+   selectedProducts,
+   selectedColors,
+   selectedSizes,
+   totalValue,
+   hasAnySelection,
+   onClear,
+   onWhatsApp,
+   getImageForColor,
+   isMobile = false,
+   missingSize = false,
+   sizedCategories = ["blusa", "bottom", "vestido", "conjunto"],
+   onPickSize,
+   relatedSuggestions = [],
+   onSelectItem,
+ }: PreviewPanelProps) => {
   const isFullOutfit = selectedProducts.vestido || selectedProducts.conjunto;
   
   return (
