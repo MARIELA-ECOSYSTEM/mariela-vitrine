@@ -54,7 +54,7 @@ const Health = () => {
         check("Home Blocks", "/home/blocks", () => vitrineApiService.getHomeBlocks()),
         check("Coleções", "/colecoes", () => vitrineApiService.getColecoes()),
         check("Categorias", "/categorias", () => vitrineApiService.getCategorias()),
-        check("Monte Seu Look", "/monte-seu-look", () => vitrineApiService.getMonteSeuLook()),
+        check("Monte Seu Look", "/monte-seu-look", () => vitrineApiService.getMonteSeuLookData()),
         check("Configuração da Loja", "/config", () => vitrineApiService.getConfig()),
       ]);
 

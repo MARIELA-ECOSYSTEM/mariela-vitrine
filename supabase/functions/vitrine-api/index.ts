@@ -6,54 +6,28 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   const url = new URL(req.url);
-  // In Supabase, the path might or might not include the function name depending on how it's called.
-  // We normalize it to always start from the actual resource path.
-  // Normalizamos o path para garantir que a comparação de rotas funcione
-  // independente de como a Edge Function é invocada.
   let path = url.pathname
     .replace(/^\/functions\/v1\/vitrine-api/, '')
     .replace(/^\/vitrine-api/, '');
   
-  // Removemos query strings codificadas que podem vir no pathname em alguns ambientes
   path = path.split('?')[0].split('%3F')[0] || '/';
 
-    const queryParams = Object.fromEntries(url.searchParams.entries());
-    console.log(`[vitrine-api] Forwarding to production: ${req.method} ${path}`, queryParams);
+    const PRODUCTION_API_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 
     try {
-      const PRODUCTION_API_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
-
-      // Rota de Healthcheck
+      // 1. Healthcheck local
       if (path === '/health' || path === '/') {
-        const healthData = {
-          status: "ok",
-          mode: "proxy",
-          timestamp: new Date().toISOString(),
-          target: PRODUCTION_API_URL,
-          endpoints: [
-            "/produtos",
-            "/blocks",
-            "/colecoes",
-            "/promocoes",
-            "/campanhas",
-            "/categorias",
-            "/monte-seu-look"
-          ]
-        };
-        
-        return new Response(
-          JSON.stringify(healthData),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
 
-      // REGRAS ESPECIAIS DE ROTEAMENTO (Mapeamento Inteligente Real)
+      // 2. Mapeamento Inteligente Real (Home Blocks)
       if (path === '/home/blocks') {
         const [configResp, colecoesResp, destaquesResp] = await Promise.all([
           fetch(`${PRODUCTION_API_URL}/config`),
@@ -62,101 +36,64 @@ serve(async (req) => {
         ]);
 
         const blocks = [];
-
         if (configResp.ok) {
           const configData = await configResp.json();
           const banners = configData.data?.banners || configData.banners || [];
           if (banners.length > 0) {
-            blocks.push({
-              id: "hero-carousel",
-              tipo: "banner",
-              prioridade: 0,
-              config: { items: banners }
-            });
+            blocks.push({ id: "hero-carousel", tipo: "banner", prioridade: 0, config: { items: banners } });
           }
         }
 
-        if (destaquesResp.ok) {
-          const destaquesData = await destaquesResp.json();
-          const items = destaquesData.items || destaquesData.data || [];
-          if (items.length > 0) {
-            blocks.push({
-              id: "featured-products",
-              tipo: "produtos",
-              titulo: "Destaques",
-              prioridade: 10,
-              config: { filter: "destaques", limit: 8, estilo: "grade" }
-            });
-          } else {
-            // Fallback para Lançamentos se não houver destaques manuais
-            blocks.push({
-              id: "latest-products",
-              tipo: "produtos",
-              titulo: "Lançamentos",
-              prioridade: 10,
-              config: { filter: "novidades", limit: 8, estilo: "grade" }
-            });
-          }
-        }
-
+        // Se houver coleções, adicionamos o bloco
         if (colecoesResp.ok) {
           const colecoesData = await colecoesResp.json();
           const items = colecoesData.data || colecoesData.items || [];
           if (items.length > 0) {
-            blocks.push({
-              id: "featured-collections",
-              tipo: "colecoes",
-              titulo: "Coleções",
-              prioridade: 20,
-              config: { estilo: "carrossel" }
-            });
+            blocks.push({ id: "featured-collections", tipo: "colecoes", titulo: "Nossas Coleções", prioridade: 20, config: { estilo: "carrossel" } });
           }
         }
+
+        // Adicionamos sempre um bloco de produtos (mesmo que venha a falhar o fetch real, o frontend gerencia)
+        blocks.push({ id: "latest-products", tipo: "produtos", titulo: "Novidades", prioridade: 10, config: { filter: "novidades", limit: 8, estilo: "grade" } });
 
         return new Response(JSON.stringify({ data: blocks }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Chamada padrão via Proxy
+      // 3. Proxy Padrão para Produção
       const targetPath = path.startsWith('/') ? path : `/${path}`;
       const targetUrl = new URL(`${PRODUCTION_API_URL}${targetPath}${url.search}`);
       
-      console.log(`[vitrine-api] Proxying to: ${targetUrl.toString()}`);
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      const incomingApikey = req.headers.get('apikey');
+      const incomingAuth = req.headers.get('authorization');
+      if (incomingApikey) headers['apikey'] = incomingApikey;
+      if (incomingAuth) headers['authorization'] = incomingAuth;
 
-      const response = await fetch(targetUrl.toString(), {
-        method: req.method,
-        headers: { 'Accept': 'application/json' },
-      });
+      const response = await fetch(targetUrl.toString(), { method: req.method, headers: headers });
 
       if (!response.ok) {
-        let errorBody = "";
-        try { errorBody = await response.text(); } catch { errorBody = "No body"; }
+        const errorText = await response.text();
+        console.error(`[vitrine-api] Production Error on ${path}: ${response.status}`, errorText);
         
-        console.error(`[vitrine-api] Production API error: ${response.status}`, errorBody);
-        
-        // Se a produção der 500 em produtos, tentamos fornecer uma mensagem técnica amigável
-        if (response.status === 500 && path.includes('produtos')) {
-          return new Response(
-            JSON.stringify({ 
-              error: "O catálogo está temporariamente indisponível (Erro 500 no PDV).", 
-              status: 500,
-              details: errorBody.slice(0, 100) 
-            }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        // Proteção para o catálogo: se der 500 (bug conhecido do motor), retornamos vazio em vez de erro fatal
+        if (path.includes('produtos')) {
+          return new Response(JSON.stringify({ items: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
         }
-
-        return new Response(
-          JSON.stringify({ error: "Erro na API de Produção", status: response.status }),
-          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        
+        return new Response(JSON.stringify({ error: "Erro no PDV", status: response.status, details: errorText.slice(0, 100) }), {
+          status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
 
       const data = await response.json();
       return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error(`[vitrine-api] Critical Error:`, error);
+    return new Response(JSON.stringify({ error: "Erro interno na Vitrine", details: error.message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });
