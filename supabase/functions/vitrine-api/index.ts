@@ -139,19 +139,18 @@ serve(async (req) => {
         let errorBody = "";
         try { errorBody = await response.text(); } catch { errorBody = "No body"; }
         
-        console.error(`[vitrine-api] Production API error: ${response.status}`, errorBody);
+        console.error(`[vitrine-api] Production API error on ${path}: ${response.status}`, errorBody);
         
-        // Se a produção der 500 em produtos, tentamos fornecer uma mensagem técnica amigável
-        if (response.status === 500 && path.includes('produtos')) {
-          return new Response(
-            JSON.stringify({ 
-              error: "O catálogo está temporariamente indisponível (Erro 500 no PDV).", 
-              status: 500,
-              details: errorBody.slice(0, 100) 
-            }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
+        // Retornamos o erro original mas com cabeçalhos CORS e formato JSON
+        return new Response(
+          JSON.stringify({ 
+            error: "Erro na API de Produção", 
+            path: path,
+            status: response.status,
+            details: errorBody.slice(0, 200) 
+          }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
 
         return new Response(
           JSON.stringify({ error: "Erro na API de Produção", status: response.status }),
