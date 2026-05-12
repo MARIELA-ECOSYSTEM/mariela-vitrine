@@ -92,13 +92,13 @@
    }
  
    const link = document.createElement("link");
-   link.rel = "preload";
-   link.as = as;
-   link.href = url;
+   link.setAttribute("rel", "preload");
+   link.setAttribute("as", as);
+   link.setAttribute("href", url);
    if (priority !== "auto") {
      link.setAttribute("fetchpriority", priority);
    }
-   link.dataset.mediaPreload = url;
+   link.setAttribute("data-media-preload", url);
    document.head.appendChild(link);
  }
  
