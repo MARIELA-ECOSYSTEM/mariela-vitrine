@@ -25,13 +25,14 @@
    }
  
    const url = new URL(req.url);
-   const pathname = url.pathname;
+    // Normaliza o pathname removendo prefixos comuns de deploy do Supabase
+    const pathname = url.pathname.replace("/functions/v1/vitrine-api", "").replace("/vitrine-api", "");
  
-   console.info(`[vitrine-api] Request: ${req.method} ${pathname}`);
+    console.info(`[vitrine-api] Request: ${req.method} ${pathname} (original: ${url.pathname})`);
  
    try {
      // Rota: /home/blocks
-     if (pathname.includes("/home/blocks")) {
+      if (pathname === "/home/blocks" || pathname.endsWith("/home/blocks")) {
        const blocks = [
          {
            id: "banner-principal",
@@ -67,7 +68,7 @@
      }
  
      // Rota: /config
-     if (pathname.includes("/config")) {
+      if (pathname === "/config" || pathname.endsWith("/config")) {
         return createResponse({
          data: {
            nome_loja: "Mariela Moda Feminina",
@@ -82,22 +83,22 @@
      }
  
      // Rota: /destaques
-     if (pathname.includes("/destaques")) {
+      if (pathname === "/destaques" || pathname.endsWith("/destaques")) {
         return createResponse({ items: [] });
      }
  
      // Rota: /colecoes
-     if (pathname.includes("/colecoes")) {
+      if (pathname === "/colecoes" || pathname.endsWith("/colecoes")) {
         return createResponse({ data: [] });
      }
  
      // Rota: /categorias
-     if (pathname.includes("/categorias")) {
+      if (pathname === "/categorias" || pathname.endsWith("/categorias")) {
         return createResponse({ data: ["Blusas", "Vestidos", "Calças", "Acessórios"] });
      }
  
      // Rota: /produtos
-     if (pathname.includes("/produtos")) {
+      if (pathname === "/produtos" || pathname.endsWith("/produtos")) {
         return createResponse({ data: [], total: 0, limit: 20, offset: 0, hasMore: false });
      }
  
