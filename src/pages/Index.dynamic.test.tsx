@@ -15,7 +15,10 @@
  vi.mock("@/hooks/useProducts", () => ({
    useProducts: vi.fn().mockReturnValue({ 
      loading: false, 
-     produtos: [{ id: 1, nome: "Produto Teste", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: false, isNovidade: true }] 
+     produtos: [
+       { id: 1, nome: "Produto Novidade", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: false, isNovidade: true },
+       { id: 2, nome: "Produto Promo", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: true, isNovidade: false }
+     ] 
    }),
  }));
  
@@ -112,6 +115,8 @@
  
    it("handles empty blocks gracefully", async () => {
      (vitrineApiService.getHomeBlocks as any).mockResolvedValue([]);
+     const { useProducts } = await import("@/hooks/useProducts");
+     (useProducts as any).mockReturnValue({ loading: false, produtos: [] });
  
      render(
        <MemoryRouter>
