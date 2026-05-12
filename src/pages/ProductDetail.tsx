@@ -843,6 +843,7 @@ const ProductDetail = () => {
             <div className="animate-fade-in">
               <ImageGallery
                 images={imagensParaMostrar}
+                media={midiaParaMostrar}
                 imageColors={galeriaUnificada.map((g) => g.cor)}
                 colorSwatchMap={COLOR_MAP}
                 productName={
