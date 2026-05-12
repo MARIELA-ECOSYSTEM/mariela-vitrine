@@ -1622,16 +1622,40 @@ export const vitrineApiService = {
 
    isValidBrandingUrl: isValidUrl,
  
-   // Expõe diagnóstico no window para facilitar auditoria em tempo real (DEV ONLY)
-   _setupDiagnostic(): void {
-     if (import.meta.env.DEV && typeof window !== "undefined") {
-       (window as any).diagnosticoVitrine = () => {
-         console.info("Iniciando diagnóstico de coleções...");
-         this.getDiagnosticColecoesDestaque().then(console.table);
-       };
-     }
-   },
- 
+    _setupDiagnostic(): void {
+      if (import.meta.env.DEV && typeof window !== "undefined") {
+        (window as any).diagnosticoVitrine = () => {
+          console.group("🔍 [vitrine-api] Diagnóstico Completo");
+          
+          console.group("📦 Cache & Sessão");
+          console.info("Versão do Cache:", LOCAL_STORAGE_CACHE_KEY);
+          console.info("Memory Cache Keys:", Array.from(memoryCache.keys()));
+          console.groupEnd();
+
+          console.group("📂 Home Blocks");
+          this.getHomeBlocks().then(blocks => {
+            console.table(blocks.map(b => ({
+              id: b.id,
+              tipo: b.tipo,
+              titulo: b.titulo,
+              prioridade: b.prioridade,
+              tem_config: !!b.config
+            })));
+          });
+          console.groupEnd();
+
+          console.group("🏷️ Coleções Destaque");
+          this.getDiagnosticColecoesDestaque().then(d => console.log(d));
+          console.groupEnd();
+
+          console.group("✨ Monte Seu Look");
+          this.getDiagnosticLooks().then(d => console.log(d));
+          console.groupEnd();
+
+          console.groupEnd();
+        };
+      }
+    },
    /**
     * Endpoint de diagnóstico interno (DEV ONLY).
     * Retorna o status detalhado de todas as coleções candidatas a destaque.
