@@ -148,7 +148,7 @@ export const HeroBannerCarousel = () => {
               isActive ? "opacity-100 z-10" : "opacity-0 z-0"
             )}
           >
-            {media?.type === "video" ? (
+            {media?.type === "video" && (isActive || Math.abs(idx - currentIndex) <= 1 || (currentIndex === colecoes.length - 1 && idx === 0) || (currentIndex === 0 && idx === colecoes.length - 1)) ? (
               <video
                 src={media.url}
                 autoPlay
