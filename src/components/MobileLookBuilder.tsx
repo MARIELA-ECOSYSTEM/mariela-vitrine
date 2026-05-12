@@ -770,6 +770,7 @@ interface CategorySectionProps {
   onColorChange: (color: string) => void;
   onSizeChange: (size: string) => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
+  getImageForLook?: (produto: Produto | null, cor: string) => string;
 }
 
 const CategorySection = ({
@@ -1009,6 +1010,7 @@ const PreviewPanel = ({
   onClear,
   onWhatsApp,
   getImageForColor,
+  getImageForLook,
   isMobile = false,
   missingSize = false,
   sizedCategories = ["blusa", "bottom", "vestido", "conjunto"],
