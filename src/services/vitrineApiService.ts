@@ -14,7 +14,9 @@ const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v10";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v11";
+
+const isDebugIntegracao = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugIntegracao") === "1";
 
 const CACHE_TTL = {
   config: 5 * 60 * 1000,
@@ -357,13 +359,22 @@ function createInvalidPayloadError(context: string): VitrineApiError {
   return new VitrineApiError(`Resposta inválida da vitrine em ${context}.`);
 }
 
-function logVitrineWarning(message: string, details?: unknown): void {
-  if (import.meta.env.DEV) {
-    console.warn(`[vitrine-api] ${message}`, details ?? "");
+function logVitrineWarning(message: string, details?: unknown, level: 'warn' | 'info' | 'error' = 'warn'): void {
+  if (import.meta.env.DEV || isDebugIntegracao) {
+    const label = `[vitrine-api]${isDebugIntegracao ? ' [DEBUG]' : ''}`;
+    if (level === 'error') console.error(`${label} ${message}`, details ?? "");
+    else if (level === 'info') console.info(`${label} ${message}`, details ?? "");
+    else console.warn(`${label} ${message}`, details ?? "");
     return;
   }
-  // Produção: silêncio total. Falhas técnicas não devem poluir o
-  // console do usuário final — a UI já trata via fallback silencioso.
+}
+
+export function clearVitrineCache(): void {
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(LOCAL_STORAGE_CACHE_KEY);
+    memoryCache.clear();
+    logVitrineWarning("Cache da vitrine limpo com sucesso.", null, 'info');
+  }
 }
 
 export function getVitrineApiErrorMessage(error: unknown): string {
@@ -1302,25 +1313,33 @@ export const vitrineApiService = {
     * Busca os blocos dinâmicos da Home orientados pelo Motor de Campanhas.
     * Em caso de falha, retorna um conjunto padrão (fallback resiliente).
     */
-   async getHomeBlocks(): Promise<HomeBlock[]> {
-     try {
-       const response = await fetchCachedJson<HomeBlocksResponse>(
-         "/home/blocks",
-         undefined,
-         CACHE_TTL.homeBlocks
-       );
-       
-       if (!response || !Array.isArray(response.data)) {
-         throw createInvalidPayloadError("getHomeBlocks");
-       }
- 
-        const sorted = response.data.sort((a, b) => a.prioridade - b.prioridade);
-        return sorted;
-     } catch (error) {
-       logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
-       return [];
-     }
-    },
+  async getHomeBlocks(): Promise<HomeBlock[]> {
+    try {
+      const url = buildUrl("/home/blocks");
+      if (isDebugIntegracao) console.info(`[DEBUG] Chamando Home Blocks: ${url}`);
+
+      const response = await fetchCachedJson<HomeBlocksResponse>(
+        "/home/blocks",
+        undefined,
+        CACHE_TTL.homeBlocks
+      );
+      
+      if (isDebugIntegracao) {
+        console.info(`[DEBUG] Home Blocks recebidos:`, response?.data?.length || 0, response?.data);
+      }
+
+      if (!response || !Array.isArray(response.data)) {
+        logVitrineWarning("Payload de Home Blocks inválido ou vazio", response, 'error');
+        return [];
+      }
+
+      const sorted = response.data.sort((a, b) => a.prioridade - b.prioridade);
+      return sorted;
+    } catch (error) {
+      logVitrineWarning("Falha ao carregar blocos dinâmicos da Home", error, 'error');
+      return [];
+    }
+  },
  
   /**
    * Busca os dados editoriais para o Monte Seu Look (sugestões e looks manuais).
@@ -1382,13 +1401,34 @@ export const vitrineApiService = {
   },
 
   async getProdutosPage(params?: QueryParams): Promise<ProdutosPage> {
+    if (isDebugIntegracao) {
+      console.group("[DEBUG] getProdutosPage");
+      console.info("Parâmetros:", params);
+    }
+
     const [response, destaques] = await Promise.all([
       fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
       this.getDestaques(),
     ]);
-    const items = unwrapList(response)
-      .map(mapProduto)
-      .filter((produto): produto is Produto => Boolean(produto));
+    const rawItems = unwrapList(response);
+    if (isDebugIntegracao) console.info(`Total de itens brutos da API: ${rawItems.length}`);
+
+    const mappedItems = rawItems.map(item => {
+      const mapped = mapProduto(item);
+      if (!mapped && isDebugIntegracao) {
+        const product = asRecord(asRecord(item).data ?? item);
+        const id = readString(product, ["id", "produto_id", "produtoId", "sku"]);
+        console.warn(`[DEBUG] Produto ${id} descartado pelo parser ou elegibilidade`);
+      }
+      return mapped;
+    });
+
+    const items = mappedItems.filter((produto): produto is Produto => Boolean(produto));
+
+    if (isDebugIntegracao) {
+      console.info(`Total de itens após mapping/elegibilidade: ${items.length}`);
+      console.groupEnd();
+    }
 
     return {
       items: applyDestaquesToProdutos(items, destaques),

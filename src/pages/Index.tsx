@@ -31,6 +31,11 @@ function isAvailable(produto: Produto) {
      return params.get("debugHome") === "1" && import.meta.env.DEV;
    }, [search]);
  
+  const isDebugIntegracao = useMemo(() => {
+    const params = new URLSearchParams(search);
+    return params.get("debugIntegracao") === "1";
+  }, [search]);
+
    const disponiveis = useMemo(() => produtos.filter(isAvailable), [produtos]);
    const isEmpty = !loadingBlocks && !loadingProducts && homeBlocks.length === 0 && disponiveis.length === 0;
  
@@ -84,7 +89,25 @@ function isAvailable(produto: Produto) {
        <Header />
        <HeroBannerCarousel />
  
-       <div id="home-content">
+        <div id="home-content" className="relative">
+          {isDebugIntegracao && (
+            <div className="bg-black text-green-400 p-4 font-mono text-xs overflow-auto max-h-60 border-b border-green-900/30 sticky top-16 z-50">
+              <h3 className="font-bold border-b border-green-900/50 mb-2 pb-1 flex justify-between">
+                <span>DIAGNÓSTICO DE INTEGRAÇÃO</span>
+                <span className="text-[10px] opacity-50 cursor-pointer" onClick={() => window.location.reload()}>RECARREGAR</span>
+              </h3>
+              <div className="space-y-1">
+                <p>Blocks: {loadingBlocks ? 'carregando...' : `${homeBlocks.length} recebidos`}</p>
+                <p>Produtos: {loadingProducts ? 'carregando...' : `${produtos.length} totais, ${disponiveis.length} disponíveis`}</p>
+                <p>Status API: {loadingBlocks ? '?' : (homeBlocks.length > 0 ? '200 OK' : 'Vazio ou Erro')}</p>
+                <details className="mt-2">
+                  <summary className="cursor-pointer hover:underline text-[10px]">Ver detalhes dos blocos</summary>
+                  <pre className="mt-1 p-2 bg-black/50 rounded">{JSON.stringify(homeBlocks, null, 2)}</pre>
+                </details>
+              </div>
+            </div>
+          )}
+
          <DynamicHomeRenderer 
            blocks={homeBlocks} 
            loading={loadingBlocks} 
