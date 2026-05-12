@@ -76,12 +76,30 @@ serve(async (req) => {
       );
     }
 
-    // Fallback para outras rotas
+    // Fallback inteligente: se o path não for reconhecido, mas terminar em /blocks, retorna os blocos.
+    // Isso ajuda com variações de roteamento entre ambientes.
+    if (path.endsWith('/blocks') || path.endsWith('/blocks/')) {
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "novidades",
+              tipo: "produtos",
+              titulo: "Novidades",
+              subtitulo: "Recém-chegadas à coleção",
+              prioridade: 10,
+              config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+            }
+          ]
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: `Rota não encontrada: ${path}` }),
+      JSON.stringify({ error: `Rota não encontrada no vitrine-api: ${path}` }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
     console.error(`[vitrine-api] Error:`, error);
     return new Response(
