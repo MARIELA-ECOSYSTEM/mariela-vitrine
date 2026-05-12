@@ -180,9 +180,92 @@ export interface ColecaoResponse {
    }).optional(),
  });
 
- const HomeBlocksResponseSchema = z.object({
-   data: z.array(HomeBlockSchema)
- });
+  const HomeBlocksResponseSchema = z.object({
+    data: z.array(HomeBlockSchema)
+  });
+
+  const ProdutoListItemSchema = z.object({
+    id: z.string(),
+    nome: z.string(),
+    descricao: z.string().nullable(),
+    categoria: z.string().nullable(),
+    colecao: z.string().nullable(),
+    preco_venda: z.number(),
+    imagem_thumb: z.string().nullable(),
+    imagem_principal: z.string().nullable(),
+  });
+
+  const PaginationResponseSchema = z.object({
+    items: z.array(ProdutoListItemSchema),
+    limit: z.number(),
+    offset: z.number(),
+    total: z.number(),
+    hasMore: z.boolean(),
+  });
+
+  const ProdutoDetailSchema = z.object({
+    id: z.string(),
+    nome: z.string(),
+    descricao: z.string().nullable(),
+    categoria: z.string().nullable(),
+    colecao: z.string().nullable(),
+    preco_venda: z.number(),
+    imagem_thumb: z.string().nullable(),
+    imagem_principal: z.string().nullable(),
+    imagens: z.array(z.string()),
+    variantes_disponiveis: z.array(z.object({
+      id: z.string(),
+      cor: z.string().nullable(),
+      tamanho: z.string().nullable(),
+      disponivel: z.boolean(),
+    })),
+  });
+
+  const ProdutoDetailResponseSchema = z.object({
+    data: ProdutoDetailSchema
+  });
+
+  const CategoriaResponseSchema = z.object({
+    data: z.array(z.string())
+  });
+
+  const ColecaoResponseSchema = z.object({
+    data: z.array(z.unknown())
+  });
+
+  const RespostaDestaquesSchema = z.object({
+    items: z.array(z.object({
+      produto_id: z.string(),
+      badge: z.string(),
+      prioridade: z.number(),
+    }))
+  });
+
+  /**
+   * Estrutura centralizada para registro de validadores por rota.
+   * Facilita a manutenção e garante que novas rotas usem validação por padrão.
+   */
+  const ROUTE_VALIDATORS = {
+    config: validateConfigResponse,
+    homeBlocks: validateHomeBlocksResponse,
+    produtos: validatePaginationResponse,
+    produtoDetail: validateProdutoDetailResponse,
+    categorias: validateCategoriaResponse,
+    colecoes: validateColecaoResponse,
+    destaques: validateDestaquesResponse,
+  } as const;
+
+  function applyValidation<T>(payload: unknown, schema: z.ZodSchema<T>, context: string, fallback: () => T): T {
+    const result = schema.safeParse(payload);
+    if (!result.success) {
+      logVitrineWarning(`Schema de ${context} inválido (contrato quebrado)`, {
+        errors: result.error.format(),
+        payload
+      });
+      return fallback();
+    }
+    return result.data;
+  }
  
 /**
  * Coleção em destaque consumida da rota
@@ -1012,77 +1095,61 @@ function unwrapList(response: unknown): unknown[] {
   return asArray(data.items ?? data.data ?? data.produtos ?? data.results);
 }
 
- function validateConfigResponse(payload: unknown): ConfigResponse {
-   const result = ConfigSchema.safeParse(payload);
-   if (!result.success) {
-     logVitrineWarning("Schema de config inválido (contrato quebrado)", {
-       errors: result.error.format(),
-       payload
-     });
-     // Tenta unwrap manual se falhar o schema estrito para resiliência mínima
+  function validateConfigResponse(payload: unknown): ConfigResponse {
+    return applyValidation(payload, ConfigSchema, "config", () => {
+      const data = asRecord(asRecord(payload).data ?? payload);
+      return { data: data as ConfigResponse["data"] };
+    }) as ConfigResponse;
+  }
+ 
+  function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
+    return applyValidation(payload, HomeBlocksResponseSchema, "HomeBlocks", () => {
+      const data = asArray(asRecord(payload).data ?? payload);
+      return { data: data as HomeBlock[] };
+    }) as HomeBlocksResponse;
+  }
+
+ function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
+   return applyValidation(payload, PaginationResponseSchema, "pagination", () => {
+     const source = asRecord(payload);
+     const items = unwrapList(payload).filter((item) => readString(asRecord(item), ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]));
+     return {
+       items: items as ProdutoListItem[],
+       limit: readNumber(source, ["limit"], items.length),
+       offset: readNumber(source, ["offset"], 0),
+       total: readNumber(source, ["total"], items.length),
+       hasMore: readBoolean(source, ["hasMore", "has_more"], false),
+     };
+   }) as PaginationResponse<ProdutoListItem>;
+ }
+ 
+ function validateProdutoDetailResponse(payload: unknown): ProdutoDetailResponse {
+   return applyValidation(payload, ProdutoDetailResponseSchema, "produtoDetail", () => {
      const data = asRecord(asRecord(payload).data ?? payload);
-     return { data: data as ConfigResponse["data"] };
-   }
-    return result.data as ConfigResponse;
+     if (!readString(data, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"])) {
+       logVitrineWarning("Payload de detalhe de produto inválido", payload);
+       throw createInvalidPayloadError("produto detalhe");
+     }
+     return { data: data as unknown as ProdutoDetail };
+   }) as ProdutoDetailResponse;
  }
 
- function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
-   const result = HomeBlocksResponseSchema.safeParse(payload);
-   if (!result.success) {
-     logVitrineWarning("Schema de HomeBlocks inválido (contrato quebrado)", {
-       errors: result.error.format(),
-       payload
-     });
-     // Fallback manual para resiliência
-     const data = asArray(asRecord(payload).data ?? payload);
-     return { data: data as HomeBlock[] };
-   }
-    return result.data as HomeBlocksResponse;
+ function validateCategoriaResponse(payload: unknown): CategoriaResponse {
+   return applyValidation(payload, CategoriaResponseSchema, "categorias", () => {
+     const data = unwrapList(payload)
+       .map(toFilterOption)
+       .filter((categoria): categoria is FilterOption => Boolean(categoria))
+       .map((categoria) => categoria.label);
+     return { data };
+   }) as CategoriaResponse;
  }
-
-function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
-  const source = asRecord(payload);
-  const items = unwrapList(payload).filter((item) => readString(asRecord(item), ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]));
-  if (!Array.isArray(payload) && !Array.isArray(source.items) && !Array.isArray(source.data) && !Array.isArray(source.produtos) && !Array.isArray(source.results)) {
-    logVitrineWarning("Payload de produtos sem lista reconhecida", payload);
-  }
-
-  return {
-    items: items as ProdutoListItem[],
-    limit: readNumber(source, ["limit"], items.length),
-    offset: readNumber(source, ["offset"], 0),
-    total: readNumber(source, ["total"], items.length),
-    hasMore: readBoolean(source, ["hasMore", "has_more"], false),
-  };
-}
-
-function validateProdutoDetailResponse(payload: unknown): ProdutoDetailResponse {
-  const data = asRecord(asRecord(payload).data ?? payload);
-  if (!readString(data, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"])) {
-    logVitrineWarning("Payload de detalhe de produto inválido", payload);
-    throw createInvalidPayloadError("produto detalhe");
-  }
-  return { data: data as unknown as ProdutoDetail };
-}
-
-function validateCategoriaResponse(payload: unknown): CategoriaResponse {
-  const data = unwrapList(payload)
-    .map(toFilterOption)
-    .filter((categoria): categoria is FilterOption => Boolean(categoria))
-    .map((categoria) => categoria.label);
-  if (data.length === 0 && unwrapList(payload).length === 0) {
-    logVitrineWarning("Payload de categorias vazio ou inválido", payload);
-  }
-  return { data };
-}
-
-function validateColecaoResponse(payload: unknown): ColecaoResponse {
-  const data = unwrapList(payload).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
-  if (data.length === 0 && !Array.isArray(payload) && Object.keys(asRecord(payload)).length === 0) {
-    logVitrineWarning("Payload de coleções vazio ou inválido", payload);
-  }
-  return { data };
-}
+ 
+ function validateColecaoResponse(payload: unknown): ColecaoResponse {
+   return applyValidation(payload, ColecaoResponseSchema, "colecoes", () => {
+     const data = unwrapList(payload).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
+     return { data };
+   }) as ColecaoResponse;
+ }
 
 /**
  * Valida e normaliza a resposta de `/colecoes?detalhes=1&destaque=1`.
@@ -1200,18 +1267,19 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
    return validatedItems;
  }
 
-function validateDestaquesResponse(payload: unknown): RespostaDestaques {
-  const items = unwrapList(payload)
-    .map(asRecord)
-    .map((item) => ({
-      produto_id: readString(item, ["produto_id", "produtoId", "id", "codigoProduto", "codigo", "sku"]),
-      badge: readString(item, ["badge", "tipo", "type"]),
-      prioridade: readNumber(item, ["prioridade", "priority"], 0),
-    }))
-    .filter((item) => item.produto_id && isPublicProductBadgeType(item.badge));
-
-  return { items };
-}
+ function validateDestaquesResponse(payload: unknown): RespostaDestaques {
+   return applyValidation(payload, RespostaDestaquesSchema, "destaques", () => {
+     const items = unwrapList(payload)
+       .map(asRecord)
+       .map((item) => ({
+         produto_id: readString(item, ["produto_id", "produtoId", "id", "codigoProduto", "codigo", "sku"]),
+         badge: readString(item, ["badge", "tipo", "type"]),
+         prioridade: readNumber(item, ["prioridade", "priority"], 0),
+       }))
+       .filter((item) => item.produto_id && isPublicProductBadgeType(item.badge));
+     return { items };
+   }) as RespostaDestaques;
+ }
 
 function getProductHighlightKey(produto: Produto): string[] {
   return [produto.produtoId, produto.codigoProduto, String(produto.id)].filter((value): value is string => Boolean(value));
