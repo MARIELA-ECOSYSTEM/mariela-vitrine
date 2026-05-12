@@ -382,8 +382,8 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
 
   // Diagnóstico em DEV
   useEffect(() => {
-    debugProductImage("Products", imagemRes);
-  }, [imagemRes]);
+    debugProductImage("Products", imagemRes, produto);
+  }, [imagemRes, produto]);
 
   // Alt dinâmico via utilitário central — garante padronização entre
   // ProductCard, ProductDetail e Monte seu Look.
