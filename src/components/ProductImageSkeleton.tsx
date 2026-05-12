@@ -81,7 +81,7 @@ const SUPPORTS_FETCH_PRIORITY: boolean = (() => {
   if (typeof window === "undefined") return false;
   try {
     const probe = document.createElement("img");
-    return "fetchPriority" in probe || "fetchpriority" in probe;
+     return "fetchPriority" in probe;
   } catch {
     return false;
   }
@@ -89,7 +89,7 @@ const SUPPORTS_FETCH_PRIORITY: boolean = (() => {
 
 /**
  * Fallback: injeta um `<link rel="preload" as="image">` no <head> com
- * `fetchpriority="high"`. O navegador inicia o download da imagem antes
+  * `fetchPriority="high"`. O navegador inicia o download da imagem antes
  * do `<img>` real ser usado, dando-lhe prioridade alta na fila de rede.
  * Idempotente: nunca insere duplicado para a mesma URL.
  */
@@ -102,7 +102,7 @@ function injectPreloadLink(url: string, priority: PreloadPriority): void {
   link.rel = "preload";
   link.as = "image";
   link.href = url;
-  link.setAttribute("fetchpriority", "high");
+   link.setAttribute("fetchpriority", "high"); // atributo HTML é sempre lowercase
   link.dataset.preloadImg = url;
   document.head.appendChild(link);
 }
