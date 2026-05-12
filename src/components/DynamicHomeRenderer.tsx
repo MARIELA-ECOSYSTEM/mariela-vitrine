@@ -26,63 +26,65 @@
    const blockManualProducts = manualProducts?.[block.id];
  
    const renderContent = () => {
-     switch (block.tipo) {
-       case "produtos": {
-         const hasManualList = block.config?.produtos && block.config.produtos.length > 0;
-         // Se for lista manual e ainda não temos os produtos, não renderiza (espera o fetch principal)
-         if (hasManualList && !blockManualProducts) return null;
- 
-         const blockLimit = block.config?.limit || block.config?.max_items || 4;
-         const blockLayout = block.config?.estilo || "grade";
- 
-         return (
-           <FeaturedProducts
-             title={block.titulo || ""}
-             subtitle={block.subtitulo || undefined}
-             filter={(block.config?.filter as any) || "destaque"}
-             limit={blockLimit}
-             linkTo={block.config?.linkTo || "/products"}
-             linkLabel={block.config?.linkLabel || "Ver tudo"}
-             products={blockManualProducts}
-             layoutMode={blockLayout as any}
-           />
-         );
-       }
-       case "colecoes":
-         return <FeaturedCollections />;
-       case "banner":
-         if (!block.config?.mediaUrl) {
-           if (debug) return <DebugOmission block={block} reason="Falta mediaUrl" />;
-           return null;
-         }
-         return (
-           <BannerBlock
-             titulo={block.titulo}
-             subtitulo={block.subtitulo}
-             mediaUrl={block.config.mediaUrl}
-             mediaType={block.config.mediaType}
-             posterUrl={block.config.posterUrl}
-             ctaLabel={block.config.ctaLabel}
-             ctaUrl={block.config.ctaUrl}
-             priority={isAboveFold}
-           />
-         );
-       case "instagram":
-         if (!block.config?.posts || block.config.posts.length === 0) {
-           if (debug) return <DebugOmission block={block} reason="Falta posts" />;
-           return null;
-         }
-         return (
-           <InstagramBlock
-             titulo={block.titulo}
-             subtitulo={block.subtitulo}
-             posts={block.config.posts}
-           />
-         );
-       default:
-         if (debug) return <DebugOmission block={block} reason="Tipo desconhecido" />;
-         return null;
-     }
+      const isDebug = debug && import.meta.env.DEV;
+      
+      switch (block.tipo) {
+        case "produtos": {
+          const hasManualList = block.config?.produtos && block.config.produtos.length > 0;
+          if (hasManualList && !blockManualProducts) return null;
+  
+          const blockLimit = block.config?.limit || block.config?.max_items || 4;
+          const blockLayout = block.config?.estilo || "grade";
+  
+          return (
+            <FeaturedProducts
+              title={block.titulo || ""}
+              subtitle={block.subtitulo || undefined}
+              filter={(block.config?.filter as any) || "destaque"}
+              limit={blockLimit}
+              linkTo={block.config?.linkTo || "/products"}
+              linkLabel={block.config?.linkLabel || "Ver tudo"}
+              products={blockManualProducts}
+              layoutMode={blockLayout as any}
+              debug={isDebug}
+            />
+          );
+        }
+        case "colecoes":
+          return <FeaturedCollections debug={isDebug} />;
+        case "banner":
+          if (!block.config?.mediaUrl) {
+            if (isDebug) return <DebugOmission block={block} reason="Mídia ausente (mediaUrl)" details={block.config} />;
+            return null;
+          }
+          return (
+            <BannerBlock
+              titulo={block.titulo}
+              subtitulo={block.subtitulo}
+              mediaUrl={block.config.mediaUrl}
+              mediaType={block.config.mediaType}
+              posterUrl={block.config.posterUrl}
+              ctaLabel={block.config.ctaLabel}
+              ctaUrl={block.config.ctaUrl}
+              priority={isAboveFold}
+            />
+          );
+        case "instagram":
+          if (!block.config?.posts || block.config.posts.length === 0) {
+            if (isDebug) return <DebugOmission block={block} reason="Posts do instagram ausentes" details={block.config} />;
+            return null;
+          }
+          return (
+            <InstagramBlock
+              titulo={block.titulo}
+              subtitulo={block.subtitulo}
+              posts={block.config.posts}
+            />
+          );
+        default:
+          if (isDebug) return <DebugOmission block={block} reason="Tipo de bloco desconhecido" />;
+          return null;
+      }
    };
  
    const content = renderContent();
@@ -100,16 +102,16 @@
    );
  });
  
- const DebugOmission = ({ block, reason }: { block: HomeBlock, reason: string }) => (
-   <div className="p-4 border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 text-xs font-mono rounded-lg my-4">
-     <div className="flex items-center gap-2 mb-1">
-       <AlertCircle className="w-4 h-4" />
-       <strong>Bloco Omitido ({block.tipo}):</strong> {block.id}
-     </div>
-     <div>Motivo: {reason}</div>
-   </div>
- );
- 
+  const DebugOmission = ({ block, reason, details }: { block: HomeBlock, reason: string, details?: any }) => (
+    <div className="p-4 border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 text-xs font-mono rounded-lg my-4 overflow-hidden">
+      <div className="flex items-center gap-2 mb-1">
+        <AlertCircle className="w-4 h-4 shrink-0" />
+        <strong>Bloco Omitido ({block.tipo}):</strong> {block.id}
+      </div>
+      <div>Motivo: {reason}</div>
+      {details && <pre className="mt-2 text-[10px] bg-yellow-100/50 p-2 rounded overflow-auto max-h-32">{JSON.stringify(details, null, 2)}</pre>}
+    </div>
+  );
  BlockRenderer.displayName = "BlockRenderer";
  
  interface DynamicHomeRendererProps {

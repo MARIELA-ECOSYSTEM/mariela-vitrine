@@ -4,7 +4,7 @@
  import { useProducts } from "@/hooks/useProducts";
  import { Button } from "@/components/ui/button";
  import { Link } from "react-router-dom";
- import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
  import { cn } from "@/lib/utils";
 import type { Produto } from "@/data/products";
 import { isProductNovidade } from "@/lib/novidades";
@@ -18,15 +18,16 @@ interface FeaturedProductsProps {
   forceLoading?: boolean;
   linkTo: string;
   linkLabel: string;
-   products?: Produto[];
-   layoutMode?: "grade" | "lista" | "carrossel";
+    products?: Produto[];
+    layoutMode?: "grade" | "lista" | "carrossel";
+    debug?: boolean;
  }
 
 function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: string | null; destaque_publico?: string | null; recomendacao_publica?: string | null }) {
   return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
 }
 
- export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems = 1, forceLoading = false, linkTo, linkLabel, products, layoutMode = "grade" }: FeaturedProductsProps) => {
+  export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems = 1, forceLoading = false, linkTo, linkLabel, products, layoutMode = "grade", debug }: FeaturedProductsProps) => {
    const scrollContainerRef = useRef<HTMLDivElement>(null);
    const [canScrollLeft, setCanScrollLeft] = useState(false);
    const [canScrollRight, setCanScrollRight] = useState(false);
@@ -92,6 +93,16 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
    };
  
   if (!isLoading && displayed.length === 0) {
+    if (debug) return (
+      <div className="p-4 border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 text-xs font-mono rounded-lg my-4">
+        <div className="flex items-center gap-2 mb-1">
+          <AlertCircle className="w-4 h-4" />
+          <strong>Bloco Omitido (FeaturedProducts):</strong> "{title}"
+        </div>
+        <div>Motivo: Nenhum produto encontrado com o filtro "{filter}"</div>
+        <div>Total de produtos no catálogo: {produtos.length}</div>
+      </div>
+    );
     return null;
   }
 

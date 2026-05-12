@@ -300,13 +300,17 @@ export interface ColecaoResponse {
     destaques: validateDestaquesResponse,
   } as const;
 
-  function applyValidation<T>(payload: unknown, schema: z.ZodSchema<T>, context: string, fallback: () => T): T {
+  function applyValidation<T>(payload: unknown, schema: z.ZodSchema<T>, context: string, fallback: () => T, isDebug = false): T {
     const result = schema.safeParse(payload);
     if (!result.success) {
-      logVitrineWarning(`Schema de ${context} inválido (contrato quebrado)`, {
-        errors: result.error.format(),
-        payload
-      });
+      if (import.meta.env.DEV || isDebug) {
+        console.group(`[vitrine-api] Erro de Contrato: ${context}`);
+        console.error("Payload recebido:", payload);
+        console.error("Erros de validação:", result.error.format());
+        console.groupEnd();
+      }
+      
+      logVitrineWarning(`Schema de ${context} inválido (contrato quebrado)`);
       return fallback();
     }
     return result.data;
@@ -547,10 +551,7 @@ function createInvalidPayloadError(context: string): VitrineApiError {
 function logVitrineWarning(message: string, details?: unknown): void {
   if (import.meta.env.DEV) {
     console.warn(`[vitrine-api] ${message}`, details ?? "");
-    return;
   }
-  // Produção: silêncio total. Falhas técnicas não devem poluir o
-  // console do usuário final — a UI já trata via fallback silencioso.
 }
 
 export function getVitrineApiErrorMessage(error: unknown): string {
@@ -1123,10 +1124,14 @@ function unwrapList(response: unknown): unknown[] {
   }
  
   function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
+    const isDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugHome") === "1";
     return applyValidation(payload, HomeBlocksResponseSchema, "HomeBlocks", () => {
-      const data = asArray(asRecord(payload).data ?? payload);
+      const data = asArray(asRecord(payload).data ?? payload).filter(item => {
+        const rec = asRecord(item);
+        return rec.id && rec.tipo; 
+      });
       return { data: data as HomeBlock[] };
-    }) as HomeBlocksResponse;
+    }, isDebug) as HomeBlocksResponse;
   }
 
  function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
