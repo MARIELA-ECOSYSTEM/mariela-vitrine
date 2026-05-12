@@ -18,7 +18,7 @@
    return {
      ...actual,
      vitrineApiService: {
-       getHomeBlocks: vi.fn(),
+       getHomeBlocks: vi.fn().mockImplementation(async () => []),
        getConfig: vi.fn().mockResolvedValue({
          nomeLoja: "Mariela Teste",
          logoUrl: null,
@@ -45,7 +45,7 @@
          config: { filter: "novidades", limit: 4 },
        },
      ];
-     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+     (vitrineApiService.getHomeBlocks as any).mockResolvedValue([...mockBlocks].sort((a, b) => a.prioridade - b.prioridade));
  
      render(
        <MemoryRouter>
@@ -75,7 +75,7 @@
          config: { filter: "novidades" },
        },
      ];
-     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+     (vitrineApiService.getHomeBlocks as any).mockResolvedValue([...mockBlocks].sort((a, b) => a.prioridade - b.prioridade));
  
      render(
        <MemoryRouter>
