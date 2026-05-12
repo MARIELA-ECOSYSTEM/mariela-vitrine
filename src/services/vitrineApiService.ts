@@ -36,6 +36,7 @@ const CACHE_TTL = {
   produto: 2 * 60 * 1000,
    destaques: 5 * 60 * 1000,
    homeBlocks: 5 * 60 * 1000,
+   monteLook: 5 * 60 * 1000,
 } as const;
 
  const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
@@ -516,6 +517,8 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
    }
  }
 
+import { LookSuggestion, LookManual, MonteSeuLookData } from "@/data/products";
+
 function asRecord(value: unknown): ApiRecord {
   return value && typeof value === "object" && !Array.isArray(value) ? value as ApiRecord : {};
 }
@@ -951,6 +954,58 @@ function unwrapList(response: unknown): unknown[] {
   return asArray(data.items ?? data.data ?? data.produtos ?? data.results);
 }
 
+function validateMonteSeuLookResponse(payload: unknown): MonteSeuLookData {
+  const data = asRecord(asRecord(payload).data ?? payload);
+  const sugestoesRaw = asArray(data.sugestoes ?? data.sugestoes_monte_look);
+  const looksManuaisRaw = asArray(data.looks_manuais ?? data.looksManuais);
+
+  const sugestoes = sugestoesRaw.map(asRecord).map((item, idx): LookSuggestion | null => {
+    const id = readString(item, ["id", "uuid"]);
+    const titulo = readString(item, ["titulo", "title"]);
+    const midia_url = readString(item, ["midia_url", "midiaUrl", "url", "midia"]);
+    if (!id || !titulo || !midia_url) return null;
+
+    const midia_tipo_raw = readString(item, ["midia_tipo", "midiaTipo", "tipo"], "image").toLowerCase();
+    const midia_tipo = (midia_tipo_raw === "video" || midia_tipo_raw === "gif") ? midia_tipo_raw : "image";
+
+    return {
+      id,
+      titulo,
+      subtitulo: readOptionalString(item, ["subtitulo", "subtitle"]),
+      midia_url,
+      midia_tipo: midia_tipo as "image" | "gif" | "video",
+      poster_url: readOptionalString(item, ["poster_url", "posterUrl", "poster"]),
+      produtos_vinculados: asArray(item.produtos_vinculados ?? item.produtosVinculados ?? item.produtos).map(p => String(p)),
+      ordem: readNumber(item, ["ordem", "order"], idx),
+      ativo: readBoolean(item, ["ativo", "active", "enabled"], true),
+      data_inicio: readOptionalString(item, ["data_inicio", "dataInicio"]),
+      data_fim: readOptionalString(item, ["data_fim", "dataFim"]),
+    };
+  }).filter((s): s is LookSuggestion => !!s && s.ativo);
+
+  const looks_manuais = looksManuaisRaw.map(asRecord).map((item): LookManual | null => {
+    const id = readString(item, ["id", "uuid"]);
+    const nome = readString(item, ["nome", "name"]);
+    if (!id || !nome) return null;
+
+    const midia_editorial_tipo_raw = readString(item, ["midia_editorial_tipo", "midiaEditorialTipo"], null)?.toLowerCase();
+    const midia_editorial_tipo = (midia_editorial_tipo_raw === "video" || midia_editorial_tipo_raw === "gif") ? midia_editorial_tipo_raw : (midia_editorial_tipo_raw === "image" ? "image" : null);
+
+    return {
+      id,
+      nome,
+      midia_editorial_url: readOptionalString(item, ["midia_editorial_url", "midiaEditorialUrl", "midia_url"]),
+      midia_editorial_tipo: midia_editorial_tipo as "image" | "gif" | "video" | null,
+      produtos_vinculados: asArray(item.produtos_vinculados ?? item.produtosVinculados ?? item.produtos).map(p => String(p)),
+    };
+  }).filter((l): l is LookManual => !!l);
+
+  return {
+    sugestoes: sugestoes.sort((a, b) => a.ordem - b.ordem),
+    looks_manuais,
+  };
+}
+
 function validateConfigResponse(payload: unknown): ConfigResponse {
   const data = asRecord(asRecord(payload).data ?? payload);
   if (Object.keys(data).length === 0) {
@@ -1271,6 +1326,23 @@ export const vitrineApiService = {
      }
     },
  
+  /**
+   * Busca os dados editoriais para o Monte Seu Look (sugestões e looks manuais).
+   */
+  async getMonteSeuLookData(): Promise<MonteSeuLookData> {
+    try {
+      return await fetchCachedJson<MonteSeuLookData>(
+        "/monte-seu-look",
+        undefined,
+        CACHE_TTL.monteLook,
+        validateMonteSeuLookResponse
+      );
+    } catch (error) {
+      logVitrineWarning("Falha ao carregar dados do Monte Seu Look.", error);
+      return { sugestoes: [], looks_manuais: [] };
+    }
+  },
+
   async getConfig(): Promise<VitrineConfig> {
     try {
       return mapConfig(await fetchCachedJson<ConfigResponse>("/config", undefined, CACHE_TTL.config, validateConfigResponse));
