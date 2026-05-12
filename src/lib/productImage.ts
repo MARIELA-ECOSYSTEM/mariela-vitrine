@@ -39,6 +39,8 @@ export function getProductImageByColor(
   if (cor && Array.isArray(produto.cores) && produto.cores.length > 0) {
     const corMatch = produto.cores.find((c) => c?.cor === cor);
     const candidates = [
+      corMatch?.imagem_look_url,
+      corMatch?.imagem_card_url,
       corMatch?.imagem_full,
       corMatch?.imagem_thumb,
       corMatch?.imagens?.[0]?.url_full,
