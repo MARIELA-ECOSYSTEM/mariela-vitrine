@@ -1,6 +1,6 @@
  import { useState, useEffect, useRef, useMemo, useCallback } from "react";
  import { cn } from "@/lib/utils";
- import { applyMediaProps } from "@/lib/mediaUtils";
+ import { applyMediaProps, injectMediaPreload } from "@/lib/mediaUtils";
 
 interface ProductImageSkeletonProps {
   src: string;
@@ -71,49 +71,9 @@ type LoaderEntry = {
 
 export type PreloadPriority = "low" | "auto" | "high";
 
-// Detecta se o navegador suporta `fetchPriority` em <img>. Detecção
-// barata, executada UMA vez. Em browsers sem suporte (Safari < 17.2,
-// Firefox antigo), aplicamos um fallback via <link rel="preload"> para
-// pedidos "high" — assim mantemos a intenção de prioridade mesmo quando
-// o atributo direto é ignorado. "low" sem suporte fica apenas com
-// `decoding=async` (já não compete por padrão).
-const SUPPORTS_FETCH_PRIORITY: boolean = (() => {
-  if (typeof window === "undefined") return false;
-  try {
-    const probe = document.createElement("img");
-     return "fetchPriority" in probe;
-  } catch {
-    return false;
-  }
-})();
-
-/**
- * Fallback: injeta um `<link rel="preload" as="image">` no <head> com
-  * `fetchPriority="high"`. O navegador inicia o download da imagem antes
- * do `<img>` real ser usado, dando-lhe prioridade alta na fila de rede.
- * Idempotente: nunca insere duplicado para a mesma URL.
- */
-function injectPreloadLink(url: string, priority: PreloadPriority): void {
-  if (typeof document === "undefined") return;
-  if (priority !== "high") return; // só compensa o esforço para high
-  const selector = `link[data-preload-img="${CSS.escape(url)}"]`;
-  if (document.head.querySelector(selector)) return;
-  const link = document.createElement("link");
-  link.rel = "preload";
-  link.as = "image";
-  link.href = url;
-   link.setAttribute("fetchpriority", "high"); // atributo HTML é sempre lowercase
-  link.dataset.preloadImg = url;
-  document.head.appendChild(link);
-}
-
 function applyPriorityHints(img: HTMLImageElement, priority: PreloadPriority): void {
-  try {
-    if (SUPPORTS_FETCH_PRIORITY) {
-      (img as unknown as { fetchPriority?: string }).fetchPriority = priority;
-    }
-    img.decoding = "async";
-  } catch { /* navegadores antigos */ }
+   img.fetchPriority = priority;
+   img.decoding = "async";
 }
 
 const loadedImageCache = new Set<string>(); // chaves NORMALIZADAS já carregadas
@@ -137,13 +97,13 @@ export function preloadImage(src: string, priority: PreloadPriority = "low"): Pr
     // urgente (ex.: preload disparado em hover ganha boost ao usuário
     // tocar a seta). Browser respeita o último hint para o mesmo
     // request em curso.
-    if (rankPriority(priority) > rankPriority(existing.priority)) {
-      existing.priority = priority;
-      applyPriorityHints(existing.img, priority);
-      if (!SUPPORTS_FETCH_PRIORITY && priority === "high") {
-        injectPreloadLink(existing.realSrc, priority);
-      }
-    }
+     if (rankPriority(priority) > rankPriority(existing.priority)) {
+       existing.priority = priority;
+       applyPriorityHints(existing.img, priority);
+       if (priority === "high") {
+         injectMediaPreload(existing.realSrc, "image", "high");
+       }
+     }
     return existing.promise;
   }
 
@@ -151,12 +111,10 @@ export function preloadImage(src: string, priority: PreloadPriority = "low"): Pr
   // Default `low`: preloads em background nunca devem competir com a
   // imagem principal acima do fold. Quem pede prioridade maior (ex.:
   // touchstart na seta) sobe explicitamente.
-  applyPriorityHints(img, priority);
-  // Fallback para navegadores sem `fetchPriority`: usa <link rel=preload>
-  // para sinalizar prioridade alta ao stack de rede.
-  if (!SUPPORTS_FETCH_PRIORITY && priority === "high") {
-    injectPreloadLink(src, priority);
-  }
+   applyPriorityHints(img, priority);
+   if (priority === "high") {
+     injectMediaPreload(src, "image", "high");
+   }
 
   const promise = new Promise<void>((resolve, reject) => {
     img.onload = () => {
