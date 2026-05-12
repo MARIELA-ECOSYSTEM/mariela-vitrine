@@ -28,7 +28,9 @@
         headers,
       });
  
-     const data = await response.json();
+      const data = await response.json();
+      console.log(`[blocks] vitrine-api responded with status ${response.status}`);
+
       return new Response(JSON.stringify(data), {
         status: response.status,
         headers: { ...CORS_HEADERS, ...JSON_HEADER },
