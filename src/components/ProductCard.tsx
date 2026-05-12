@@ -420,6 +420,11 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
     }
   };
 
+  // Reset do índice ao trocar de cor para mostrar a nova galeria filtrada do início
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [corSelecionada]);
+
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
