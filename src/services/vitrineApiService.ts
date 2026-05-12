@@ -403,33 +403,8 @@ const DEFAULT_CONFIG: VitrineConfig = {
   instagram: null,
 };
 
- const DEFAULT_HOME_BLOCKS: HomeBlock[] = [
-   {
-     id: "novidades",
-     tipo: "produtos",
-     titulo: "Novidades",
-     subtitulo: "Recém-chegadas à coleção",
-     prioridade: 10,
-     config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-   },
-   {
-     id: "em_alta",
-     tipo: "produtos",
-     titulo: "Em alta",
-     subtitulo: "Peças em destaque na vitrine",
-     prioridade: 20,
-     config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-   },
-   {
-     id: "promocoes",
-     tipo: "produtos",
-     titulo: "Promoções",
-     subtitulo: "Descontos em peças selecionadas",
-     prioridade: 100,
-     config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
-   }
- ];
- 
+  const DEFAULT_HOME_BLOCKS: HomeBlock[] = [];
+
 const memoryCache = new Map<string, CacheEntry<unknown>>();
 const inFlightDestaques = new Map<string, Promise<ProdutoDestaquePublico[]>>();
 
@@ -1455,14 +1430,11 @@ export const vitrineApiService = {
           validateHomeBlocksResponse
         );
         
-        if (!response || !Array.isArray(response.data)) {
-          throw createInvalidPayloadError("getHomeBlocks");
-        }
-  
-        return response.data.sort((a, b) => a.prioridade - b.prioridade);
+        const blocks = response?.data || [];
+        return blocks.sort((a, b) => a.prioridade - b.prioridade);
       } catch (error) {
-        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
-        return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
+        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home.", error);
+        return [];
       }
      },
  
@@ -1482,21 +1454,25 @@ export const vitrineApiService = {
   async getDestaques(params?: QueryParams): Promise<ProdutoDestaquePublico[]> {
     const normalizedParams = { limit: 50, ...params };
     const key = stableParamsKey(normalizedParams);
-    const inFlight = inFlightDestaques.get(key);
-    if (inFlight) return inFlight;
+    try {
+      const inFlight = inFlightDestaques.get(key);
+      if (inFlight) return inFlight;
 
-    const request = fetchCachedJson<RespostaDestaques>("/destaques", normalizedParams, CACHE_TTL.destaques, validateDestaquesResponse)
-      .then((response) => response.items)
-      .catch((error) => {
-        logVitrineWarning(getVitrineApiErrorMessage(error), error);
-        return [];
-      })
-      .finally(() => {
-        inFlightDestaques.delete(key);
-      });
+      const request = fetchCachedJson<RespostaDestaques>("/destaques", normalizedParams, CACHE_TTL.destaques, validateDestaquesResponse)
+        .then((response) => response.items)
+        .catch((error) => {
+          logVitrineWarning(getVitrineApiErrorMessage(error), error);
+          return [];
+        })
+        .finally(() => {
+          inFlightDestaques.delete(key);
+        });
 
-    inFlightDestaques.set(key, request);
-    return request;
+      inFlightDestaques.set(key, request);
+      return request;
+    } catch (error) {
+      return [];
+    }
   },
 
   async attachDestaquesToProdutos(produtos: Produto[]): Promise<Produto[]> {
@@ -1509,21 +1485,26 @@ export const vitrineApiService = {
   },
 
   async getProdutosPage(params?: QueryParams): Promise<ProdutosPage> {
-    const [response, destaques] = await Promise.all([
-      fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
-      this.getDestaques(),
-    ]);
-    const items = unwrapList(response)
-      .map(mapProduto)
-      .filter((produto): produto is Produto => Boolean(produto));
+    try {
+      const [response, destaques] = await Promise.all([
+        fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
+        this.getDestaques(),
+      ]);
+      const items = unwrapList(response)
+        .map(mapProduto)
+        .filter((produto): produto is Produto => Boolean(produto));
 
-    return {
-      items: applyDestaquesToProdutos(items, destaques),
-      limit: response.limit,
-      offset: response.offset,
-      total: response.total || items.length,
-      hasMore: response.hasMore,
-    };
+      return {
+        items: applyDestaquesToProdutos(items, destaques),
+        limit: response.limit,
+        offset: response.offset,
+        total: response.total || items.length,
+        hasMore: response.hasMore,
+      };
+    } catch (error) {
+      logVitrineWarning("Erro ao carregar página de produtos", error);
+      return { items: [], limit: 0, offset: 0, total: 0, hasMore: false };
+    }
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
@@ -1618,13 +1599,18 @@ export const vitrineApiService = {
    */
   async getColecoesDestaque(): Promise<ColecaoDestaque[]> {
     const params: QueryParams = { detalhes: 1, destaque: 1 };
-    const response = await fetchCachedJson<unknown>(
-      "/colecoes",
-      params,
-      CACHE_TTL.colecoes,
-      validateColecoesDestaqueResponse,
-    );
-    return response as ColecaoDestaque[];
+    try {
+      const response = await fetchCachedJson<unknown>(
+        "/colecoes",
+        params,
+        CACHE_TTL.colecoes,
+        validateColecoesDestaqueResponse,
+      );
+      return (response as ColecaoDestaque[]) || [];
+    } catch (error) {
+      logVitrineWarning("Erro ao carregar coleções em destaque", error);
+      return [];
+    }
   },
 
   async getCategorias(): Promise<FilterOption[]> {
