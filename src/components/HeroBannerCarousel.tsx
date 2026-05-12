@@ -177,31 +177,30 @@ export const HeroBannerCarousel = () => {
             )}
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-          
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-          
-          {colecao.cor_destaque && (
-            <div 
-              className="absolute top-0 left-0 right-0 h-1.5 opacity-80" 
-              style={{ backgroundColor: colecao.cor_destaque }}
-              aria-hidden
-            />
-          )}
-
-          <div className="absolute bottom-6 left-6 sm:bottom-10 sm:left-10 lg:bottom-14 lg:left-14 max-w-[85%] sm:max-w-[70%] animate-fade-in">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-white uppercase tracking-wider">
-                <Sparkles className="w-3 h-3" /> Destaque
-              </span>
-            </div>
-            <h1 className="font-serif text-white text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold drop-shadow-lg leading-tight">
-              {colecao.nome}
-            </h1>
-            {colecao.descricao && (
-              <p className="text-white/90 text-xs sm:text-base md:text-lg mt-2 sm:mt-3 drop-shadow line-clamp-2 max-w-2xl font-medium">
-                {colecao.descricao}
-              </p>
+            
+            {colecao.cor_destaque && (
+              <div 
+                className="absolute top-0 left-0 right-0 h-1.5 opacity-80" 
+                style={{ backgroundColor: colecao.cor_destaque }}
+                aria-hidden
+              />
             )}
+
+            <div className="absolute bottom-6 left-6 sm:bottom-10 sm:left-10 lg:bottom-14 lg:left-14 max-w-[85%] sm:max-w-[70%] animate-fade-in">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-white uppercase tracking-wider">
+                  <Sparkles className="w-3 h-3" /> Destaque
+                </span>
+              </div>
+              <h1 className="font-serif text-white text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold drop-shadow-lg leading-tight">
+                {colecao.nome}
+              </h1>
+              {colecao.descricao && (
+                <p className="text-white/90 text-xs sm:text-base md:text-lg mt-2 sm:mt-3 drop-shadow line-clamp-2 max-w-2xl font-medium">
+                  {colecao.descricao}
+                </p>
+              )}
+            </div>
           </div>
         );
       })}
