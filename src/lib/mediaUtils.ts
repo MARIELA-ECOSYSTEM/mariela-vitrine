@@ -8,7 +8,7 @@
  interface MediaProps {
    loading?: "lazy" | "eager";
    decoding?: "async" | "sync" | "auto";
-   fetchPriority?: MediaPriority;
+   fetchpriority?: MediaPriority;
  }
  
  /**
@@ -26,7 +26,7 @@
    return {
      loading: isAboveFold ? "eager" : "lazy",
      decoding: "async",
-     fetchPriority: effectivePriority,
+     fetchpriority: effectivePriority,
    };
  }
  
@@ -40,8 +40,8 @@
    return {
      loading: props.loading,
      decoding: props.decoding,
-     // Usamos fetchPriority camelCase pois estendemos os tipos no vite-env.d.ts
-     // Se o React 18 ainda der warning em runtime, podemos mudar para lowercase aqui centralizado.
-     fetchPriority: props.fetchPriority,
+     // Usamos fetchpriority (lowercase) para evitar avisos no React 18 e garantir 
+     // que o atributo seja passado corretamente para o DOM.
+     fetchpriority: props.fetchpriority,
    };
  }
