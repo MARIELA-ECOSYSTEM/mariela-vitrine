@@ -771,7 +771,6 @@ interface CategorySectionProps {
   onSizeChange: (size: string) => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
   getImageForLook?: (produto: Produto | null, cor: string) => string;
-  getImageForLook?: (produto: Produto | null, cor: string) => string;
 }
 
 const CategorySection = ({
@@ -994,6 +993,7 @@ interface PreviewPanelProps {
   onClear: () => void;
   onWhatsApp: () => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
+  getImageForLook?: (produto: Produto | null, cor: string) => string;
   isMobile?: boolean;
   missingSize?: boolean;
   /** Categorias que exigem tamanho. Usado para destacar items sem tamanho na prévia. */
