@@ -10,7 +10,7 @@ const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v7";
+   const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v8"; // Força revalidação após correção de elegibilidade
 const LEGACY_CACHE_KEYS = [
   "mariela_vitrine_api_cache_v6",
   "mariela_vitrine_api_cache_v5",
@@ -1325,7 +1325,7 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
   });
 }
 
- function mapProduto(rawProduct: unknown): Produto | null {
+  function mapProduto(rawProduct: unknown, debugSource?: string): Produto | null {
    const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
    const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
    if (!rawId) return null;
@@ -1341,23 +1341,34 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
    const imagens = extractImages(product, variantRecords, corRecords, corOrder);
    const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
  
-   // Validação de elegibilidade (isProdutoPublicavel)
-   const { publicavel, motivos } = isProdutoPublicavel({
-     id: rawId,
-     nome: readString(product, ["nome", "name", "titulo", "title"]),
-     ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
-     arquivado: readBoolean(product, ["arquivado", "archived"], false),
-     variants,
-     imagens,
-     precoVenda
-   });
- 
-   if (!publicavel) {
-     if (import.meta.env.DEV) {
-       console.warn(`[vitrine-api] Produto ${rawId} não é publicável:`, motivos);
-     }
-     return null;
-   }
+    // Validação de elegibilidade (isProdutoPublicavel)
+    const productData = {
+      id: rawId,
+      nome: readString(product, ["nome", "name", "titulo", "title"]),
+      ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
+      arquivado: readBoolean(product, ["arquivado", "archived"], false),
+      variants,
+      imagens,
+      precoVenda
+    };
+
+    const { publicavel, motivos } = isProdutoPublicavel(productData);
+  
+    const isDebugMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugVitrine") === "1";
+
+    if (!publicavel) {
+      if (import.meta.env.DEV || isDebugMode) {
+        console.warn(`[vitrine-api] Produto ${rawId} ("${productData.nome}") descartado em ${debugSource || 'mapProduto'}:`, motivos, {
+          id: rawId,
+          hasVariants: variants.length > 0,
+          hasImages: imagens.length > 0,
+          precoVenda,
+          isAtivo: productData.ativo,
+          isArquivado: productData.arquivado
+        });
+      }
+      return null;
+    }
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
 
