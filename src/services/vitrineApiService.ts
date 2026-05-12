@@ -1313,25 +1313,33 @@ export const vitrineApiService = {
     * Busca os blocos dinâmicos da Home orientados pelo Motor de Campanhas.
     * Em caso de falha, retorna um conjunto padrão (fallback resiliente).
     */
-   async getHomeBlocks(): Promise<HomeBlock[]> {
-     try {
-       const response = await fetchCachedJson<HomeBlocksResponse>(
-         "/home/blocks",
-         undefined,
-         CACHE_TTL.homeBlocks
-       );
-       
-       if (!response || !Array.isArray(response.data)) {
-         throw createInvalidPayloadError("getHomeBlocks");
-       }
- 
-        const sorted = response.data.sort((a, b) => a.prioridade - b.prioridade);
-        return sorted;
-     } catch (error) {
-       logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
-       return [];
-     }
-    },
+  async getHomeBlocks(): Promise<HomeBlock[]> {
+    try {
+      const url = buildUrl("/home/blocks");
+      if (isDebugIntegracao) console.info(`[DEBUG] Chamando Home Blocks: ${url}`);
+
+      const response = await fetchCachedJson<HomeBlocksResponse>(
+        "/home/blocks",
+        undefined,
+        CACHE_TTL.homeBlocks
+      );
+      
+      if (isDebugIntegracao) {
+        console.info(`[DEBUG] Home Blocks recebidos:`, response?.data?.length || 0, response?.data);
+      }
+
+      if (!response || !Array.isArray(response.data)) {
+        logVitrineWarning("Payload de Home Blocks inválido ou vazio", response, 'error');
+        return [];
+      }
+
+      const sorted = response.data.sort((a, b) => a.prioridade - b.prioridade);
+      return sorted;
+    } catch (error) {
+      logVitrineWarning("Falha ao carregar blocos dinâmicos da Home", error, 'error');
+      return [];
+    }
+  },
  
   /**
    * Busca os dados editoriais para o Monte Seu Look (sugestões e looks manuais).
