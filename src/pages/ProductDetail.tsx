@@ -390,15 +390,10 @@ const ProductDetail = () => {
     [coresList, tamanhoSelecionado],
   );
 
-  // Ao trocar cor, salta para a primeira imagem dessa cor na galeria unificada.
+  // Ao trocar cor, resetamos o índice da imagem para a primeira da nova galeria filtrada.
   useEffect(() => {
-    if (!corSelecionadaObj) return;
-    const idx = primeiraImagemPorCor[corSelecionadaObj.cor];
-    if (typeof idx === "number" && idx !== imagemSelecionadaIndex) {
-      setImagemSelecionadaIndex(idx);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [corSelecionadaObj?.produto_cor_id, primeiraImagemPorCor]);
+    setImagemSelecionadaIndex(0);
+  }, [corSelecionada]);
 
   // Auto-seleciona a cor com base na query string (?cor=...) ou na primeira disponível.
   useEffect(() => {
