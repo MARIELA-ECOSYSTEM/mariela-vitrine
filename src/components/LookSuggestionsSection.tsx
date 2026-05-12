@@ -46,6 +46,8 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [mediaError, setMediaError] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (mediaError) {
     if (import.meta.env.DEV) {
@@ -55,14 +57,29 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
   }
 
   useEffect(() => {
-    if (sugestao.midia_tipo === "video" && videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.play().catch(() => setIsPlaying(false));
-      } else {
-        videoRef.current.pause();
-      }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
     }
-  }, [isPlaying, sugestao.midia_tipo]);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (sugestao.midia_tipo === "video" && videoRef.current && isInView) {
+      if (isPlaying || !isPlaying) { // If it's in view, we try to play if intended
+        videoRef.current.play().catch(() => setIsPlaying(false));
+      }
+    } else if (videoRef.current && !isInView) {
+      videoRef.current.pause();
+    }
+  }, [isPlaying, sugestao.midia_tipo, isInView]);
 
   const handleMontarLook = () => {
     // Emit an event to select products in the builder
@@ -80,43 +97,62 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
 
   return (
     <div 
+      ref={containerRef}
       className="group relative bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2"
       tabIndex={0}
     >
       {/* Media Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-        {sugestao.midia_tipo === "video" ? (
+        {sugestao.midia_tipo === "video" && (
           <>
-            <video
-              ref={videoRef}
-              src={sugestao.midia_url}
-              poster={sugestao.poster_url || undefined}
-              muted={muted}
-              loop
-              playsInline
-              className="w-full h-full object-cover"
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onError={() => setMediaError(true)}
-            />
+            {isInView ? (
+              <video
+                ref={videoRef}
+                src={sugestao.midia_url}
+                poster={sugestao.poster_url || undefined}
+                muted={muted}
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onError={() => setMediaError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                {sugestao.poster_url ? (
+                  <img src={sugestao.poster_url} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <Play className="h-10 w-10 text-primary opacity-20" />
+                )}
+              </div>
+            )}
             <div className="absolute bottom-2 right-2 flex gap-2">
-              <button
-                onClick={onToggleMute}
-                className="p-1.5 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors"
-              >
-                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </button>
-              {!isPlaying && (
-                <button
-                  onClick={() => setIsPlaying(true)}
-                  className="p-1.5 rounded-full bg-primary/80 text-white backdrop-blur-sm hover:bg-primary transition-colors"
-                >
-                  <Play className="h-4 w-4 fill-current" />
-                </button>
-              )}
+               {/* Controls only shown if video is in DOM */}
+               {isInView && (
+                 <>
+                    <button
+                      onClick={onToggleMute}
+                      className="p-1.5 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition-colors"
+                      aria-label={muted ? "Ativar som" : "Desativar som"}
+                    >
+                      {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                    </button>
+                    {!isPlaying && (
+                      <button
+                        onClick={() => setIsPlaying(true)}
+                        className="p-1.5 rounded-full bg-primary/80 text-white backdrop-blur-sm hover:bg-primary transition-colors"
+                        aria-label="Reproduzir vídeo"
+                      >
+                        <Play className="h-4 w-4 fill-current" />
+                      </button>
+                    )}
+                 </>
+               )}
             </div>
           </>
-        ) : (
+        )}
+        {sugestao.midia_tipo !== "video" && (
           <img
             src={sugestao.midia_url}
             alt={sugestao.titulo}
