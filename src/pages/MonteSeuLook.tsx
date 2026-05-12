@@ -15,8 +15,11 @@ const MonteSeuLook = () => {
     console.group("[MonteSeuLook] Debug Data");
     console.log("Suggestions:", data.sugestoes);
     console.log("Manual Looks:", data.looks_manuais);
+    console.log("Loading State:", loading);
     console.groupEnd();
   }
+
+  const hasContent = data.sugestoes.length > 0 || data.looks_manuais.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/10 to-background pt-[60px] sm:pt-[68px]">

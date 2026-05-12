@@ -45,6 +45,14 @@ interface SuggestionCardProps {
 const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
+
+  if (mediaError) {
+    if (import.meta.env.DEV) {
+      console.warn(`[MonteSeuLook] Sugestão "${sugestao.titulo}" (${sugestao.id}): Mídia editorial falhou ao carregar. Item omitido.`);
+    }
+    return null;
+  }
 
   useEffect(() => {
     if (sugestao.midia_tipo === "video" && videoRef.current) {
@@ -71,7 +79,10 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
   };
 
   return (
-    <div className="group relative bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
+    <div 
+      className="group relative bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2"
+      tabIndex={0}
+    >
       {/* Media Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-muted">
         {sugestao.midia_tipo === "video" ? (
@@ -86,6 +97,7 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
               className="w-full h-full object-cover"
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
+              onError={() => setMediaError(true)}
             />
             <div className="absolute bottom-2 right-2 flex gap-2">
               <button
@@ -110,6 +122,7 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
             alt={sugestao.titulo}
             loading="lazy"
             onError={handleProductImageError}
+            onLoad={(e) => { if (!e.currentTarget.complete) setMediaError(true); }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
         )}
