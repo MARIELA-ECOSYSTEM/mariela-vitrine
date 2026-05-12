@@ -6,7 +6,7 @@ export enum ColecaoExclusionReason {
   FORA_PERIODO = "COLECAO_FORA_PERIODO",
   SEM_PRODUTOS = "COLECAO_SEM_PRODUTOS",
   PRODUTOS_NAO_PUBLICAVEIS = "PRODUTOS_NAO_PUBLICAVEIS",
-  SEM_IMAGEM_CAPA = "COLECAO_SEM_IMAGEM_CAPA"
+  SEM_MIDIA = "COLECAO_SEM_MIDIA"
 }
 
 export interface ColecaoElegibilidadeRaw {
@@ -18,6 +18,8 @@ export interface ColecaoElegibilidadeRaw {
   data_fim?: string | null;
   quantidade_produtos?: number;
   tem_produtos_invalidos?: boolean;
+  home_destaque_url?: string | null;
+  banner_url?: string | null;
   imagem_capa_url?: string | null;
 }
  
@@ -78,9 +80,13 @@ export interface ColecaoElegibilidadeRaw {
       motivos.push(ColecaoExclusionReason.PRODUTOS_NAO_PUBLICAVEIS);
     }
 
-    if (!colecao.imagem_capa_url || colecao.imagem_capa_url.trim() === "") {
-      motivos.push(ColecaoExclusionReason.SEM_IMAGEM_CAPA);
-    }
+     const temMidia = (colecao.home_destaque_url?.trim() || 
+                      colecao.banner_url?.trim() || 
+                      colecao.imagem_capa_url?.trim());
+
+     if (!temMidia) {
+       motivos.push(ColecaoExclusionReason.SEM_MIDIA);
+     }
 
    let status: "HEALTHY" | "WARNING" | "INVALID" = "HEALTHY";
    
@@ -90,7 +96,7 @@ export interface ColecaoElegibilidadeRaw {
         ColecaoExclusionReason.NAO_DESTAQUE,
         ColecaoExclusionReason.INATIVA,
         ColecaoExclusionReason.SEM_PRODUTOS,
-        ColecaoExclusionReason.SEM_IMAGEM_CAPA
+         ColecaoExclusionReason.SEM_MIDIA
      ];
      
      const temCritico = motivos.some(m => criticos.includes(m));
