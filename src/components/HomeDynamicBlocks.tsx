@@ -1,4 +1,4 @@
- import { memo, useEffect, useRef } from "react";
+ import { memo, useEffect, useRef, useState } from "react";
  import { Button } from "@/components/ui/button";
  import { Link } from "react-router-dom";
  import { cn } from "@/lib/utils";
@@ -18,6 +18,25 @@
  
  export const BannerBlock = memo(({ titulo, subtitulo, mediaUrl, mediaType, posterUrl, ctaLabel, ctaUrl, priority = false }: BannerBlockProps) => {
    const videoRef = useRef<HTMLVideoElement>(null);
+   const containerRef = useRef<HTMLDivElement>(null);
+   const [isNearViewport, setIsNearViewport] = useState(priority);
+ 
+   useEffect(() => {
+     if (priority || !containerRef.current) return;
+ 
+     const observer = new IntersectionObserver(
+       ([entry]) => {
+         if (entry.isIntersecting) {
+           setIsNearViewport(true);
+           observer.disconnect();
+         }
+       },
+       { rootMargin: "200px" } // Detecta antes de entrar na tela
+     );
+ 
+     observer.observe(containerRef.current);
+     return () => observer.disconnect();
+   }, [priority]);
  
    useEffect(() => {
      if (mediaType === "video" && videoRef.current) {
@@ -35,24 +54,24 @@
    if (!mediaUrl) return null;
  
    return (
-     <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-xl bg-muted group">
+     <div ref={containerRef} className="relative w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-xl bg-muted group">
        {mediaType === "video" ? (
          <video
            ref={videoRef}
-           src={mediaUrl}
+           src={isNearViewport ? mediaUrl : undefined}
            muted
            loop
            playsInline
-           {...applyMediaProps(priority)}
-           preload={priority ? "auto" : "metadata"}
+           {...applyMediaProps(mediaUrl, isNearViewport)}
+           preload={isNearViewport ? "auto" : "metadata"}
            poster={posterUrl}
            className="absolute inset-0 w-full h-full object-cover"
          />
        ) : (
           <img
-            src={mediaUrl}
+            src={isNearViewport ? mediaUrl : undefined}
             alt={titulo || "Banner"}
-            {...applyMediaProps(priority)}
+            {...applyMediaProps(mediaUrl, isNearViewport)}
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
        )}
