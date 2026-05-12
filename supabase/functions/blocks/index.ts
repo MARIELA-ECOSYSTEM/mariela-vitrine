@@ -47,14 +47,6 @@ serve(async (req) => {
           config: { style: "grid" }
         },
         {
-          id: "em_alta",
-          tipo: "produtos",
-          titulo: "Em alta",
-          subtitulo: "Peças em destaque na vitrine",
-          prioridade: 20,
-          config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-        },
-        {
           id: "promocoes",
           tipo: "produtos",
           titulo: "Promoções",
