@@ -48,12 +48,12 @@
          />
        ) : (
          <img
-           src={mediaUrl}
-           alt={titulo || "Banner"}
-           loading={priority ? "eager" : "lazy"}
-           {...({ fetchPriority: priority ? "high" : "auto" } as any)}
-           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-         />
+            src={mediaUrl}
+            alt={titulo || "Banner"}
+            loading={priority ? "eager" : "lazy"}
+            fetchpriority={priority ? "high" : "auto"}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
        )}
        <div className="absolute inset-0 bg-black/30 flex flex-col justify-center items-center text-center p-6 sm:p-12">
          {titulo && (

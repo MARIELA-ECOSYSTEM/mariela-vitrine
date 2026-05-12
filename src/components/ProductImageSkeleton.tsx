@@ -518,12 +518,12 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
         <img
           src={layerA}
           alt={activeLayer === "A" ? alt : ""}
-          aria-hidden={activeLayer !== "A" || undefined}
-          loading={priority ? "eager" : "lazy"}
-          decoding="async"
-          draggable={false}
-          {...({ fetchpriority: priority ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
-          className={cn(
+           aria-hidden={activeLayer !== "A" || undefined}
+           loading={priority ? "eager" : "lazy"}
+           decoding="async"
+           draggable={false}
+           fetchpriority={priority ? "high" : "auto"}
+           className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
             "transition-opacity ease-out",
             activeLayer === "A" ? "opacity-100" : "opacity-0",
@@ -536,12 +536,12 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
         <img
           src={layerB}
           alt={activeLayer === "B" ? alt : ""}
-          aria-hidden={activeLayer !== "B" || undefined}
-          loading="eager"
-          decoding="async"
-          draggable={false}
-          {...({ fetchpriority: "high" } as React.ImgHTMLAttributes<HTMLImageElement>)}
-          className={cn(
+           aria-hidden={activeLayer !== "B" || undefined}
+           loading="eager"
+           decoding="async"
+           draggable={false}
+           fetchpriority="high"
+           className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
             "transition-opacity ease-out",
             activeLayer === "B" ? "opacity-100" : "opacity-0",
@@ -760,12 +760,12 @@ const LegacyImageDisplay = ({
             />
           )}
           <img
-            src={displaySrc}
-            alt={alt}
-            loading={priority ? "eager" : "lazy"}
-            decoding="async"
-            {...({ fetchpriority: priority ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
-            className={cn(
+             src={displaySrc}
+             alt={alt}
+             loading={priority ? "eager" : "lazy"}
+             decoding="async"
+             fetchpriority={priority ? "high" : "auto"}
+             className={cn(
               "relative w-full h-full object-cover",
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
               loadState === 'loading' && "opacity-0 scale-[1.02] transition-all duration-700 ease-out",
