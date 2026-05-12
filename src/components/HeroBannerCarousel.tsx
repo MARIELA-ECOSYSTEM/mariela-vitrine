@@ -87,7 +87,7 @@ export const HeroBannerCarousel = () => {
   };
 
   const handleBannerClick = () => {
-    if (!currentBanner) return;
+    if (!currentColecao) return;
     const params = new URLSearchParams();
     try {
       const current = new URLSearchParams(search);
@@ -95,7 +95,7 @@ export const HeroBannerCarousel = () => {
         if (key.toLowerCase().startsWith("utm_")) params.set(key, value);
       });
     } catch {}
-    params.set("colecaoId", currentBanner.id);
+    params.set("colecaoId", currentColecao.id);
     navigate(`/products?${params.toString()}`);
   };
 
@@ -118,7 +118,7 @@ export const HeroBannerCarousel = () => {
       className="relative w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] overflow-hidden cursor-pointer"
       onClick={handleBannerClick}
     >
-      {colecoes.map((colecao, idx) => (
+      {colecoes.map((colecao, idx) => {
         const media = getBestMedia(colecao);
         const isActive = idx === currentIndex;
 
