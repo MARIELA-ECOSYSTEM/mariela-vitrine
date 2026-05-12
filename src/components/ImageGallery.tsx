@@ -130,12 +130,8 @@ interface ImageGalleryProps {
    * sobre a imagem principal.
    */
   imageColors?: (string | null)[];
-   /** Mapa cor -> HEX usado para renderizar o "swatch dot". */
-   colorSwatchMap?: Record<string, string>;
-   /** Indica se o produto é uma novidade. */
-   isNovidade?: boolean;
-   /** Indica se o produto está em promoção. */
-   emPromocao?: boolean;
+    /** Mapa cor -> HEX usado para renderizar o "swatch dot". */
+    colorSwatchMap?: Record<string, string>;
 }
 
 export const ImageGallery = ({ 
