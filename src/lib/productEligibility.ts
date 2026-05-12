@@ -3,7 +3,7 @@ import type { Produto, VarianteProduto } from "@/data/products";
 
 export enum ProdutoExclusionReason {
   INATIVO = "PRODUTO_INATIVO",
-   SEM_VARIANTE = "PRODUTO_SEM_VARIANTE", // Crítico para detalhe, flexível para listagem
+  SEM_VARIANTE = "PRODUTO_SEM_VARIANTE",
   SEM_IMAGEM = "PRODUTO_SEM_IMAGEM",
   PRECO_INVALIDO = "PRODUTO_PRECO_INVALIDO",
   ARQUIVADO = "PRODUTO_ARQUIVADO",
@@ -37,17 +37,12 @@ export function isProdutoPublicavel(produto: Partial<Produto> | any): ProdutoEle
     motivos.push(ProdutoExclusionReason.ARQUIVADO);
   }
 
-   // Variantes / Estoque: No catálogo (listagem), aceitamos produtos sem variantes expandidas 
-   // se eles tiverem preço e identificação. A grade real é obrigatória no detalhe.
-   const variants = (produto.variants || produto.variantes || []) as VarianteProduto[];
-   const hasValidVariants = variants.length > 0 && variants.some(v => (v.disponibilidade ?? 0) > 0);
-   
-   // Se não tem variantes, verificamos se é um item de listagem válido
-   const isListItem = Boolean(produto.id && (produto.precoVenda ?? produto.preco_venda ?? 0) > 0);
-   
-   if (!hasValidVariants && !isListItem) {
-     motivos.push(ProdutoExclusionReason.SEM_VARIANTE);
-   }
+  // Variantes / Estoque
+  const variants = (produto.variants || []) as VarianteProduto[];
+  const hasValidVariants = variants.length > 0 && variants.some(v => v.disponibilidade > 0);
+  if (!hasValidVariants) {
+    motivos.push(ProdutoExclusionReason.SEM_VARIANTE);
+  }
 
   // Imagens
   const hasImages = Array.isArray(produto.imagens) && produto.imagens.length > 0 && produto.imagens.some(img => typeof img === 'string' && img.length > 0);

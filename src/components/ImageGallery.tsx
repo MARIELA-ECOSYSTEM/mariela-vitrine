@@ -600,7 +600,6 @@ export const ImageGallery = ({
                 <img
                   src={img}
                   alt={`${productName} miniatura ${index + 1}`}
-                  loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
                 />
               </button>
@@ -635,7 +634,6 @@ export const ImageGallery = ({
                 <img
                   src={img}
                   alt={`${productName} miniatura ${index + 1}`}
-                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </button>

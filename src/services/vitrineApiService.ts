@@ -3,14 +3,13 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
  import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
-import { z } from "zod";
 
-const VITRINE_API_BASE_URL = "https://zbmdrncgsuvjexpiezbr.supabase.co/functions/v1/vitrine-api";
+const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-   const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v8"; // Força revalidação após correção de elegibilidade
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v7";
 const LEGACY_CACHE_KEYS = [
   "mariela_vitrine_api_cache_v6",
   "mariela_vitrine_api_cache_v5",
@@ -103,218 +102,24 @@ export interface ColecaoResponse {
    titulo: string | null;
    subtitulo: string | null;
    prioridade: number;
-    config: {
-       filter?: string;
-       colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
-       produtos?: string[];
-       linkLabel?: string;
-       linkTo?: string;
-       estilo?: "grade" | "carrossel" | "lista";
-       limit?: number;
-       max_items?: number;
-       mediaUrl?: string;
-       mediaType?: "image" | "video" | "gif";
-       posterUrl?: string;
-       ctaLabel?: string;
-       ctaUrl?: string;
-       posts?: Array<{
-         id: string;
-         url: string;
-         mediaUrl: string;
-         caption?: string;
-       }>;
-       sugestoes_monte_look?: LookSugestao[];
-       looks_manuais?: LookManual[];
-     };
+   config: {
+     filter?: string;
+     limit?: number;
+     colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
+     produtos?: string[]; // IDs de produtos se tipo for "produtos" (manual)
+     linkLabel?: string;
+     linkTo?: string;
+     estilo?: "grade" | "carrossel" | "lista";
+   };
    validade?: {
      inicio: string | null;
      fim: string | null;
    };
  }
  
-  export interface HomeBlocksResponse {
-    data: HomeBlock[];
-  }
-
-  export interface LookSugestao {
-    id: string;
-    titulo: string;
-    subtitulo?: string;
-    mediaUrl: string;
-    mediaType: "image" | "video" | "gif";
-    posterUrl?: string;
-    produtos: string[];
-    ctaLabel?: string;
-  }
-
-  export interface LookManual {
-    id: string;
-    nome: string;
-    mediaUrl?: string;
-    mediaType?: "image" | "video" | "gif";
-    posterUrl?: string;
-    produtos: string[];
-  }
-
- // Schemas de Validação (Zod) para detecção rápida de falhas de contrato
- const ConfigSchema = z.object({
-   data: z.object({
-     nome_loja: z.string().nullable(),
-     logo_url: z.string().nullable(),
-     favicon_url: z.string().nullable(),
-     cor_primaria: z.string().nullable(),
-     cor_secundaria: z.string().nullable(),
-     whatsapp: z.string().nullable(),
-     instagram: z.string().nullable(),
-   })
- });
-
- const HomeBlockSchema = z.object({
-   id: z.string(),
-   tipo: z.enum(["produtos", "colecoes", "banner", "instagram"]),
-   titulo: z.string().nullable(),
-   subtitulo: z.string().nullable(),
-   prioridade: z.number(),
-    config: z.object({
-      filter: z.string().optional(),
-      colecoes: z.array(z.string()).optional(),
-      produtos: z.array(z.string()).optional(),
-      linkLabel: z.string().optional(),
-      linkTo: z.string().optional(),
-       estilo: z.string().optional(),
-      limit: z.number().optional(),
-      max_items: z.number().optional(),
-      mediaUrl: z.string().optional(),
-       mediaType: z.string().optional(),
-      posterUrl: z.string().optional(),
-      ctaLabel: z.string().optional(),
-      ctaUrl: z.string().optional(),
-      posts: z.array(z.object({
-        id: z.string(),
-        url: z.string(),
-        mediaUrl: z.string(),
-        caption: z.string().optional(),
-      })).optional(),
-      // Campos para Monte Seu Look
-      sugestoes_monte_look: z.array(z.object({
-        id: z.string(),
-        titulo: z.string(),
-        subtitulo: z.string().optional(),
-        mediaUrl: z.string(),
-         mediaType: z.string().optional().default("image"),
-        posterUrl: z.string().optional(),
-        produtos: z.array(z.string()),
-        ctaLabel: z.string().optional(),
-      })).optional(),
-      looks_manuais: z.array(z.object({
-        id: z.string(),
-        nome: z.string(),
-        mediaUrl: z.string().optional(),
-         mediaType: z.string().optional(),
-        posterUrl: z.string().optional(),
-        produtos: z.array(z.string()),
-      })).optional(),
-    }),
-   validade: z.object({
-     inicio: z.string().nullable(),
-     fim: z.string().nullable(),
-   }).optional(),
- });
-
-  const HomeBlocksResponseSchema = z.object({
-    data: z.array(HomeBlockSchema)
-  });
-
-  const ProdutoListItemSchema = z.object({
-    id: z.string(),
-    nome: z.string(),
-    descricao: z.string().nullable(),
-    categoria: z.string().nullable(),
-    colecao: z.string().nullable(),
-     preco_venda: z.number().optional().default(0),
-    imagem_thumb: z.string().nullable(),
-    imagem_principal: z.string().nullable(),
-    imagem_card_url: z.string().nullable().optional(),
-    imagem_look_url: z.string().nullable().optional(),
-  });
-
-  const PaginationResponseSchema = z.object({
-    items: z.array(ProdutoListItemSchema),
-    limit: z.number(),
-    offset: z.number(),
-    total: z.number(),
-    hasMore: z.boolean(),
-  });
-
-  const ProdutoDetailSchema = z.object({
-    id: z.string(),
-    nome: z.string(),
-    descricao: z.string().nullable(),
-    categoria: z.string().nullable(),
-    colecao: z.string().nullable(),
-     preco_venda: z.number().optional().default(0),
-    imagem_thumb: z.string().nullable(),
-    imagem_principal: z.string().nullable(),
-    imagem_card_url: z.string().nullable().optional(),
-    imagem_look_url: z.string().nullable().optional(),
-    imagens: z.array(z.string()),
-    variantes_disponiveis: z.array(z.object({
-      id: z.string(),
-      cor: z.string().nullable(),
-      tamanho: z.string().nullable(),
-      disponivel: z.boolean(),
-    })),
-  });
-
-  const ProdutoDetailResponseSchema = z.object({
-    data: ProdutoDetailSchema
-  });
-
-  const CategoriaResponseSchema = z.object({
-    data: z.array(z.string())
-  });
-
-  const ColecaoResponseSchema = z.object({
-    data: z.array(z.unknown())
-  });
-
-  const RespostaDestaquesSchema = z.object({
-    items: z.array(z.object({
-      produto_id: z.string(),
-      badge: z.string(),
-      prioridade: z.number(),
-    }))
-  });
-
-  /**
-   * Estrutura centralizada para registro de validadores por rota.
-   * Facilita a manutenção e garante que novas rotas usem validação por padrão.
-   */
-  const ROUTE_VALIDATORS = {
-    config: validateConfigResponse,
-    homeBlocks: validateHomeBlocksResponse,
-    produtos: validatePaginationResponse,
-    produtoDetail: validateProdutoDetailResponse,
-    categorias: validateCategoriaResponse,
-    colecoes: validateColecaoResponse,
-    destaques: validateDestaquesResponse,
-  } as const;
-
-  function applyValidation<T>(payload: unknown, schema: z.ZodSchema<T>, context: string, fallback: () => T, isDebug = false): T {
-    const result = schema.safeParse(payload);
-    if (!result.success) {
-      if (import.meta.env.DEV || isDebug) {
-        console.group(`[vitrine-api] Erro de Contrato: ${context}`);
-        console.error("Payload recebido:", payload);
-        console.error("Erros de validação:", result.error.format());
-        console.groupEnd();
-      }
-      
-      logVitrineWarning(`Schema de ${context} inválido (contrato quebrado)`);
-      return fallback();
-    }
-    return result.data;
-  }
+ export interface HomeBlocksResponse {
+   data: HomeBlock[];
+ }
  
 /**
  * Coleção em destaque consumida da rota
@@ -407,8 +212,33 @@ const DEFAULT_CONFIG: VitrineConfig = {
   instagram: null,
 };
 
-  const DEFAULT_HOME_BLOCKS: HomeBlock[] = [];
-
+ const DEFAULT_HOME_BLOCKS: HomeBlock[] = [
+   {
+     id: "novidades",
+     tipo: "produtos",
+     titulo: "Novidades",
+     subtitulo: "Recém-chegadas à coleção",
+     prioridade: 10,
+     config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+   },
+   {
+     id: "em_alta",
+     tipo: "produtos",
+     titulo: "Em alta",
+     subtitulo: "Peças em destaque na vitrine",
+     prioridade: 20,
+     config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
+   },
+   {
+     id: "promocoes",
+     tipo: "produtos",
+     titulo: "Promoções",
+     subtitulo: "Descontos em peças selecionadas",
+     prioridade: 100,
+     config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
+   }
+ ];
+ 
 const memoryCache = new Map<string, CacheEntry<unknown>>();
 const inFlightDestaques = new Map<string, Promise<ProdutoDestaquePublico[]>>();
 
@@ -551,7 +381,10 @@ function createInvalidPayloadError(context: string): VitrineApiError {
 function logVitrineWarning(message: string, details?: unknown): void {
   if (import.meta.env.DEV) {
     console.warn(`[vitrine-api] ${message}`, details ?? "");
+    return;
   }
+  // Produção: silêncio total. Falhas técnicas não devem poluir o
+  // console do usuário final — a UI já trata via fallback silencioso.
 }
 
 export function getVitrineApiErrorMessage(error: unknown): string {
@@ -794,10 +627,8 @@ export function uniqueImages(images: string[]): string[] {
       return `${u.origin}${normalizedPath}${search ? `?${search}` : ""}`;
     } catch {
       return url.split("?")[0];
-   }
- };
-
- vitrineApiService._setupDiagnostic();
+    }
+  };
   const seen = new Set<string>();
   const out: string[] = [];
   for (const url of images) {
@@ -1118,69 +949,57 @@ function unwrapList(response: unknown): unknown[] {
   return asArray(data.items ?? data.data ?? data.produtos ?? data.results);
 }
 
-  function validateConfigResponse(payload: unknown): ConfigResponse {
-    return applyValidation(payload, ConfigSchema, "config", () => {
-      const data = asRecord(asRecord(payload).data ?? payload);
-      return { data: data as ConfigResponse["data"] };
-    }) as ConfigResponse;
+function validateConfigResponse(payload: unknown): ConfigResponse {
+  const data = asRecord(asRecord(payload).data ?? payload);
+  if (Object.keys(data).length === 0) {
+    logVitrineWarning("Payload de config vazio ou inválido", payload);
   }
- 
-  function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
-    const isDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugHome") === "1";
-    return applyValidation(payload, HomeBlocksResponseSchema, "HomeBlocks", () => {
-       const data = unwrapList(payload).filter(item => {
-         const rec = asRecord(item);
-         return rec.id && rec.tipo;
-       });
-      return { data: data as HomeBlock[] };
-    }, isDebug) as HomeBlocksResponse;
+  return { data: data as ConfigResponse["data"] };
+}
+
+function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
+  const source = asRecord(payload);
+  const items = unwrapList(payload).filter((item) => readString(asRecord(item), ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]));
+  if (!Array.isArray(payload) && !Array.isArray(source.items) && !Array.isArray(source.data) && !Array.isArray(source.produtos) && !Array.isArray(source.results)) {
+    logVitrineWarning("Payload de produtos sem lista reconhecida", payload);
   }
 
- function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
-   return applyValidation(payload, PaginationResponseSchema, "pagination", () => {
-     const source = asRecord(payload);
-       const items = unwrapList(payload).filter((item) => {
-         const rec = asRecord(item);
-         return readString(rec, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]) || 
-                readString(rec, ["slug", "url"]); // Fallbacks de identificação
-       });
-     return {
-       items: items as ProdutoListItem[],
-       limit: readNumber(source, ["limit"], items.length),
-       offset: readNumber(source, ["offset"], 0),
-       total: readNumber(source, ["total"], items.length),
-       hasMore: readBoolean(source, ["hasMore", "has_more"], false),
-     };
-   }) as PaginationResponse<ProdutoListItem>;
- }
- 
- function validateProdutoDetailResponse(payload: unknown): ProdutoDetailResponse {
-   return applyValidation(payload, ProdutoDetailResponseSchema, "produtoDetail", () => {
-     const data = asRecord(asRecord(payload).data ?? payload);
-     if (!readString(data, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"])) {
-       logVitrineWarning("Payload de detalhe de produto inválido", payload);
-       throw createInvalidPayloadError("produto detalhe");
-     }
-     return { data: data as unknown as ProdutoDetail };
-   }) as ProdutoDetailResponse;
- }
+  return {
+    items: items as ProdutoListItem[],
+    limit: readNumber(source, ["limit"], items.length),
+    offset: readNumber(source, ["offset"], 0),
+    total: readNumber(source, ["total"], items.length),
+    hasMore: readBoolean(source, ["hasMore", "has_more"], false),
+  };
+}
 
- function validateCategoriaResponse(payload: unknown): CategoriaResponse {
-   return applyValidation(payload, CategoriaResponseSchema, "categorias", () => {
-     const data = unwrapList(payload)
-       .map(toFilterOption)
-       .filter((categoria): categoria is FilterOption => Boolean(categoria))
-       .map((categoria) => categoria.label);
-     return { data };
-   }) as CategoriaResponse;
- }
- 
- function validateColecaoResponse(payload: unknown): ColecaoResponse {
-   return applyValidation(payload, ColecaoResponseSchema, "colecoes", () => {
-     const data = unwrapList(payload).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
-     return { data };
-   }) as ColecaoResponse;
- }
+function validateProdutoDetailResponse(payload: unknown): ProdutoDetailResponse {
+  const data = asRecord(asRecord(payload).data ?? payload);
+  if (!readString(data, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"])) {
+    logVitrineWarning("Payload de detalhe de produto inválido", payload);
+    throw createInvalidPayloadError("produto detalhe");
+  }
+  return { data: data as unknown as ProdutoDetail };
+}
+
+function validateCategoriaResponse(payload: unknown): CategoriaResponse {
+  const data = unwrapList(payload)
+    .map(toFilterOption)
+    .filter((categoria): categoria is FilterOption => Boolean(categoria))
+    .map((categoria) => categoria.label);
+  if (data.length === 0 && unwrapList(payload).length === 0) {
+    logVitrineWarning("Payload de categorias vazio ou inválido", payload);
+  }
+  return { data };
+}
+
+function validateColecaoResponse(payload: unknown): ColecaoResponse {
+  const data = unwrapList(payload).map(toFilterOption).filter((colecao): colecao is FilterOption => Boolean(colecao));
+  if (data.length === 0 && !Array.isArray(payload) && Object.keys(asRecord(payload)).length === 0) {
+    logVitrineWarning("Payload de coleções vazio ou inválido", payload);
+  }
+  return { data };
+}
 
 /**
  * Valida e normaliza a resposta de `/colecoes?detalhes=1&destaque=1`.
@@ -1298,19 +1117,18 @@ function unwrapList(response: unknown): unknown[] {
    return validatedItems;
  }
 
- function validateDestaquesResponse(payload: unknown): RespostaDestaques {
-   return applyValidation(payload, RespostaDestaquesSchema, "destaques", () => {
-     const items = unwrapList(payload)
-       .map(asRecord)
-       .map((item) => ({
-         produto_id: readString(item, ["produto_id", "produtoId", "id", "codigoProduto", "codigo", "sku"]),
-         badge: readString(item, ["badge", "tipo", "type"]),
-         prioridade: readNumber(item, ["prioridade", "priority"], 0),
-       }))
-       .filter((item) => item.produto_id && isPublicProductBadgeType(item.badge));
-     return { items };
-   }) as RespostaDestaques;
- }
+function validateDestaquesResponse(payload: unknown): RespostaDestaques {
+  const items = unwrapList(payload)
+    .map(asRecord)
+    .map((item) => ({
+      produto_id: readString(item, ["produto_id", "produtoId", "id", "codigoProduto", "codigo", "sku"]),
+      badge: readString(item, ["badge", "tipo", "type"]),
+      prioridade: readNumber(item, ["prioridade", "priority"], 0),
+    }))
+    .filter((item) => item.produto_id && isPublicProductBadgeType(item.badge));
+
+  return { items };
+}
 
 function getProductHighlightKey(produto: Produto): string[] {
   return [produto.produtoId, produto.codigoProduto, String(produto.id)].filter((value): value is string => Boolean(value));
@@ -1331,7 +1149,7 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
   });
 }
 
-  function mapProduto(rawProduct: unknown, debugSource?: string): Produto | null {
+ function mapProduto(rawProduct: unknown): Produto | null {
    const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
    const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
    if (!rawId) return null;
@@ -1347,34 +1165,23 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
    const imagens = extractImages(product, variantRecords, corRecords, corOrder);
    const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
  
-    // Validação de elegibilidade (isProdutoPublicavel)
-    const productData = {
-      id: rawId,
-      nome: readString(product, ["nome", "name", "titulo", "title"]),
-      ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
-      arquivado: readBoolean(product, ["arquivado", "archived"], false),
-      variants,
-      imagens,
-      precoVenda
-    };
-
-    const { publicavel, motivos } = isProdutoPublicavel(productData);
-  
-    const isDebugMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugVitrine") === "1";
-
-    if (!publicavel) {
-      if (import.meta.env.DEV || isDebugMode) {
-        console.warn(`[vitrine-api] Produto ${rawId} ("${productData.nome}") descartado em ${debugSource || 'mapProduto'}:`, motivos, {
-          id: rawId,
-          hasVariants: variants.length > 0,
-          hasImages: imagens.length > 0,
-          precoVenda,
-          isAtivo: productData.ativo,
-          isArquivado: productData.arquivado
-        });
-      }
-      return null;
-    }
+   // Validação de elegibilidade (isProdutoPublicavel)
+   const { publicavel, motivos } = isProdutoPublicavel({
+     id: rawId,
+     nome: readString(product, ["nome", "name", "titulo", "title"]),
+     ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
+     arquivado: readBoolean(product, ["arquivado", "archived"], false),
+     variants,
+     imagens,
+     precoVenda
+   });
+ 
+   if (!publicavel) {
+     if (import.meta.env.DEV) {
+       console.warn(`[vitrine-api] Produto ${rawId} não é publicável:`, motivos);
+     }
+     return null;
+   }
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
 
@@ -1419,8 +1226,6 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
     destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),
     recomendacao_publica: readOptionalString(product, ["recomendacao_publica", "recomendacaoPublica"]),
     createdAt,
-    imagem_look_url: readOptionalString(product, ["imagem_look_url", "imagemLookUrl", "look_image"]),
-    imagem_card_url: readOptionalString(product, ["imagem_card_url", "imagemCardUrl", "card_image"]),
   };
 }
 
@@ -1443,22 +1248,24 @@ export const vitrineApiService = {
     * Busca os blocos dinâmicos da Home orientados pelo Motor de Campanhas.
     * Em caso de falha, retorna um conjunto padrão (fallback resiliente).
     */
-    async getHomeBlocks(): Promise<HomeBlock[]> {
-      try {
-        const response = await fetchCachedJson<HomeBlocksResponse>(
-          "/home/blocks",
-          undefined,
-          CACHE_TTL.homeBlocks,
-          validateHomeBlocksResponse
-        );
-        
-        const blocks = response?.data || [];
-        return blocks.sort((a, b) => a.prioridade - b.prioridade);
-      } catch (error) {
-        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home.", error);
-        return [];
-      }
-     },
+   async getHomeBlocks(): Promise<HomeBlock[]> {
+     try {
+       const response = await fetchCachedJson<HomeBlocksResponse>(
+         "/home/blocks",
+         undefined,
+         CACHE_TTL.homeBlocks
+       );
+       
+       if (!response || !Array.isArray(response.data)) {
+         throw createInvalidPayloadError("getHomeBlocks");
+       }
+ 
+       return response.data.sort((a, b) => a.prioridade - b.prioridade);
+     } catch (error) {
+       logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
+       return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
+     }
+    },
  
   async getConfig(): Promise<VitrineConfig> {
     try {
@@ -1476,25 +1283,21 @@ export const vitrineApiService = {
   async getDestaques(params?: QueryParams): Promise<ProdutoDestaquePublico[]> {
     const normalizedParams = { limit: 50, ...params };
     const key = stableParamsKey(normalizedParams);
-    try {
-      const inFlight = inFlightDestaques.get(key);
-      if (inFlight) return inFlight;
+    const inFlight = inFlightDestaques.get(key);
+    if (inFlight) return inFlight;
 
-      const request = fetchCachedJson<RespostaDestaques>("/destaques", normalizedParams, CACHE_TTL.destaques, validateDestaquesResponse)
-        .then((response) => response.items)
-        .catch((error) => {
-          logVitrineWarning(getVitrineApiErrorMessage(error), error);
-          return [];
-        })
-        .finally(() => {
-          inFlightDestaques.delete(key);
-        });
+    const request = fetchCachedJson<RespostaDestaques>("/destaques", normalizedParams, CACHE_TTL.destaques, validateDestaquesResponse)
+      .then((response) => response.items)
+      .catch((error) => {
+        logVitrineWarning(getVitrineApiErrorMessage(error), error);
+        return [];
+      })
+      .finally(() => {
+        inFlightDestaques.delete(key);
+      });
 
-      inFlightDestaques.set(key, request);
-      return request;
-    } catch (error) {
-      return [];
-    }
+    inFlightDestaques.set(key, request);
+    return request;
   },
 
   async attachDestaquesToProdutos(produtos: Produto[]): Promise<Produto[]> {
@@ -1507,33 +1310,25 @@ export const vitrineApiService = {
   },
 
   async getProdutosPage(params?: QueryParams): Promise<ProdutosPage> {
-    try {
-      const [response, destaques] = await Promise.all([
-        fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
-        this.getDestaques(),
-      ]);
-       const items = unwrapList(response)
-         .map((p) => mapProduto(p, "getProdutosPage"))
-         .filter((produto): produto is Produto => Boolean(produto));
+    const [response, destaques] = await Promise.all([
+      fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
+      this.getDestaques(),
+    ]);
+    const items = unwrapList(response)
+      .map(mapProduto)
+      .filter((produto): produto is Produto => Boolean(produto));
 
-      return {
-        items: applyDestaquesToProdutos(items, destaques),
-        limit: response.limit,
-        offset: response.offset,
-        total: response.total || items.length,
-        hasMore: response.hasMore,
-      };
-    } catch (error) {
-      logVitrineWarning("Erro ao carregar página de produtos", error);
-      return { items: [], limit: 0, offset: 0, total: 0, hasMore: false };
-    }
+    return {
+      items: applyDestaquesToProdutos(items, destaques),
+      limit: response.limit,
+      offset: response.offset,
+      total: response.total || items.length,
+      hasMore: response.hasMore,
+    };
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
-     const produto = mapProduto(
-       await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse),
-       "getProdutoById"
-     );
+    const produto = mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
     if (!produto) return null;
     return (await this.attachDestaquesToProdutos([produto]))[0] ?? produto;
   },
@@ -1549,40 +1344,10 @@ export const vitrineApiService = {
    /**
     * Invalida caches relacionados a coleções.
     */
-    invalidateColecoesCache(): void {
-      this._clearCacheKey(buildUrl("/colecoes", { detalhes: 1, destaque: 1 }));
-      this._clearCacheKey(buildUrl("/colecoes"));
-    },
- 
-    /**
-     * Busca produtos em lote por uma lista de IDs.
-     * Otimizado para evitar N+1 requests em blocos manuais.
-     */
-    async getProdutosByIds(ids: string[]): Promise<Produto[]> {
-      if (!ids || ids.length === 0) return [];
-      
-      // Se for apenas um, usa o endpoint individual (mais cacheável e detalhado)
-      if (ids.length === 1) {
-        const p = await this.getProdutoById(ids[0]);
-        return p ? [p] : [];
-      }
- 
-      try {
-        const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>(
-          "/produtos",
-          { ids: ids.join(","), limit: ids.length },
-          CACHE_TTL.produtos,
-          validatePaginationResponse
-        );
-         const items = unwrapList(response)
-           .map((p) => mapProduto(p, "getProdutosByIds"))
-           .filter((produto): produto is Produto => Boolean(produto));
-        return await this.attachDestaquesToProdutos(items);
-      } catch (error) {
-        logVitrineWarning(`Falha ao buscar produtos por IDs: ${ids.join(",")}`, error);
-        return [];
-      }
-    },
+   invalidateColecoesCache(): void {
+     this._clearCacheKey(buildUrl("/colecoes", { detalhes: 1, destaque: 1 }));
+     this._clearCacheKey(buildUrl("/colecoes"));
+   },
  
    /**
     * Invalida caches relacionados a categorias.
@@ -1624,18 +1389,13 @@ export const vitrineApiService = {
    */
   async getColecoesDestaque(): Promise<ColecaoDestaque[]> {
     const params: QueryParams = { detalhes: 1, destaque: 1 };
-    try {
-      const response = await fetchCachedJson<unknown>(
-        "/colecoes",
-        params,
-        CACHE_TTL.colecoes,
-        validateColecoesDestaqueResponse,
-      );
-      return (response as ColecaoDestaque[]) || [];
-    } catch (error) {
-      logVitrineWarning("Erro ao carregar coleções em destaque", error);
-      return [];
-    }
+    const response = await fetchCachedJson<unknown>(
+      "/colecoes",
+      params,
+      CACHE_TTL.colecoes,
+      validateColecoesDestaqueResponse,
+    );
+    return response as ColecaoDestaque[];
   },
 
   async getCategorias(): Promise<FilterOption[]> {
@@ -1647,67 +1407,16 @@ export const vitrineApiService = {
 
    isValidBrandingUrl: isValidUrl,
  
-    _setupDiagnostic(): void {
-      if (typeof window === "undefined") return;
-      
-      const isDebugRequested = new URLSearchParams(window.location.search).get("debugVitrine") === "1";
-      const isDev = import.meta.env.DEV;
-
-      if (isDev || isDebugRequested) {
-        (window as any).diagnosticoVitrine = async () => {
-          console.group("🔍 [vitrine-api] Diagnóstico Estrutural Completo");
-          
-          console.group("📦 Cache, Sessão & Performance");
-          console.info("Versão do Contrato (Cache):", LOCAL_STORAGE_CACHE_KEY);
-          console.info("Memory Cache Items:", memoryCache.size);
-          console.info("Inflight Requests:", inflightRequests.size);
-          console.groupEnd();
-
-          console.group("📂 Home Blocks (Configuração)");
-          const blocks = await this.getHomeBlocks();
-          console.info(`Total de blocos: ${blocks.length}`);
-          console.table(blocks.map(b => ({
-            id: b.id,
-            tipo: b.tipo,
-            titulo: b.titulo || "Sem título",
-            prioridade: b.prioridade,
-            has_config: !!b.config,
-            validade: b.validade ? `${b.validade.inicio || '...'} ate ${b.validade.fim || '...'}` : 'Sempre'
-          })));
-          console.groupEnd();
-
-          console.group("🏷️ Coleções & Campanhas Destaque");
-          const colecoesDiagnosis = await this.getDiagnosticColecoesDestaque();
-          console.log(colecoesDiagnosis);
-          console.groupEnd();
-
-          console.group("🛍️ Produtos & Elegibilidade");
-          try {
-            const prodPage = await this.getProdutosPage({ limit: 1 });
-            console.info("Status Catálogo:", {
-              total: prodPage.total,
-              recebidos_amostra: prodPage.items.length,
-              hasMore: prodPage.hasMore
-            });
-          } catch (e) {
-            console.error("Erro ao sondar catálogo:", e);
-          }
-          console.groupEnd();
-
-          console.group("✨ Monte Seu Look");
-          const looksDiag = await this.getDiagnosticLooks();
-          console.log(looksDiag);
-          console.groupEnd();
-
-          console.groupEnd();
-          return "Diagnóstico concluído. Verifique os logs acima.";
-        };
-
-        if (isDebugRequested) {
-          console.info("🛠️ [debugVitrine] Modo diagnóstico ATIVO. Use 'await diagnosticoVitrine()' no console para detalhes.");
-        }
-      }
-    },
+   // Expõe diagnóstico no window para facilitar auditoria em tempo real (DEV ONLY)
+   _setupDiagnostic(): void {
+     if (import.meta.env.DEV && typeof window !== "undefined") {
+       (window as any).diagnosticoVitrine = () => {
+         console.info("Iniciando diagnóstico de coleções...");
+         this.getDiagnosticColecoesDestaque().then(console.table);
+       };
+     }
+   },
+ 
    /**
     * Endpoint de diagnóstico interno (DEV ONLY).
     * Retorna o status detalhado de todas as coleções candidatas a destaque.
@@ -1774,41 +1483,7 @@ export const vitrineApiService = {
          timestamp_cache: cacheEntry ? new Date(cacheEntry.timestamp).toISOString() : "None",
          version: LOCAL_STORAGE_CACHE_KEY
        },
-        items: diagnosis
-      };
-    },
-
-    /**
-     * Endpoint de diagnóstico para o Monte Seu Look (DEV ONLY).
-     * Analisa sugestões e looks manuais recebidos.
-     */
-    async getDiagnosticLooks(): Promise<unknown> {
-      if (!import.meta.env.DEV) return { error: "Diagnostic only available in development mode" };
-
-      const blocks = await this.getHomeBlocks();
-      const blockML = blocks.find(b => b.config.sugestoes_monte_look || b.config.looks_manuais);
-
-      const sugestoes = blockML?.config.sugestoes_monte_look || [];
-      const manuais = blockML?.config.looks_manuais || [];
-
-      return {
-        block_id: blockML?.id || "not_found",
-        total_sugestoes: sugestoes.length,
-        total_manuais: manuais.length,
-        sugestoes: sugestoes.map(s => ({
-          id: s.id,
-          titulo: s.titulo,
-          tem_midia: !!s.mediaUrl,
-          tipo_midia: s.mediaType,
-          total_produtos: s.produtos.length
-        })),
-        manuais: manuais.map(m => ({
-          id: m.id,
-          nome: m.nome,
-          tem_midia: !!m.mediaUrl,
-          total_produtos: m.produtos.length
-        })),
-        timestamp: new Date().toISOString()
-      };
-    }
-  };
+       items: diagnosis
+     };
+   }
+ };

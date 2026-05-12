@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-  import { ArrowRight, ImageOff, Sparkles, AlertCircle } from "lucide-react";
- import {
-   vitrineApiService,
-   type ColecaoDestaque,
- } from "@/services/vitrineApiService";
- import { cn } from "@/lib/utils";
- import { applyMediaProps, injectMediaPreload } from "@/lib/mediaUtils";
+import { ArrowRight, ImageOff, Sparkles } from "lucide-react";
+import {
+  vitrineApiService,
+  type ColecaoDestaque,
+} from "@/services/vitrineApiService";
+import { cn } from "@/lib/utils";
 
 /**
  * Banners dinâmicos de coleções em destaque na Home.
@@ -70,15 +69,7 @@ interface CardProps {
   variant: "hero" | "grid";
 }
 
- const CollectionCard = ({ colecao, href, variant }: CardProps) => {
-   const isHero = variant === "hero";
-   
-   useEffect(() => {
-     if (isHero) {
-       const url = colecao.banner_url || colecao.imagem_capa_url;
-       if (url) injectMediaPreload(url, "image", "high");
-     }
-   }, [isHero, colecao.banner_url, colecao.imagem_capa_url]);
+const CollectionCard = ({ colecao, href, variant }: CardProps) => {
   const [imgFailed, setImgFailed] = useState(false);
   // Nunca usar home_destaque_url aqui. Prioridade: banner_url > imagem_capa_url
   const displayImageUrl = (colecao.banner_url && !imgFailed) ? colecao.banner_url : colecao.imagem_capa_url;
@@ -100,13 +91,14 @@ interface CardProps {
           <ImageOff className="w-8 h-8 text-muted-foreground/50" aria-hidden />
         </div>
       ) : (
-         <img
-           src={displayImageUrl ?? undefined}
-           alt={colecao.nome}
-           {...applyMediaProps(displayImageUrl ?? undefined, isHero)}
-           onError={() => setImgFailed(true)}
-           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-         />
+        <img
+          src={displayImageUrl ?? undefined}
+          alt={colecao.nome}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
       )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
@@ -174,11 +166,7 @@ interface CardProps {
   );
 };
 
-interface FeaturedCollectionsProps {
-  debug?: boolean;
-}
-
-export const FeaturedCollections = ({ debug }: FeaturedCollectionsProps) => {
+export const FeaturedCollections = () => {
   const [colecoes, setColecoes] = useState<CollectionLike[] | null>(null);
   const [failed, setFailed] = useState(false);
   const { search } = useLocation();
@@ -214,18 +202,7 @@ export const FeaturedCollections = ({ debug }: FeaturedCollectionsProps) => {
     );
   }
 
-  if (failed || !colecoes || colecoes.length === 0) {
-    if (debug) return (
-      <div className="p-4 border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 text-xs font-mono rounded-lg my-4">
-        <div className="flex items-center gap-2 mb-1">
-          <AlertCircle className="w-4 h-4" />
-          <strong>Bloco Omitido (FeaturedCollections)</strong>
-        </div>
-        <div>Motivo: {failed ? "Falha na requisição da API" : "Nenhuma coleção elegível encontrada"}</div>
-      </div>
-    );
-    return null;
-  }
+  if (failed || !colecoes || colecoes.length === 0) return null;
 
   return (
     <section

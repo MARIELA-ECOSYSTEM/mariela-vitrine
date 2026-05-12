@@ -1,15 +1,1 @@
- /// <reference types="vite/client" />
- 
- interface HTMLImageElement extends HTMLElement {
-   fetchPriority?: "high" | "low" | "auto";
-   fetchpriority?: "high" | "low" | "auto";
- }
- 
- declare namespace React {
-   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
-     fetchpriority?: "high" | "low" | "auto";
-   }
-   interface VideoHTMLAttributes<T> extends HTMLAttributes<T> {
-     fetchpriority?: "high" | "low" | "auto";
-   }
- }
+/// <reference types="vite/client" />

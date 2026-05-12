@@ -29,8 +29,6 @@ export interface ProdutoCor {
   cor: string;
   imagem_thumb: string | null;
   imagem_full: string | null;
-  imagem_card_url?: string | null;
-  imagem_look_url?: string | null;
   tamanhos: ProdutoCorTamanho[];
   /**
    * Galeria completa da cor — vem somente no endpoint de detalhe
@@ -66,10 +64,6 @@ export interface Produto {
   destaque_publico?: string | null;
   recomendacao_publica?: string | null;
   createdAt?: string | null;
-  /** URL específica para visualização no Monte Seu Look (editorial). */
-  imagem_look_url?: string | null;
-  /** URL específica para exibição em cards de vitrine. */
-  imagem_card_url?: string | null;
 }
 
 export async function fetchProdutos(params?: Record<string, string | number | boolean | null | undefined>): Promise<Produto[]> {

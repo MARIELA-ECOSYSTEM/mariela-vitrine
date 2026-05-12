@@ -22,9 +22,8 @@ import { getPublicProductBadge } from "@/services/productInsightsService";
 import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
-import { preloadImagesPrioritized, ProductImageSkeleton } from "@/components/ProductImageSkeleton";
+import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
 import { normalizeSizeLabel, sortSizes } from "@/lib/sizeUtils";
-import { getProductImageByColor, debugProductImage } from "@/lib/productImage";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -152,8 +151,6 @@ const ProductDetail = () => {
     tamanhos: string[];
     imagem_full: string | null;
     imagem_thumb: string | null;
-    imagem_card_url?: string | null;
-    imagem_look_url?: string | null;
     imagens: Array<{ url_full: string; url_thumb: string }>;
   };
   const coresList = useMemo<CorListItem[]>(() => {
@@ -185,8 +182,6 @@ const ProductDetail = () => {
             ),
             imagem_full: c.imagem_full,
             imagem_thumb: c.imagem_thumb,
-            imagem_card_url: c.imagem_card_url,
-            imagem_look_url: c.imagem_look_url,
             imagens: galeria,
           };
         });
@@ -267,8 +262,9 @@ const ProductDetail = () => {
         if (c.imagens.length > 0) {
           c.imagens.forEach((img) => push(img.url_full, c.cor));
         } else {
-          // Prioridade da galeria por cor: card -> full -> thumb
-          push(c.imagem_card_url || c.imagem_full || c.imagem_thumb, c.cor);
+          // Só uma das duas — full tem prioridade, thumb é variante da mesma
+          // foto e não deve gerar entrada extra.
+          push(c.imagem_full || c.imagem_thumb, c.cor);
         }
       });
     }
@@ -283,26 +279,10 @@ const ProductDetail = () => {
     return entries;
   }, [produto, coresList]);
 
-  // Filtra a galeria para mostrar apenas a cor selecionada (PDP exclusiva)
-  // se houver imagens vinculadas a essa cor.
-  const galeriaFiltrada = useMemo(() => {
-    const porCor = galeriaUnificada.filter((g) => !corSelecionada || g.cor === corSelecionada);
-    // Se a cor selecionada não tiver imagens próprias (raro no detalhe), cai para a galeria unificada
-    return porCor.length > 0 ? porCor : galeriaUnificada;
-  }, [galeriaUnificada, corSelecionada]);
-
   const imagensParaMostrar = useMemo(
-    () => galeriaFiltrada.map((g) => g.url),
-    [galeriaFiltrada]
+    () => galeriaUnificada.map((g) => g.url),
+    [galeriaUnificada],
   );
-
-  // Diagnóstico em DEV
-  useEffect(() => {
-    if (produto && corSelecionada) {
-      const res = getProductImageByColor(produto, corSelecionada);
-      debugProductImage("PDP", res);
-    }
-  }, [produto, corSelecionada]);
 
   // Mapas auxiliares para sync bidirecional cor ↔ imagem.
   const primeiraImagemPorCor = useMemo(() => {
@@ -393,10 +373,15 @@ const ProductDetail = () => {
     [coresList, tamanhoSelecionado],
   );
 
-  // Ao trocar cor, resetamos o índice da imagem para a primeira da nova galeria filtrada.
+  // Ao trocar cor, salta para a primeira imagem dessa cor na galeria unificada.
   useEffect(() => {
-    setImagemSelecionadaIndex(0);
-  }, [corSelecionada]);
+    if (!corSelecionadaObj) return;
+    const idx = primeiraImagemPorCor[corSelecionadaObj.cor];
+    if (typeof idx === "number" && idx !== imagemSelecionadaIndex) {
+      setImagemSelecionadaIndex(idx);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corSelecionadaObj?.produto_cor_id, primeiraImagemPorCor]);
 
   // Auto-seleciona a cor com base na query string (?cor=...) ou na primeira disponível.
   useEffect(() => {
@@ -544,7 +529,7 @@ const ProductDetail = () => {
   const handleImageSelect = useCallback(
     (index: number) => {
       setImagemSelecionadaIndex(index);
-      const entry = galeriaFiltrada[index];
+      const entry = galeriaUnificada[index];
       if (!entry?.cor) return;
       if (entry.cor === corSelecionada) return;
       const corItem = coresList.find((c) => c.cor === entry.cor);
@@ -846,7 +831,7 @@ const ProductDetail = () => {
             <div className="animate-fade-in">
               <ImageGallery
                 images={imagensParaMostrar}
-                imageColors={galeriaFiltrada.map((g) => g.cor)}
+                imageColors={galeriaUnificada.map((g) => g.cor)}
                 colorSwatchMap={COLOR_MAP}
                 productName={
                   corSelecionada

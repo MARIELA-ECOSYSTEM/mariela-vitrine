@@ -112,8 +112,8 @@ export const PromotionsSection = () => {
     touchEndX.current = null;
   };
 
-  const hasPromotions = useMemo(() => produtos.some(p => p.emPromocao), [produtos]);
-  if (!loading && !hasPromotions) {
+  // Não renderiza a seção se não houver promoções no total
+  if (!loading && produtos.filter(p => p.emPromocao).length === 0) {
     return null;
   }
 
