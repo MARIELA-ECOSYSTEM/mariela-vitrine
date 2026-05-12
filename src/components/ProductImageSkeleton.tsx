@@ -522,7 +522,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
            loading={priority ? "eager" : "lazy"}
            decoding="async"
            draggable={false}
-           fetchPriority={priority ? "high" : "auto"}
+           fetchpriority={priority ? "high" : "auto"}
            className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
             "transition-opacity ease-out",
@@ -540,7 +540,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
            loading="eager"
            decoding="async"
            draggable={false}
-           fetchPriority="high"
+           fetchpriority="high"
            className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
             "transition-opacity ease-out",
@@ -764,7 +764,7 @@ const LegacyImageDisplay = ({
              alt={alt}
              loading={priority ? "eager" : "lazy"}
              decoding="async"
-             fetchPriority={priority ? "high" : "auto"}
+             fetchpriority={priority ? "high" : "auto"}
              className={cn(
               "relative w-full h-full object-cover",
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
