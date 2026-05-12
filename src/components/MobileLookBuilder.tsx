@@ -27,6 +27,7 @@ import {
   handleProductImageError,
   PRODUCT_IMAGE_PLACEHOLDER,
 } from "@/lib/productImage";
+import { vitrineApiService, LookSugestao, LookManual } from "@/services/vitrineApiService";
 
 // Ícone oficial do WhatsApp (inline SVG) — deixa explícito o canal de envio.
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -79,7 +80,7 @@ const categoryConfig: Array<{
   { key: 'bolsa', label: 'Bolsas & Acessórios', emoji: '👜' },
 ];
 
-export const MobileLookBuilder = () => {
+export const MobileLookBuilder = ({ preSelectedIds = [] }: { preSelectedIds?: string[] }) => {
   const { produtos, loading } = useProducts();
   const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
@@ -205,6 +206,41 @@ export const MobileLookBuilder = () => {
     vestido: null,
     conjunto: null,
   });
+
+  // Efeito para carregar look sugerido
+  useEffect(() => {
+    if (preSelectedIds.length > 0 && produtos.length > 0) {
+      const newSelections: SelectedItems = { blusa: null, bottom: null, bolsa: null, vestido: null, conjunto: null };
+      const newSizes: SelectedSizes = { blusa: "", bottom: "", bolsa: "", vestido: "", conjunto: "" };
+      const newColors: SelectedColors = { blusa: "", bottom: "", bolsa: "", vestido: "", conjunto: "" };
+
+      preSelectedIds.forEach(id => {
+        const product = produtos.find(p => p.produtoId === id || String(p.id) === id);
+        if (product) {
+          // Determina categoria
+          let cat: CategoryKey | null = null;
+          if (product.categoria === "vestidos") cat = "vestido";
+          else if (product.categoria === "conjuntos") cat = "conjunto";
+          else if (product.categoria === "blusas") cat = "blusa";
+          else if (["shorts", "calças", "saias", "short-saias"].includes(product.categoria)) cat = "bottom";
+          else if (["bolsas", "acessorios"].includes(product.categoria)) cat = "bolsa";
+
+          if (cat) {
+            newSelections[cat] = product.id;
+          }
+        }
+      });
+
+      setSelectedItems(newSelections);
+      setSelectedSizes(newSizes);
+      setSelectedColors(newColors);
+      
+      toast({
+        title: "Look Carregado",
+        description: "As peças sugeridas foram adicionadas ao seu look.",
+      });
+    }
+  }, [preSelectedIds, produtos]);
 
   const [selectedSizes, setSelectedSizes] = useState<SelectedSizes>({
     blusa: "",
@@ -367,10 +403,30 @@ export const MobileLookBuilder = () => {
     setSelectedSizes({ ...selectedSizes, [category]: "" });
   };
 
-  // Wrapper fino sobre o utilitário central — mantém a assinatura usada
-  // pelos componentes filhos (que esperam apenas a URL).
-  const getImageForColor = (produto: Produto | null, cor: string) =>
-    getProductImageByColor(produto, cor).src;
+  // Implementa a regra de fallback da Vitrine: 
+  // 1. imagem_look_url -> 2. imagem_card_url -> 3. imagem principal (da cor ou produto)
+  const getImageForLook = (produto: Produto | null, cor: string) => {
+    if (!produto) return PRODUCT_IMAGE_PLACEHOLDER;
+    
+    // 1. Tenta imagem editorial específica para Look
+    if (produto.imagem_look_url) return produto.imagem_look_url;
+    
+    // 2. Tenta imagem de card (fallback editorial intermediário)
+    if (produto.imagem_card_url) return produto.imagem_card_url;
+    
+    // 3. Fallback para imagem principal da cor ou produto
+    return getProductImageByColor(produto, cor).src;
+  };
+
+  // Wrapper para cards e listagens (Vitrine comum)
+  const getImageForCard = (produto: Produto | null, cor: string) => {
+    if (!produto) return PRODUCT_IMAGE_PLACEHOLDER;
+    if (produto.imagem_card_url) return produto.imagem_card_url;
+    return getProductImageByColor(produto, cor).src;
+  };
+
+  // Mantém compatibilidade com a assinatura antiga usada nos componentes internos
+  const getImageForColor = getImageForCard;
 
   // Leva o usuário até o card da categoria correspondente para escolher o
   // tamanho ali (sem dialog separado). Usado tanto pela validação do envio
@@ -524,8 +580,8 @@ export const MobileLookBuilder = () => {
                   >
                     <img
                       key={`${product.id}-${color || "default"}`}
-                      src={getImageForColor(product, color)}
-                      alt={getProductImageByColor(product, color).alt}
+                  src={getImageForLook(product, color)}
+                  alt={getProductImageByColor(product, color).alt}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -714,6 +770,7 @@ interface CategorySectionProps {
   onColorChange: (color: string) => void;
   onSizeChange: (size: string) => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
+  getImageForLook?: (produto: Produto | null, cor: string) => string;
 }
 
 const CategorySection = ({
@@ -936,6 +993,7 @@ interface PreviewPanelProps {
   onClear: () => void;
   onWhatsApp: () => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
+  getImageForLook?: (produto: Produto | null, cor: string) => string;
   isMobile?: boolean;
   missingSize?: boolean;
   /** Categorias que exigem tamanho. Usado para destacar items sem tamanho na prévia. */
@@ -953,6 +1011,7 @@ const PreviewPanel = ({
   onClear,
   onWhatsApp,
   getImageForColor,
+  getImageForLook,
   isMobile = false,
   missingSize = false,
   sizedCategories = ["blusa", "bottom", "vestido", "conjunto"],
@@ -977,7 +1036,10 @@ const PreviewPanel = ({
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
                 <img
                   key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
-                  src={getImageForColor(
+                  src={getImageForLook ? getImageForLook(
+                    selectedProducts.vestido || selectedProducts.conjunto,
+                    selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
+                  ) : getImageForColor(
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
                   )}
@@ -996,7 +1058,7 @@ const PreviewPanel = ({
                   {selectedProducts.blusa ? (
                     <img
                       key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
-                      src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
+                      src={getImageForLook ? getImageForLook(selectedProducts.blusa, selectedColors.blusa) : getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
                       alt={getProductImageByColor(selectedProducts.blusa, selectedColors.blusa).alt}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
@@ -1012,7 +1074,7 @@ const PreviewPanel = ({
                   {selectedProducts.bottom ? (
                     <img
                       key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
-                      src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
+                      src={getImageForLook ? getImageForLook(selectedProducts.bottom, selectedColors.bottom) : getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
                       alt={getProductImageByColor(selectedProducts.bottom, selectedColors.bottom).alt}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
@@ -1030,7 +1092,7 @@ const PreviewPanel = ({
               <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in">
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
-                  src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
+                  src={getImageForLook ? getImageForLook(selectedProducts.bolsa, selectedColors.bolsa) : getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={getProductImageByColor(selectedProducts.bolsa, selectedColors.bolsa).alt}
                   className="w-full h-full object-contain"
                 />
@@ -1095,7 +1157,7 @@ const PreviewPanel = ({
                   <div className="flex items-center gap-2 min-w-0">
                     <img
                       key={`${product.id}-${color || "default"}`}
-                      src={getImageForColor(product, color)}
+                      src={getImageForLook ? getImageForLook(product, color) : getImageForColor(product, color)}
                       alt={getProductImageByColor(product, color).alt}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
                     />
