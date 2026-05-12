@@ -569,8 +569,10 @@ const categoryConfig: Array<{
             onWhatsApp={handleWhatsApp}
             getImageForColor={getImageForColor}
             missingSize={missingSize}
-            onPickSize={(cat) => goToCategorySize(cat)}
-          />
+             onPickSize={(cat) => goToCategorySize(cat)}
+             relatedSuggestions={relatedSuggestions}
+             onSelectItem={selectItem}
+           />
           {/* aria-live region (desktop) — anuncia falta de tamanho ao tentar enviar. */}
           <p aria-live="polite" aria-atomic="true" className="sr-only">
             {sizeGuide.announceMessage}
@@ -790,9 +792,11 @@ const categoryConfig: Array<{
                   // Fecha a prévia mobile e leva o usuário até o card da
                   // categoria correspondente para escolher o tamanho lá.
                   closePreview();
-                  goToCategorySize(cat);
-                }}
-              />
+                   goToCategorySize(cat);
+                 }}
+                 relatedSuggestions={relatedSuggestions}
+                 onSelectItem={selectItem}
+               />
             </div>
           </div>
         </div>,
