@@ -95,11 +95,24 @@
            limit: 50
          });
  
-         if (active) {
-           setProdutos(productsPage.items);
-           setLoading(false);
-         }
- 
+          if (active) {
+            setProdutos(productsPage.items);
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error("[CollectionDetail] Error fetching data:", err);
+          if (active) {
+            setError(true);
+            setLoading(false);
+          }
+        }
+      };
+  
+      fetchData();
+  
+      return () => {
+        active = false;
+      };
     }, [id]);
 
     // Sincronizar filtros com URL
