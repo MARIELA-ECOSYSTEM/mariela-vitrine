@@ -4,6 +4,7 @@ import produtoGenerico from "@/assets/produto-generico.png";
 export interface ProductImageResult {
   src: string;
   alt: string;
+  origin?: "card" | "look" | "cor" | "principal" | "none";
 }
 
 /**
@@ -27,7 +28,7 @@ export function getProductImageByColor(
   corSelecionada?: string | null,
 ): ProductImageResult {
   if (!produto) {
-    return { src: "", alt: "Produto" };
+    return { src: "", alt: "Produto", origin: "none" };
   }
 
   const nome = produto.nome ?? "Produto";
@@ -46,7 +47,7 @@ export function getProductImageByColor(
     const fromCor = candidates
       .map((value) => (typeof value === "string" ? value.trim() : ""))
       .find((value) => value.length > 0);
-    if (fromCor) return { src: fromCor, alt };
+    if (fromCor) return { src: fromCor, alt, origin: "cor" };
   }
 
   const imagens = produto.imagens ?? [];
@@ -54,14 +55,84 @@ export function getProductImageByColor(
   // 2. Primeira imagem do produto retornada pela API (já inclui a genérica
   //    quando o PDV decidir aplicá-la).
   if (imagens[0]) {
-    return { src: imagens[0], alt };
+    return { src: imagens[0], alt, origin: "principal" };
   }
 
   // 3. Sem imagem da API — devolve string vazia. O onError do <img> vai
   //    aplicar o fallback extremo local (handleProductImageError) caso o
   //    navegador tente carregar e falhe. Isso evita "inventar" imagem
   //    genérica antes de saber se a API realmente não entregou nada.
-  return { src: "", alt };
+  return { src: "", alt, origin: "none" };
+}
+
+/**
+ * Resolve a imagem específica para o Card da Vitrine.
+ * Prioridade: 1. imagem_card_url -> 2. getProductImageByColor
+ */
+export function getProductCardImage(
+  produto: Produto | null | undefined,
+  corSelecionada?: string | null,
+): ProductImageResult {
+  if (!produto) return { src: "", alt: "Produto", origin: "none" };
+
+  const nome = produto.nome ?? "Produto";
+  const cor = corSelecionada?.trim() || "";
+  const alt = cor ? `${nome} — cor ${cor}` : nome;
+
+  // 1. Tenta imagem de card (específica para vitrine)
+  if (produto.imagem_card_url) {
+    return { src: produto.imagem_card_url, alt, origin: "card" };
+  }
+
+  // 2. Fallback centralizado
+  return getProductImageByColor(produto, corSelecionada);
+}
+
+/**
+ * Resolve a imagem específica para o Monte Seu Look.
+ * Prioridade: 1. imagem_look_url -> 2. imagem_card_url -> 3. getProductImageByColor
+ */
+export function getProductLookImage(
+  produto: Produto | null | undefined,
+  corSelecionada?: string | null,
+): ProductImageResult {
+  if (!produto) return { src: "", alt: "Produto", origin: "none" };
+
+  const nome = produto.nome ?? "Produto";
+  const cor = corSelecionada?.trim() || "";
+  const alt = cor ? `${nome} — cor ${cor}` : nome;
+
+  // 1. Tenta imagem editorial de look
+  if (produto.imagem_look_url) {
+    return { src: produto.imagem_look_url, alt, origin: "look" };
+  }
+
+  // 2. Tenta imagem de card como fallback editorial
+  if (produto.imagem_card_url) {
+    return { src: produto.imagem_card_url, alt, origin: "card" };
+  }
+
+  // 3. Fallback centralizado
+  return getProductImageByColor(produto, corSelecionada);
+}
+
+/**
+ * Helper de diagnóstico para console (Dev only)
+ */
+export function debugProductImage(context: string, result: ProductImageResult) {
+  if (import.meta.env.DEV) {
+    const debugPDP = new URLSearchParams(window.location.search).get("debugPDP") === "1";
+    const debugProducts = new URLSearchParams(window.location.search).get("debugProducts") === "1";
+    const debugLooks = new URLSearchParams(window.location.search).get("debugLooks") === "1";
+
+    if ((context === "PDP" && debugPDP) || (context === "Products" && debugProducts) || (context === "Looks" && debugLooks)) {
+      console.group(`[debug-midia] ${context}`);
+      console.info("Mídia usada:", result.src);
+      console.info("Origem:", result.origin);
+      console.info("Alt:", result.alt);
+      console.groupEnd();
+    }
+  }
 }
 
 /**
