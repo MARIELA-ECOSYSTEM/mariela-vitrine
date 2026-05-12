@@ -4,19 +4,7 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
  import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
 
-const isLocal = 
-  window.location.hostname === "localhost" || 
-  window.location.hostname.includes("lovable.app") || 
-  window.location.hostname.includes("lovableproject.com") || 
-  window.location.hostname.includes("preview");
-const LOCAL_PROJECT_ID = "zbmdrncgsuvjexpiezbr";
-const VITRINE_API_BASE_URL = isLocal && LOCAL_PROJECT_ID
-  ? `https://${LOCAL_PROJECT_ID}.supabase.co/functions/v1/vitrine-api`
-  : "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
-
-if (import.meta.env.DEV) {
-  console.log(`[vitrine-api] Base URL: ${VITRINE_API_BASE_URL}`);
-}
+const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
@@ -380,9 +368,19 @@ function stableParamsKey(params?: QueryParams): string {
   return JSON.stringify(Object.entries(params).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-function createApiError(status: number): VitrineApiError {
+function createApiError(status: number, url?: string): VitrineApiError {
   if (status === 400) return new VitrineApiError("Parâmetros inválidos na consulta da vitrine.", status);
-  if (status === 404) return new VitrineApiError("Item não encontrado na vitrine.", status);
+  
+  if (status === 404) {
+    // Se um recurso editorial novo falhar (blocks, monte-seu-look), retornamos um erro
+    // específico que permite ao frontend ignorar a seção sem quebrar o resto.
+    const isEditorial = url?.includes("/home/blocks") || url?.includes("/monte-seu-look");
+    if (isEditorial) {
+      return new VitrineApiError("Recurso editorial não disponível no ambiente atual.", 404);
+    }
+    return new VitrineApiError("Item não encontrado na vitrine.", 404);
+  }
+  
   if (status >= 500) return new VitrineApiError("A vitrine está temporariamente indisponível. Tente novamente em instantes.", status);
   return new VitrineApiError("Não foi possível carregar os dados da vitrine.", status);
 }
@@ -432,7 +430,7 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
 
       if (!response.ok) {
         logVitrineWarning(`HTTP ${response.status} em ${url}`);
-        throw createApiError(response.status);
+        throw createApiError(response.status, url);
       }
 
       const data = await response.json() as T;

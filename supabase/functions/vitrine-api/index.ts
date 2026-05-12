@@ -14,94 +14,42 @@ serve(async (req) => {
   const url = new URL(req.url);
   // In Supabase, the path might or might not include the function name depending on how it's called.
   // We normalize it to always start from the actual resource path.
-  const path = url.pathname
+  // Normalizamos o path para garantir que a comparação de rotas funcione
+  // independente de como a Edge Function é invocada.
+  let path = url.pathname
     .replace(/^\/functions\/v1\/vitrine-api/, '')
-    .replace(/^\/vitrine-api/, '') || '/';
+    .replace(/^\/vitrine-api/, '');
+  
+  // Removemos query strings codificadas que podem vir no pathname em alguns ambientes
+  path = path.split('?')[0].split('%3F')[0] || '/';
 
   console.log(`[vitrine-api] Request: ${req.method} ${path}`);
 
+  /**
+   * Função 'vitrine-api' (Preview).
+   * Esta função foi detectada como causa de regressão ao tentar mockar dados de catálogo.
+   * Restauramos para um comportamento neutro: se for uma rota editorial nova, 
+   * retorna vazio. Se for catálogo, retorna erro para forçar o frontend a usar
+   * o endpoint de produção real configurado no vitrineApiService.ts.
+   */
   try {
-    // Rota: /home/blocks
-    if (path === '/home/blocks' || path === '/home/blocks/') {
+    const editorialPaths = ['/home/blocks', '/monte-seu-look', '/config'];
+    if (editorialPaths.some(p => path === p || path === `${p}/`)) {
       return new Response(
-        JSON.stringify({
-          data: [
-            {
-              id: "novidades",
-              tipo: "produtos",
-              titulo: "Novidades",
-              subtitulo: "Recém-chegadas à coleção",
-              prioridade: 10,
-              config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-            },
-            {
-              id: "em_alta",
-              tipo: "produtos",
-              titulo: "Em alta",
-              subtitulo: "Peças em destaque na vitrine",
-              prioridade: 20,
-              config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-            }
-          ]
+        JSON.stringify({ 
+          data: path.includes('blocks') ? [] : { sugestoes: [], looks_manuais: [] },
+          status: "preview_mode" 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Rota: /monte-seu-look
-    if (path === '/monte-seu-look' || path === '/monte-seu-look/') {
-      return new Response(
-        JSON.stringify({
-          data: {
-            sugestoes: [],
-            looks_manuais: []
-          }
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Rota: /config
-    if (path === '/config' || path === '/config/') {
-      return new Response(
-        JSON.stringify({
-          data: {
-            nome_loja: "Mariela Moda Feminina",
-            logo_url: null,
-            whatsapp: "5583986567915",
-            instagram: "marielaloja_"
-          }
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Fallback inteligente: se o path não for reconhecido, mas terminar em /blocks, retorna os blocos.
-    // Isso ajuda com variações de roteamento entre ambientes.
-    if (path.endsWith('/blocks') || path.endsWith('/blocks/')) {
-      return new Response(
-        JSON.stringify({
-          data: [
-            {
-              id: "novidades",
-              tipo: "produtos",
-              titulo: "Novidades",
-              subtitulo: "Recém-chegadas à coleção",
-              prioridade: 10,
-              config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-            }
-          ]
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // Não mockamos /produtos nem /colecoes aqui para não quebrar a vitrine de produção.
     return new Response(
-      JSON.stringify({ error: `Rota não encontrada no vitrine-api: ${path}` }),
+      JSON.stringify({ error: `Recurso não implementado no mock: ${path}. Use o endpoint de produção.` }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error(`[vitrine-api] Error:`, error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
