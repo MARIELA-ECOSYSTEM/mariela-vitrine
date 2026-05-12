@@ -152,6 +152,8 @@ const ProductDetail = () => {
     tamanhos: string[];
     imagem_full: string | null;
     imagem_thumb: string | null;
+    imagem_card_url?: string | null;
+    imagem_look_url?: string | null;
     imagens: Array<{ url_full: string; url_thumb: string }>;
   };
   const coresList = useMemo<CorListItem[]>(() => {
@@ -183,6 +185,8 @@ const ProductDetail = () => {
             ),
             imagem_full: c.imagem_full,
             imagem_thumb: c.imagem_thumb,
+            imagem_card_url: c.imagem_card_url,
+            imagem_look_url: c.imagem_look_url,
             imagens: galeria,
           };
         });
