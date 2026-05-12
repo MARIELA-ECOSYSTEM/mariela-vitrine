@@ -30,7 +30,7 @@ serve(async (req) => {
      if (path === '/config' || path === '/config/') {
        return new Response(
          JSON.stringify({ data: { nome: "Mariela Vitrine (Preview)", features: { monte_seu_look: true } } }),
-         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } }
        );
      }
  

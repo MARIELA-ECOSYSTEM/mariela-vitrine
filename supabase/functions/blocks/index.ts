@@ -60,7 +60,7 @@ serve(async (req) => {
      if (path === '/' || path === '/home/blocks' || path === '/home/blocks/') {
        return new Response(
          JSON.stringify({ data: blocksData, status: "preview_mode" }),
-         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } }
        );
      }
  
