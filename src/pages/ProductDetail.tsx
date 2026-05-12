@@ -263,9 +263,8 @@ const ProductDetail = () => {
         if (c.imagens.length > 0) {
           c.imagens.forEach((img) => push(img.url_full, c.cor));
         } else {
-          // Só uma das duas — full tem prioridade, thumb é variante da mesma
-          // foto e não deve gerar entrada extra.
-          push(c.imagem_full || c.imagem_thumb, c.cor);
+          // Prioridade da galeria por cor: card -> full -> thumb
+          push(c.imagem_card_url || c.imagem_full || c.imagem_thumb, c.cor);
         }
       });
     }
