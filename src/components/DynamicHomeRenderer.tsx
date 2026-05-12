@@ -11,9 +11,10 @@
    debug?: boolean;
    manualProducts?: Record<string, Produto[]>;
    index: number;
+   isAboveFold?: boolean;
  }
  
- const BlockRenderer = memo(({ block, debug, manualProducts, index }: BlockRendererProps) => {
+ const BlockRenderer = memo(({ block, debug, manualProducts, index, isAboveFold = false }: BlockRendererProps) => {
    // Validade temporal controlada pelo PDV
    const now = useMemo(() => new Date(), []);
    if (block.validade) {
@@ -62,7 +63,7 @@
              posterUrl={block.config.posterUrl}
              ctaLabel={block.config.ctaLabel}
              ctaUrl={block.config.ctaUrl}
-             priority={index === 0}
+             priority={isAboveFold}
            />
          );
        case "instagram":
@@ -164,15 +165,26 @@
  
    return (
      <div className="space-y-6 sm:space-y-10">
-       {blocks.map((block, idx) => (
-         <BlockRenderer 
-           key={block.id} 
-           block={block} 
-           debug={debug} 
-           manualProducts={manualProducts}
-           index={idx}
-         />
-       ))}
+       {blocks.map((block, idx) => {
+         // Detecção confiável de "acima da dobra" (LCP candidates):
+         // - Se for o primeiro bloco da lista dinâmica
+         // - E não estivermos em um estado de loading massivo que empurre o conteúdo
+         // No Mariela, o HeroBannerCarousel já ocupa o topo, então o 1º bloco dinâmico 
+         // pode ou não estar visível dependendo da altura da tela. Consideramos o 1º
+         // bloco dinâmico como prioridade para garantir que o LCP não sofra.
+         const isAboveFold = idx === 0;
+         
+         return (
+           <BlockRenderer 
+             key={block.id} 
+             block={block} 
+             debug={debug} 
+             manualProducts={manualProducts}
+             index={idx}
+             isAboveFold={isAboveFold}
+           />
+         );
+       })}
      </div>
    );
  });
