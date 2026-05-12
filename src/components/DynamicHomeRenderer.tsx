@@ -164,7 +164,7 @@
  
    return (
      <div className="space-y-6 sm:space-y-10">
-       {blocks.map((block) => (
+       {blocks.map((block, idx) => (
          <BlockRenderer 
            key={block.id} 
            block={block} 
