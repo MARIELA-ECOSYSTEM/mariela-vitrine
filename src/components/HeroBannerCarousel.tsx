@@ -156,7 +156,7 @@ export const HeroBannerCarousel = () => {
                 loop
                 playsInline
                 preload="metadata"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
                 onLoadStart={() => { loadStartTimes.current[colecao.id] = performance.now(); }}
                 onLoadedData={() => handleMediaLoad(colecao.id)}
                 onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: { error: true, reason: "Erro de decodificação ou rede" } }))}
@@ -179,7 +179,7 @@ export const HeroBannerCarousel = () => {
               <img
                 src={media.url}
                 alt={colecao.nome}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
                 onLoadStart={() => { 
                   const key = media.url === colecao.home_destaque_url ? colecao.id : 
                              media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
