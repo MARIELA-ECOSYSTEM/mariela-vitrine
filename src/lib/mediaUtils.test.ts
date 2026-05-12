@@ -27,6 +27,17 @@
        const issues = validateHeadPreloads();
        expect(issues.some(i => i.includes("Preload duplicado para"))).toBe(true);
      });
+ 
+     it("detects invalid priority", () => {
+       const link = document.createElement("link");
+       link.rel = "preload";
+       link.href = "invalid.jpg";
+       link.setAttribute("fetchpriority", "very-high");
+       document.head.appendChild(link);
+ 
+       const issues = validateHeadPreloads();
+       expect(issues.some(i => i.includes('Prioridade inválida ("very-high")'))).toBe(true);
+     });
    });
 
 describe("mediaUtils", () => {
