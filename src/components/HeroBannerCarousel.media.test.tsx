@@ -19,6 +19,10 @@ describe("HeroBannerCarousel — Novos tipos de mídia e fallbacks (Mocked Servi
       unobserve: vi.fn(),
       disconnect: vi.fn(),
     }));
+
+    // Mock HTMLMediaElement prototype
+    window.HTMLMediaElement.prototype.play = vi.fn().mockImplementation(() => Promise.resolve());
+    window.HTMLMediaElement.prototype.pause = vi.fn();
   });
 
   it("Renderiza imagem quando home_destaque_tipo é 'image'", async () => {
