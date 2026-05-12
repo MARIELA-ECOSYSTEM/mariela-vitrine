@@ -4,7 +4,13 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
  import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
 
-const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
+const isPreview = 
+  window.location.hostname.includes("lovableproject.com") || 
+  window.location.hostname.includes("preview");
+
+const VITRINE_API_BASE_URL = isPreview
+  ? "https://zbmdrncgsuvjexpiezbr.supabase.co/functions/v1/vitrine-api"
+  : "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
