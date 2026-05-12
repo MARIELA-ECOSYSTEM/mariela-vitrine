@@ -550,7 +550,7 @@ const Products = () => {
             <p>Status: {catalogLoading ? 'carregando...' : (produtosCatalogo.length > 0 ? 'OK' : 'Vazio ou Erro')}</p>
             <p>Total API: {totalProdutos}</p>
             <p>Total exibido: {produtosCatalogo.length}</p>
-            {productsError && <p className="text-red-400">Erro: {productsError.message}</p>}
+            {productsError && <p className="text-red-400">Erro: {productsError}</p>}
             <details className="mt-2">
               <summary className="cursor-pointer hover:underline text-[10px]">Ver query params</summary>
               <pre className="mt-1 p-2 bg-black/50 rounded">{JSON.stringify(getProdutosQuery(0), null, 2)}</pre>
