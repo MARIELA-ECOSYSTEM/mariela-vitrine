@@ -1,4 +1,4 @@
- import { memo } from "react";
+ import { memo, useEffect, useRef } from "react";
  import { Button } from "@/components/ui/button";
  import { Link } from "react-router-dom";
  import { cn } from "@/lib/utils";
@@ -14,17 +14,33 @@
  }
  
  export const BannerBlock = memo(({ titulo, subtitulo, mediaUrl, mediaType, ctaLabel, ctaUrl }: BannerBlockProps) => {
+   const videoRef = useRef<HTMLVideoElement>(null);
+ 
+   useEffect(() => {
+     if (mediaType === "video" && videoRef.current) {
+       // Autoplay seguro tratado com Promise para evitar erros de console
+       // quando o navegador bloqueia o autoplay (silencioso em produção)
+       const playPromise = videoRef.current.play();
+       if (playPromise !== undefined) {
+         playPromise.catch(() => {
+           /* Autoplay bloqueado pelo navegador — comportamento esperado */
+         });
+       }
+     }
+   }, [mediaType, mediaUrl]);
+ 
    if (!mediaUrl) return null;
  
    return (
      <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-xl bg-muted group">
        {mediaType === "video" ? (
          <video
+           ref={videoRef}
            src={mediaUrl}
-           autoPlay
            muted
            loop
            playsInline
+           preload="metadata"
            className="absolute inset-0 w-full h-full object-cover"
          />
        ) : (

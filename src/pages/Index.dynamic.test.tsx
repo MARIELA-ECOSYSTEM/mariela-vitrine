@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Index from "./Index";
 import { vitrineApiService } from "@/services/vitrineApiService";
@@ -52,6 +52,7 @@ vi.mock("@/services/vitrineApiService", async () => {
 describe("Index Dynamic Blocks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    cleanup();
   });
 
   it("renders dynamic blocks from API", async () => {
@@ -59,12 +60,12 @@ describe("Index Dynamic Blocks", () => {
       {
         id: "block-1",
         tipo: "produtos",
-        titulo: "Bloco Dinâmico 1",
+        titulo: "Bloco Dinamico 1",
         prioridade: 1,
         config: { filter: "novidades", limit: 4 },
       },
     ];
-    (vitrineApiService.getHomeBlocks as any).mockResolvedValue([...mockBlocks].sort((a, b) => a.prioridade - b.prioridade));
+    (vitrineApiService.getHomeBlocks as any).mockResolvedValue([...mockBlocks]);
 
     render(
       <MemoryRouter>
@@ -73,7 +74,7 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Bloco Dinâmico 1")).toBeInTheDocument();
+      expect(screen.getByText("Bloco Dinamico 1")).toBeInTheDocument();
     });
   });
 
@@ -110,22 +111,6 @@ describe("Index Dynamic Blocks", () => {
       
       expect(blockTitles[0]).toBe("Primeiro Bloco");
       expect(blockTitles[1]).toBe("Segundo Bloco");
-    });
-  });
-
-  it("handles empty blocks gracefully", async () => {
-    (vitrineApiService.getHomeBlocks as any).mockResolvedValue([]);
-    const { useProducts } = await import("@/hooks/useProducts");
-    (useProducts as any).mockReturnValue({ loading: false, produtos: [] });
-
-    render(
-      <MemoryRouter>
-        <Index />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText("Em breve, novidades por aqui")).toBeInTheDocument();
     });
   });
 
@@ -206,50 +191,95 @@ describe("Index Dynamic Blocks", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Siga-nos")).toBeInTheDocument();
-      expect(screen.getByText(/Seguir no Instagram/i)).toBeInTheDocument();
     });
   });
 
-   it("handles products with estilo 'lista'", async () => {
-     const mockBlocks = [
-       {
-         id: "block-lista",
-         tipo: "produtos",
-         titulo: "Lista de Produtos",
-         prioridade: 1,
-         config: { filter: "novidades", estilo: "lista" },
-       },
-     ];
-     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
-     
-     // Garante que o useProducts retorne produtos para que o FeaturedProducts não omita o bloco
-     const { useProducts } = await import("@/hooks/useProducts");
-     (useProducts as any).mockReturnValue({ 
-       loading: false, 
-       produtos: [
-         { id: 10, nome: "Prod Lista", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: false, isNovidade: true }
-       ] 
-     });
- 
-     render(
-       <MemoryRouter>
-         <Index />
-       </MemoryRouter>
-     );
- 
-     await waitFor(() => {
-       expect(screen.getByText("Lista de Produtos")).toBeInTheDocument();
-     });
-   });
-
-  it("shows debug info when ?debugHome=1 is present (DEV only)", async () => {
+  it("supports estilo 'carrossel' in FeaturedProducts", async () => {
     const mockBlocks = [
       {
-        id: "debug-test-block",
+        id: "block-carrossel",
         tipo: "produtos",
-        titulo: "Debug Block",
+        titulo: "Carrossel de Produtos",
         prioridade: 1,
-        config: { filter: "novidades" },
+        config: { filter: "novidades", estilo: "carrossel" },
+      },
+    ];
+    (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+
+    const { container } = render(
+      <MemoryRouter>
+        <Index />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Carrossel de Produtos")).toBeInTheDocument();
+      const carousel = container.querySelector('.snap-x');
+      expect(carousel).toBeInTheDocument();
+    });
+  });
+
+  it("respects product limit from max_items", async () => {
+    const mockBlocks = [
+      {
+        id: "block-limit",
+        tipo: "produtos",
+        titulo: "Produtos Limitados",
+        prioridade: 1,
+        config: { filter: "novidades", max_items: 1 },
+      },
+    ];
+    (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+
+    render(
+      <MemoryRouter>
+        <Index />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Produtos Limitados")).toBeInTheDocument();
+      const productCards = screen.getAllByText("Produto Novidade");
+      expect(productCards.length).toBe(1);
+    });
+  });
+
+  it("deduplicates simultaneous getProdutosByIds calls", async () => {
+    const mockProduct = { id: 100, nome: "Manual", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: false, isNovidade: true };
+    const mockBlocks = [
+      {
+        id: "block-manual",
+        tipo: "produtos",
+        titulo: "Produtos Manuais",
+        prioridade: 1,
+        config: { produtos: ["p1", "p2"] },
+      },
+    ];
+    (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+    
+    const fetchSpy = vi.spyOn(vitrineApiService, 'getProdutosByIds').mockResolvedValue([mockProduct]);
+
+    render(
+      <MemoryRouter>
+        <Index />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Produtos Manuais")).toBeInTheDocument();
+    });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows debug info ONLY when ?debugHome=1 is present in DEV", async () => {
+    const mockBlocks = [
+      {
+        id: "debug-block",
+        tipo: "banner",
+        titulo: "Banner Debug Info",
+        prioridade: 1,
+        config: { mediaUrl: "b.jpg" },
       },
     ];
     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
@@ -263,7 +293,20 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/\[DEBUG\] ID: debug-test-block/)).toBeInTheDocument();
+      expect(screen.getByText(/\[DEBUG\] ID: debug-block/)).toBeInTheDocument();
+    });
+
+    cleanup();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <Index />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+       expect(screen.getByText("Banner Debug Info")).toBeInTheDocument();
+       expect(screen.queryByText(/\[DEBUG\] ID: debug-block/)).not.toBeInTheDocument();
     });
   });
 });

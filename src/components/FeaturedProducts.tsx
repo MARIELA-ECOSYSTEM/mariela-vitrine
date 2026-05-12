@@ -1,10 +1,11 @@
-import { useMemo } from "react";
-import { ProductCard } from "./ProductCard";
-import { ProductSkeleton } from "./ProductSkeleton";
-import { useProducts } from "@/hooks/useProducts";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+ import { useMemo, useRef, useState, useEffect } from "react";
+ import { ProductCard } from "./ProductCard";
+ import { ProductSkeleton } from "./ProductSkeleton";
+ import { useProducts } from "@/hooks/useProducts";
+ import { Button } from "@/components/ui/button";
+ import { Link } from "react-router-dom";
+ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+ import { cn } from "@/lib/utils";
 import type { Produto } from "@/data/products";
 import { isProductNovidade } from "@/lib/novidades";
 
@@ -26,6 +27,10 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
 }
 
  export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems = 1, forceLoading = false, linkTo, linkLabel, products, layoutMode = "grade" }: FeaturedProductsProps) => {
+   const scrollContainerRef = useRef<HTMLDivElement>(null);
+   const [canScrollLeft, setCanScrollLeft] = useState(false);
+   const [canScrollRight, setCanScrollRight] = useState(false);
+ 
   const { produtos, loading } = useProducts();
 
   const filtered = useMemo(() => {
@@ -54,6 +59,30 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
   const displayed = filtered.slice(0, limit);
   const isLoading = forceLoading || (loading && !products);
 
+   const checkScroll = () => {
+     if (scrollContainerRef.current) {
+       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+       setCanScrollLeft(scrollLeft > 0);
+       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+     }
+   };
+ 
+   useEffect(() => {
+     if (layoutMode === "carrossel") {
+       checkScroll();
+       window.addEventListener("resize", checkScroll);
+       return () => window.removeEventListener("resize", checkScroll);
+     }
+   }, [layoutMode, displayed.length]);
+ 
+   const scroll = (direction: "left" | "right") => {
+     if (scrollContainerRef.current) {
+       const { clientWidth } = scrollContainerRef.current;
+       const scrollAmount = direction === "left" ? -clientWidth * 0.8 : clientWidth * 0.8;
+       scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+     }
+   };
+ 
   if (!isLoading && displayed.length < minItems) return null;
 
   return (
@@ -103,25 +132,59 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
              );
            }
  
-           if (layoutMode === "carrossel") {
-             return (
-               <div className="relative group/carousel">
-                 <div className="flex gap-3 sm:gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                   {isLoading
-                     ? Array.from({ length: skeletonCount }).map((_, i) => (
-                         <div key={`skeleton-${i}`} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
-                           <ProductSkeleton />
-                         </div>
-                       ))
-                     : displayed.map((produto) => (
-                         <div key={produto.id} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
-                           <ProductCard produto={produto} layoutMode="grade" />
-                         </div>
-                       ))}
-                 </div>
-               </div>
-             );
-           }
+            if (layoutMode === "carrossel") {
+              return (
+                <div className="relative group/carousel -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div 
+                    ref={scrollContainerRef}
+                    onScroll={checkScroll}
+                    className="flex gap-3 sm:gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                  >
+                    {isLoading
+                      ? Array.from({ length: skeletonCount }).map((_, i) => (
+                          <div key={`skeleton-${i}`} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
+                            <ProductSkeleton />
+                          </div>
+                        ))
+                      : displayed.map((produto) => (
+                          <div key={produto.id} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
+                            <ProductCard produto={produto} layoutMode="grade" />
+                          </div>
+                        ))}
+                  </div>
+ 
+                  {/* Desktop Arrows */}
+                  {!isLoading && (canScrollLeft || canScrollRight) && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className={cn(
+                          "absolute left-4 top-[40%] -translate-y-1/2 z-10 rounded-full bg-background/80 shadow-md transition-opacity duration-300 hidden md:flex",
+                          !canScrollLeft && "opacity-0 pointer-events-none"
+                        )}
+                        onClick={() => scroll("left")}
+                        aria-label="Anterior"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className={cn(
+                          "absolute right-4 top-[40%] -translate-y-1/2 z-10 rounded-full bg-background/80 shadow-md transition-opacity duration-300 hidden md:flex",
+                          !canScrollRight && "opacity-0 pointer-events-none"
+                        )}
+                        onClick={() => scroll("right")}
+                        aria-label="Próximo"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              );
+            }
  
            return (
              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-fr gap-2.5 sm:gap-4 md:gap-5">

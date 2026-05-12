@@ -103,13 +103,14 @@ export interface ColecaoResponse {
    subtitulo: string | null;
    prioridade: number;
    config: {
-     filter?: string;
-     limit?: number;
-     colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
+      filter?: string;
+      colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
       produtos?: string[];
       linkLabel?: string;
       linkTo?: string;
       estilo?: "grade" | "carrossel" | "lista";
+      limit?: number;
+      max_items?: number;
       mediaUrl?: string;
       mediaType?: "image" | "video" | "gif";
       ctaLabel?: string;
