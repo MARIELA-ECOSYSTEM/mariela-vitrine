@@ -27,11 +27,12 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
         const manuais = blockML?.config.looks_manuais || [];
         
         if (isDev && isDebug) {
-          console.group("[MonteSeuLook] Sugestões Recebidas");
-          console.info("Bloco ML:", blockML);
-          console.info("Sugestões:", looks);
-          console.info("Looks Manuais:", manuais);
-          console.groupEnd();
+          vitrineApiService.getDiagnosticLooks().then(diagnosis => {
+            console.group("[MonteSeuLook] Diagnóstico Editorial");
+            console.info("Payload:", blockML);
+            console.table(diagnosis);
+            console.groupEnd();
+          });
         }
 
         setSugestoes(looks.slice(0, 3));
@@ -79,6 +80,10 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
                       muted={muted}
                       playsInline
                       className="w-full h-full object-cover"
+                      aria-label={`Vídeo: ${sugestao.titulo}`}
+                      onError={() => {
+                        if (import.meta.env.DEV) console.warn(`[LookSugestoes] Erro ao carregar vídeo: ${sugestao.mediaUrl}`);
+                      }}
                     />
                       <Button
                         variant="ghost"
@@ -98,17 +103,21 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
                     alt={sugestao.titulo}
                     {...applyMediaProps(sugestao.mediaUrl, index === 0, index === 0 ? "high" : "auto")}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    onError={() => {
+                      if (import.meta.env.DEV) console.warn(`[LookSugestoes] Erro ao carregar imagem: ${sugestao.mediaUrl}`);
+                    }}
                   />
                   )}
                   
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                    <Button 
-                      onClick={() => onSelectLook(sugestao.produtos)}
-                      className="w-full bg-white text-black hover:bg-white/90 gap-2 font-semibold"
-                    >
-                      <ShoppingBag className="h-4 w-4" />
-                      {sugestao.ctaLabel || "Montar este Look"}
-                    </Button>
+                  <Button 
+                    onClick={() => onSelectLook(sugestao.produtos)}
+                    className="w-full bg-white text-black hover:bg-white/90 gap-2 font-semibold"
+                    aria-label={`${sugestao.ctaLabel || "Montar este Look"}: ${sugestao.titulo}`}
+                  >
+                    <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+                    {sugestao.ctaLabel || "Montar este Look"}
+                  </Button>
                   </div>
                 </div>
 
@@ -153,8 +162,9 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
               <button
                 key={look.id}
                 onClick={() => onSelectLook(look.produtos)}
-                className="group relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-primary/5 hover:border-primary/20 transition-all text-left outline-none focus-visible:ring-2 ring-primary"
+                className="group relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border border-primary/5 hover:border-primary/20 transition-all text-left outline-none focus-visible:ring-2 ring-primary ring-offset-2"
                 style={{ containIntrinsicSize: 'auto 200px', contentVisibility: 'auto' }}
+                aria-label={`Visualizar look: ${look.nome}`}
               >
                 {look.mediaUrl ? (
                   <img

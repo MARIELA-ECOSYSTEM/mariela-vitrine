@@ -1043,7 +1043,8 @@ const PreviewPanel = ({
                       e.preventDefault();
                       window.location.href = `/products/${(selectedProducts.vestido || selectedProducts.conjunto)?.id}`;
                     }}
-                    className="w-full h-full flex items-center justify-center group/piece outline-none focus-visible:ring-2 ring-primary rounded-xl"
+                    className="w-full h-full flex items-center justify-center group/piece outline-none focus-visible:ring-2 ring-primary rounded-xl ring-offset-2"
+                    aria-label={`Ver detalhes do produto: ${(selectedProducts.vestido || selectedProducts.conjunto)?.nome}`}
                   >
                     <img
                       key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
@@ -1074,7 +1075,8 @@ const PreviewPanel = ({
                         e.preventDefault();
                         window.location.href = `/products/${selectedProducts.blusa.id}`;
                       }}
-                      className="w-full h-full flex items-end justify-center group/piece outline-none focus-visible:ring-2 ring-primary rounded-xl"
+                      className="w-full h-full flex items-end justify-center group/piece outline-none focus-visible:ring-2 ring-primary rounded-xl ring-offset-2"
+                      aria-label={`Ver detalhes: ${selectedProducts.blusa.nome}`}
                     >
                       <img
                         key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
@@ -1099,7 +1101,8 @@ const PreviewPanel = ({
                         e.preventDefault();
                         window.location.href = `/products/${selectedProducts.bottom.id}`;
                       }}
-                      className="w-full h-full flex items-start justify-center group/piece outline-none focus-visible:ring-2 ring-primary rounded-xl"
+                      className="w-full h-full flex items-start justify-center group/piece outline-none focus-visible:ring-2 ring-primary rounded-xl ring-offset-2"
+                      aria-label={`Ver detalhes: ${selectedProducts.bottom.nome}`}
                     >
                       <img
                         key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
@@ -1125,7 +1128,8 @@ const PreviewPanel = ({
                   e.preventDefault();
                   window.location.href = `/products/${selectedProducts.bolsa.id}`;
                 }}
-                className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in group/piece outline-none focus-visible:ring-2 ring-primary"
+                className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in group/piece outline-none focus-visible:ring-2 ring-primary ring-offset-2"
+                aria-label={`Ver detalhes: ${selectedProducts.bolsa.nome}`}
               >
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}

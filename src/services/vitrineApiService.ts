@@ -1712,7 +1712,41 @@ export const vitrineApiService = {
          timestamp_cache: cacheEntry ? new Date(cacheEntry.timestamp).toISOString() : "None",
          version: LOCAL_STORAGE_CACHE_KEY
        },
-       items: diagnosis
-     };
-   }
- };
+        items: diagnosis
+      };
+    },
+
+    /**
+     * Endpoint de diagnóstico para o Monte Seu Look (DEV ONLY).
+     * Analisa sugestões e looks manuais recebidos.
+     */
+    async getDiagnosticLooks(): Promise<unknown> {
+      if (!import.meta.env.DEV) return { error: "Diagnostic only available in development mode" };
+
+      const blocks = await this.getHomeBlocks();
+      const blockML = blocks.find(b => b.config.sugestoes_monte_look || b.config.looks_manuais);
+
+      const sugestoes = blockML?.config.sugestoes_monte_look || [];
+      const manuais = blockML?.config.looks_manuais || [];
+
+      return {
+        block_id: blockML?.id || "not_found",
+        total_sugestoes: sugestoes.length,
+        total_manuais: manuais.length,
+        sugestoes: sugestoes.map(s => ({
+          id: s.id,
+          titulo: s.titulo,
+          tem_midia: !!s.mediaUrl,
+          tipo_midia: s.mediaType,
+          total_produtos: s.produtos.length
+        })),
+        manuais: manuais.map(m => ({
+          id: m.id,
+          nome: m.nome,
+          tem_midia: !!m.mediaUrl,
+          total_produtos: m.produtos.length
+        })),
+        timestamp: new Date().toISOString()
+      };
+    }
+  };
