@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { vitrineApiService } from '../services/vitrineApiService';
+import { vitrineApiService, clearVitrineCache } from '../services/vitrineApiService';
 
 describe('Product Integration Validation', () => {
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe('Product Integration Validation', () => {
     // Simulate some cache
     localStorage.setItem('mariela_vitrine_api_cache_v11', JSON.stringify({ test: 'data' }));
     
-    vitrineApiService.clearVitrineCache();
+    clearVitrineCache();
     
     expect(localStorage.getItem('mariela_vitrine_api_cache_v11')).toBeNull();
   });
@@ -50,7 +50,7 @@ describe('Product Integration Validation', () => {
   });
 
   it('should handle Monte Seu Look data correctly', async () => {
-    const data = await vitrineApiService.getMonteSeuLook();
+    const data = await vitrineApiService.getMonteSeuLookData();
     
     expect(data).toBeDefined();
     expect(Array.isArray(data.sugestoes)).toBe(true);
