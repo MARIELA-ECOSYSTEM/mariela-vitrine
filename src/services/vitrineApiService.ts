@@ -10,7 +10,7 @@ const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v7";
+   const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v8"; // Força revalidação após correção de elegibilidade
 const LEGACY_CACHE_KEYS = [
   "mariela_vitrine_api_cache_v6",
   "mariela_vitrine_api_cache_v5",
@@ -181,11 +181,11 @@ export interface ColecaoResponse {
       produtos: z.array(z.string()).optional(),
       linkLabel: z.string().optional(),
       linkTo: z.string().optional(),
-      estilo: z.enum(["grade", "carrossel", "lista"]).optional(),
+       estilo: z.string().optional(),
       limit: z.number().optional(),
       max_items: z.number().optional(),
       mediaUrl: z.string().optional(),
-      mediaType: z.enum(["image", "video", "gif"]).optional(),
+       mediaType: z.string().optional(),
       posterUrl: z.string().optional(),
       ctaLabel: z.string().optional(),
       ctaUrl: z.string().optional(),
@@ -201,7 +201,7 @@ export interface ColecaoResponse {
         titulo: z.string(),
         subtitulo: z.string().optional(),
         mediaUrl: z.string(),
-        mediaType: z.enum(["image", "video", "gif"]),
+         mediaType: z.string().optional().default("image"),
         posterUrl: z.string().optional(),
         produtos: z.array(z.string()),
         ctaLabel: z.string().optional(),
@@ -210,7 +210,7 @@ export interface ColecaoResponse {
         id: z.string(),
         nome: z.string(),
         mediaUrl: z.string().optional(),
-        mediaType: z.enum(["image", "video", "gif"]).optional(),
+         mediaType: z.string().optional(),
         posterUrl: z.string().optional(),
         produtos: z.array(z.string()),
       })).optional(),
@@ -231,7 +231,7 @@ export interface ColecaoResponse {
     descricao: z.string().nullable(),
     categoria: z.string().nullable(),
     colecao: z.string().nullable(),
-    preco_venda: z.number(),
+     preco_venda: z.number().optional().default(0),
     imagem_thumb: z.string().nullable(),
     imagem_principal: z.string().nullable(),
     imagem_card_url: z.string().nullable().optional(),
@@ -252,7 +252,7 @@ export interface ColecaoResponse {
     descricao: z.string().nullable(),
     categoria: z.string().nullable(),
     colecao: z.string().nullable(),
-    preco_venda: z.number(),
+     preco_venda: z.number().optional().default(0),
     imagem_thumb: z.string().nullable(),
     imagem_principal: z.string().nullable(),
     imagem_card_url: z.string().nullable().optional(),
@@ -794,8 +794,10 @@ export function uniqueImages(images: string[]): string[] {
       return `${u.origin}${normalizedPath}${search ? `?${search}` : ""}`;
     } catch {
       return url.split("?")[0];
-    }
-  };
+   }
+ };
+
+ vitrineApiService._setupDiagnostic();
   const seen = new Set<string>();
   const out: string[] = [];
   for (const url of images) {
@@ -1126,10 +1128,10 @@ function unwrapList(response: unknown): unknown[] {
   function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
     const isDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugHome") === "1";
     return applyValidation(payload, HomeBlocksResponseSchema, "HomeBlocks", () => {
-      const data = asArray(asRecord(payload).data ?? payload).filter(item => {
-        const rec = asRecord(item);
-        return rec.id && rec.tipo; 
-      });
+       const data = unwrapList(payload).filter(item => {
+         const rec = asRecord(item);
+         return rec.id && rec.tipo;
+       });
       return { data: data as HomeBlock[] };
     }, isDebug) as HomeBlocksResponse;
   }
@@ -1137,7 +1139,11 @@ function unwrapList(response: unknown): unknown[] {
  function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
    return applyValidation(payload, PaginationResponseSchema, "pagination", () => {
      const source = asRecord(payload);
-     const items = unwrapList(payload).filter((item) => readString(asRecord(item), ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]));
+       const items = unwrapList(payload).filter((item) => {
+         const rec = asRecord(item);
+         return readString(rec, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]) || 
+                readString(rec, ["slug", "url"]); // Fallbacks de identificação
+       });
      return {
        items: items as ProdutoListItem[],
        limit: readNumber(source, ["limit"], items.length),
@@ -1325,7 +1331,7 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
   });
 }
 
- function mapProduto(rawProduct: unknown): Produto | null {
+  function mapProduto(rawProduct: unknown, debugSource?: string): Produto | null {
    const product = asRecord(asRecord(rawProduct).data ?? rawProduct);
    const rawId = readString(product, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]);
    if (!rawId) return null;
@@ -1341,23 +1347,34 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
    const imagens = extractImages(product, variantRecords, corRecords, corOrder);
    const precoVenda = readNumber(product, ["preco", "precoVenda", "preco_venda", "valor", "price"], 0);
  
-   // Validação de elegibilidade (isProdutoPublicavel)
-   const { publicavel, motivos } = isProdutoPublicavel({
-     id: rawId,
-     nome: readString(product, ["nome", "name", "titulo", "title"]),
-     ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
-     arquivado: readBoolean(product, ["arquivado", "archived"], false),
-     variants,
-     imagens,
-     precoVenda
-   });
- 
-   if (!publicavel) {
-     if (import.meta.env.DEV) {
-       console.warn(`[vitrine-api] Produto ${rawId} não é publicável:`, motivos);
-     }
-     return null;
-   }
+    // Validação de elegibilidade (isProdutoPublicavel)
+    const productData = {
+      id: rawId,
+      nome: readString(product, ["nome", "name", "titulo", "title"]),
+      ativo: readBoolean(product, ["ativo", "active", "enabled", "publicada"], true),
+      arquivado: readBoolean(product, ["arquivado", "archived"], false),
+      variants,
+      imagens,
+      precoVenda
+    };
+
+    const { publicavel, motivos } = isProdutoPublicavel(productData);
+  
+    const isDebugMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugVitrine") === "1";
+
+    if (!publicavel) {
+      if (import.meta.env.DEV || isDebugMode) {
+        console.warn(`[vitrine-api] Produto ${rawId} ("${productData.nome}") descartado em ${debugSource || 'mapProduto'}:`, motivos, {
+          id: rawId,
+          hasVariants: variants.length > 0,
+          hasImages: imagens.length > 0,
+          precoVenda,
+          isAtivo: productData.ativo,
+          isArquivado: productData.arquivado
+        });
+      }
+      return null;
+    }
   const precoPromocional = readNumber(product, ["precoPromocional", "preco_promocional", "preco_oferta", "sale_price"], 0);
   const nome = readString(product, ["nome", "name", "titulo", "title"], "Produto Mariela");
 
@@ -1495,9 +1512,9 @@ export const vitrineApiService = {
         fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
         this.getDestaques(),
       ]);
-      const items = unwrapList(response)
-        .map(mapProduto)
-        .filter((produto): produto is Produto => Boolean(produto));
+       const items = unwrapList(response)
+         .map((p) => mapProduto(p, "getProdutosPage"))
+         .filter((produto): produto is Produto => Boolean(produto));
 
       return {
         items: applyDestaquesToProdutos(items, destaques),
@@ -1513,7 +1530,10 @@ export const vitrineApiService = {
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
-    const produto = mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
+     const produto = mapProduto(
+       await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse),
+       "getProdutoById"
+     );
     if (!produto) return null;
     return (await this.attachDestaquesToProdutos([produto]))[0] ?? produto;
   },
@@ -1554,9 +1574,9 @@ export const vitrineApiService = {
           CACHE_TTL.produtos,
           validatePaginationResponse
         );
-        const items = unwrapList(response)
-          .map(mapProduto)
-          .filter((produto): produto is Produto => Boolean(produto));
+         const items = unwrapList(response)
+           .map((p) => mapProduto(p, "getProdutosByIds"))
+           .filter((produto): produto is Produto => Boolean(produto));
         return await this.attachDestaquesToProdutos(items);
       } catch (error) {
         logVitrineWarning(`Falha ao buscar produtos por IDs: ${ids.join(",")}`, error);
@@ -1628,37 +1648,64 @@ export const vitrineApiService = {
    isValidBrandingUrl: isValidUrl,
  
     _setupDiagnostic(): void {
-      if (import.meta.env.DEV && typeof window !== "undefined") {
-        (window as any).diagnosticoVitrine = () => {
-          console.group("🔍 [vitrine-api] Diagnóstico Completo");
+      if (typeof window === "undefined") return;
+      
+      const isDebugRequested = new URLSearchParams(window.location.search).get("debugVitrine") === "1";
+      const isDev = import.meta.env.DEV;
+
+      if (isDev || isDebugRequested) {
+        (window as any).diagnosticoVitrine = async () => {
+          console.group("🔍 [vitrine-api] Diagnóstico Estrutural Completo");
           
-          console.group("📦 Cache & Sessão");
-          console.info("Versão do Cache:", LOCAL_STORAGE_CACHE_KEY);
-          console.info("Memory Cache Keys:", Array.from(memoryCache.keys()));
+          console.group("📦 Cache, Sessão & Performance");
+          console.info("Versão do Contrato (Cache):", LOCAL_STORAGE_CACHE_KEY);
+          console.info("Memory Cache Items:", memoryCache.size);
+          console.info("Inflight Requests:", inflightRequests.size);
           console.groupEnd();
 
-          console.group("📂 Home Blocks");
-          this.getHomeBlocks().then(blocks => {
-            console.table(blocks.map(b => ({
-              id: b.id,
-              tipo: b.tipo,
-              titulo: b.titulo,
-              prioridade: b.prioridade,
-              tem_config: !!b.config
-            })));
-          });
+          console.group("📂 Home Blocks (Configuração)");
+          const blocks = await this.getHomeBlocks();
+          console.info(`Total de blocos: ${blocks.length}`);
+          console.table(blocks.map(b => ({
+            id: b.id,
+            tipo: b.tipo,
+            titulo: b.titulo || "Sem título",
+            prioridade: b.prioridade,
+            has_config: !!b.config,
+            validade: b.validade ? `${b.validade.inicio || '...'} ate ${b.validade.fim || '...'}` : 'Sempre'
+          })));
           console.groupEnd();
 
-          console.group("🏷️ Coleções Destaque");
-          this.getDiagnosticColecoesDestaque().then(d => console.log(d));
+          console.group("🏷️ Coleções & Campanhas Destaque");
+          const colecoesDiagnosis = await this.getDiagnosticColecoesDestaque();
+          console.log(colecoesDiagnosis);
+          console.groupEnd();
+
+          console.group("🛍️ Produtos & Elegibilidade");
+          try {
+            const prodPage = await this.getProdutosPage({ limit: 1 });
+            console.info("Status Catálogo:", {
+              total: prodPage.total,
+              recebidos_amostra: prodPage.items.length,
+              hasMore: prodPage.hasMore
+            });
+          } catch (e) {
+            console.error("Erro ao sondar catálogo:", e);
+          }
           console.groupEnd();
 
           console.group("✨ Monte Seu Look");
-          this.getDiagnosticLooks().then(d => console.log(d));
+          const looksDiag = await this.getDiagnosticLooks();
+          console.log(looksDiag);
           console.groupEnd();
 
           console.groupEnd();
+          return "Diagnóstico concluído. Verifique os logs acima.";
         };
+
+        if (isDebugRequested) {
+          console.info("🛠️ [debugVitrine] Modo diagnóstico ATIVO. Use 'await diagnosticoVitrine()' no console para detalhes.");
+        }
       }
     },
    /**

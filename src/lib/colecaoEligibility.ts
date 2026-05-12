@@ -94,27 +94,30 @@ export interface ColecaoElegibilidadeRaw {
      const criticos = [
         ColecaoExclusionReason.ID_NOME_AUSENTE,
         ColecaoExclusionReason.NAO_DESTAQUE,
-        ColecaoExclusionReason.INATIVA,
-        ColecaoExclusionReason.SEM_PRODUTOS,
-         ColecaoExclusionReason.SEM_MIDIA
-     ];
+        ColecaoExclusionReason.INATIVA
+      ]; // ID_NOME_AUSENTE e INATIVA são os únicos bloqueios absolutos agora.
      
-     const temCritico = motivos.some(m => criticos.includes(m));
-     
-     if (temCritico) {
-       status = "INVALID";
-     } else {
-       // Ex: FORA_PERIODO ou PRODUTOS_NAO_PUBLICAVEIS podem ser avisos se a coleção ainda for "exibível" mas com ressalvas.
-       // No entanto, para a Home, FORA_PERIODO é impeditivo.
-       status = motivos.includes(ColecaoExclusionReason.FORA_PERIODO) ? "INVALID" : "WARNING";
-     }
-   }
- 
-   return {
-     elegivel: motivos.length === 0,
-     motivos,
-     status
-   };
+      const temCritico = motivos.some(m => criticos.includes(m)) || motivos.includes(ColecaoExclusionReason.ID_NOME_AUSENTE);
+      
+      if (temCritico) {
+        status = "INVALID";
+      } else {
+        // FORA_PERIODO é impeditivo se estivermos em produção.
+        // SEM_PRODUTOS e SEM_MIDIA agora são WARNINGS para permitir a exibição de coleções/banners
+        // que podem estar em processo de cadastro ou que o PDV marcou como destaque mas falta algo.
+        const impeditivos = [ColecaoExclusionReason.FORA_PERIODO];
+        status = motivos.some(m => impeditivos.includes(m)) ? "INVALID" : "WARNING";
+      }
+    }
+  
+    // Elegível se não for INVALID. 
+    // Isso permite que coleções SEM_MIDIA ou SEM_PRODUTOS passem pelo filtro inicial,
+    // deixando a decisão de renderização final para os componentes (que já têm fallbacks).
+    return {
+      elegivel: status !== "INVALID",
+      motivos,
+      status
+    };
  }
 
 /**
