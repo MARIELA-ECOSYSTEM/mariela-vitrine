@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { cn } from "@/lib/utils";
+ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+ import { cn } from "@/lib/utils";
+ import { applyMediaProps } from "@/lib/mediaUtils";
 
 interface ProductImageSkeletonProps {
   src: string;
@@ -517,12 +518,10 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
       {layerA && (
         <img
           src={layerA}
-          alt={activeLayer === "A" ? alt : ""}
+           alt={activeLayer === "A" ? alt : ""}
            aria-hidden={activeLayer !== "A" || undefined}
-           loading={priority ? "eager" : "lazy"}
-           decoding="async"
+           {...applyMediaProps(priority)}
            draggable={false}
-           fetchpriority={priority ? "high" : "auto"}
            className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
             "transition-opacity ease-out",
@@ -535,12 +534,10 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
       {layerB && (
         <img
           src={layerB}
-          alt={activeLayer === "B" ? alt : ""}
+           alt={activeLayer === "B" ? alt : ""}
            aria-hidden={activeLayer !== "B" || undefined}
-           loading="eager"
-           decoding="async"
+           {...applyMediaProps(true)}
            draggable={false}
-           fetchpriority="high"
            className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
             "transition-opacity ease-out",
@@ -762,9 +759,7 @@ const LegacyImageDisplay = ({
           <img
              src={displaySrc}
              alt={alt}
-             loading={priority ? "eager" : "lazy"}
-             decoding="async"
-             fetchpriority={priority ? "high" : "auto"}
+             {...applyMediaProps(priority)}
              className={cn(
               "relative w-full h-full object-cover",
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
