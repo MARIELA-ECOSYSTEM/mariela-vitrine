@@ -1329,7 +1329,7 @@ export const vitrineApiService = {
         return sorted;
      } catch (error) {
        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
-       return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
+       return [];
      }
     },
  
