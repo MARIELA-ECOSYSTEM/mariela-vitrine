@@ -25,14 +25,26 @@
    }
  
    const url = new URL(req.url);
-    // Normaliza o pathname removendo prefixos comuns de deploy do Supabase
-    const pathname = url.pathname.replace("/functions/v1/vitrine-api", "").replace("/vitrine-api", "");
- 
-    console.info(`[vitrine-api] Request: ${req.method} ${pathname} (original: ${url.pathname})`);
+    // Normalização robusta: remove prefixos de função e garante formato /path
+    let pathname = url.pathname
+      .replace("/functions/v1/vitrine-api", "")
+      .replace("/vitrine-api", "");
+    
+    // Remove trailing slash para comparação exata
+    if (pathname.length > 1 && pathname.endsWith("/")) {
+      pathname = pathname.slice(0, -1);
+    }
+    
+    // Garante que comece com /
+    if (!pathname.startsWith("/")) {
+      pathname = "/" + pathname;
+    }
+
+    console.info(`[vitrine-api] Router: ${req.method} ${pathname} (Raw: ${url.pathname})`);
  
    try {
      // Rota: /home/blocks
-      if (pathname === "/home/blocks" || pathname.endsWith("/home/blocks")) {
+      if (pathname === "/home/blocks") {
        const blocks = [
          {
            id: "banner-principal",
@@ -68,7 +80,7 @@
      }
  
      // Rota: /config
-      if (pathname === "/config" || pathname.endsWith("/config")) {
+      if (pathname === "/config") {
         return createResponse({
          data: {
            nome_loja: "Mariela Moda Feminina",
@@ -83,22 +95,22 @@
      }
  
      // Rota: /destaques
-      if (pathname === "/destaques" || pathname.endsWith("/destaques")) {
+      if (pathname === "/destaques") {
         return createResponse({ items: [] });
      }
  
      // Rota: /colecoes
-      if (pathname === "/colecoes" || pathname.endsWith("/colecoes")) {
+      if (pathname === "/colecoes") {
         return createResponse({ data: [] });
      }
  
      // Rota: /categorias
-      if (pathname === "/categorias" || pathname.endsWith("/categorias")) {
+      if (pathname === "/categorias") {
         return createResponse({ data: ["Blusas", "Vestidos", "Calças", "Acessórios"] });
      }
  
      // Rota: /produtos
-      if (pathname === "/produtos" || pathname.endsWith("/produtos")) {
+      if (pathname === "/produtos") {
         return createResponse({ data: [], total: 0, limit: 20, offset: 0, hasMore: false });
      }
  
