@@ -1354,10 +1354,40 @@ export const vitrineApiService = {
    /**
     * Invalida caches relacionados a coleções.
     */
-   invalidateColecoesCache(): void {
-     this._clearCacheKey(buildUrl("/colecoes", { detalhes: 1, destaque: 1 }));
-     this._clearCacheKey(buildUrl("/colecoes"));
-   },
+    invalidateColecoesCache(): void {
+      this._clearCacheKey(buildUrl("/colecoes", { detalhes: 1, destaque: 1 }));
+      this._clearCacheKey(buildUrl("/colecoes"));
+    },
+ 
+    /**
+     * Busca produtos em lote por uma lista de IDs.
+     * Otimizado para evitar N+1 requests em blocos manuais.
+     */
+    async getProdutosByIds(ids: string[]): Promise<Produto[]> {
+      if (!ids || ids.length === 0) return [];
+      
+      // Se for apenas um, usa o endpoint individual (mais cacheável e detalhado)
+      if (ids.length === 1) {
+        const p = await this.getProdutoById(ids[0]);
+        return p ? [p] : [];
+      }
+ 
+      try {
+        const response = await fetchCachedJson<PaginationResponse<ProdutoListItem>>(
+          "/produtos",
+          { ids: ids.join(","), limit: ids.length },
+          CACHE_TTL.produtos,
+          validatePaginationResponse
+        );
+        const items = unwrapList(response)
+          .map(mapProduto)
+          .filter((produto): produto is Produto => Boolean(produto));
+        return await this.attachDestaquesToProdutos(items);
+      } catch (error) {
+        logVitrineWarning(`Falha ao buscar produtos por IDs: ${ids.join(",")}`, error);
+        return [];
+      }
+    },
  
    /**
     * Invalida caches relacionados a categorias.
