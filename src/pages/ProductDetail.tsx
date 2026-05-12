@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
 import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
-import { getProductPath, matchesProductSlug } from "@/lib/productLinks";
+import { getProductPath, matchesProductSlug, getTrackedProductUrl, getProductShareMessage } from "@/lib/productLinks";
 import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER, handleProductImageError } from "@/lib/productImage";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { ProductDetailSkeleton } from "@/components/ProductDetailSkeleton";
