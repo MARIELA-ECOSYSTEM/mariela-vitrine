@@ -53,41 +53,67 @@ serve(async (req) => {
         );
       }
 
-      // REGRAS ESPECIAIS DE ROTEAMENTO (Tratamento de incompatibilidade de rotas)
-      // Se o frontend pede /home/blocks e o backend não tem, traduzimos usando o /config que contém banners
+      // REGRAS ESPECIAIS DE ROTEAMENTO (Mapeamento Inteligente Real)
       if (path === '/home/blocks') {
-        const configUrl = `${PRODUCTION_API_URL}/config`;
-        const configResp = await fetch(configUrl);
+        const [configResp, colecoesResp, destaquesResp] = await Promise.all([
+          fetch(`${PRODUCTION_API_URL}/config`),
+          fetch(`${PRODUCTION_API_URL}/colecoes`),
+          fetch(`${PRODUCTION_API_URL}/destaques`)
+        ]);
+
+        const blocks = [];
+
         if (configResp.ok) {
           const configData = await configResp.json();
-          const banners = configData.banners || [];
-          
-          // Convertemos banners em blocos de vitrine
-          const blocks = [
-            {
+          const banners = configData.data?.banners || configData.banners || [];
+          if (banners.length > 0) {
+            blocks.push({
               id: "hero-carousel",
               tipo: "banner",
               prioridade: 0,
               config: { items: banners }
-            },
-            {
+            });
+          }
+        }
+
+        if (destaquesResp.ok) {
+          const destaquesData = await destaquesResp.json();
+          const items = destaquesData.items || destaquesData.data || [];
+          if (items.length > 0) {
+            blocks.push({
+              id: "featured-products",
+              tipo: "produtos",
+              titulo: "Destaques",
+              prioridade: 10,
+              config: { filter: "destaques", limit: 8, estilo: "grade" }
+            });
+          } else {
+            // Fallback para Lançamentos se não houver destaques manuais
+            blocks.push({
               id: "latest-products",
               tipo: "produtos",
               titulo: "Lançamentos",
               prioridade: 10,
               config: { filter: "novidades", limit: 8, estilo: "grade" }
-            },
-            {
+            });
+          }
+        }
+
+        if (colecoesResp.ok) {
+          const colecoesData = await colecoesResp.json();
+          const items = colecoesData.data || colecoesData.items || [];
+          if (items.length > 0) {
+            blocks.push({
               id: "featured-collections",
               tipo: "colecoes",
-              titulo: "Nossas Coleções",
+              titulo: "Coleções",
               prioridade: 20,
               config: { estilo: "carrossel" }
-            }
-          ];
-          
-          return new Response(JSON.stringify({ data: blocks }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            });
+          }
         }
+
+        return new Response(JSON.stringify({ data: blocks }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Chamada padrão via Proxy
