@@ -22,8 +22,9 @@ import { getPublicProductBadge } from "@/services/productInsightsService";
 import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import type { Produto } from "@/data/products";
-import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
+import { preloadImagesPrioritized, ProductImageSkeleton } from "@/components/ProductImageSkeleton";
 import { normalizeSizeLabel, sortSizes } from "@/lib/sizeUtils";
+import { getProductImageByColor, debugProductImage } from "@/lib/productImage";
 
 // Mapa de cores para as amostras visuais
 const COLOR_MAP: Record<string, string> = {
@@ -279,10 +280,22 @@ const ProductDetail = () => {
     return entries;
   }, [produto, coresList]);
 
-  const imagensParaMostrar = useMemo(
-    () => galeriaUnificada.map((g) => g.url),
-    [galeriaUnificada],
-  );
+  // Filtra a galeria para mostrar apenas a cor selecionada (PDP exclusiva)
+  // se houver imagens vinculadas a essa cor.
+  const imagensParaMostrar = useMemo(() => {
+    const porCor = galeriaUnificada.filter((g) => !corSelecionada || g.cor === corSelecionada);
+    // Se a cor selecionada não tiver imagens próprias (raro no detalhe), cai para a galeria unificada
+    const result = porCor.length > 0 ? porCor : galeriaUnificada;
+    return result.map((g) => g.url);
+  }, [galeriaUnificada, corSelecionada]);
+
+  // Diagnóstico em DEV
+  useEffect(() => {
+    if (produto && corSelecionada) {
+      const res = getProductImageByColor(produto, corSelecionada);
+      debugProductImage("PDP", res);
+    }
+  }, [produto, corSelecionada]);
 
   // Mapas auxiliares para sync bidirecional cor ↔ imagem.
   const primeiraImagemPorCor = useMemo(() => {
