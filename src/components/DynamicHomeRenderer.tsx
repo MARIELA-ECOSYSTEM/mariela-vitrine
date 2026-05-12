@@ -102,16 +102,16 @@
    );
  });
  
- const DebugOmission = ({ block, reason }: { block: HomeBlock, reason: string }) => (
-   <div className="p-4 border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 text-xs font-mono rounded-lg my-4">
-     <div className="flex items-center gap-2 mb-1">
-       <AlertCircle className="w-4 h-4" />
-       <strong>Bloco Omitido ({block.tipo}):</strong> {block.id}
-     </div>
-     <div>Motivo: {reason}</div>
-   </div>
- );
- 
+  const DebugOmission = ({ block, reason, details }: { block: HomeBlock, reason: string, details?: any }) => (
+    <div className="p-4 border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 text-xs font-mono rounded-lg my-4 overflow-hidden">
+      <div className="flex items-center gap-2 mb-1">
+        <AlertCircle className="w-4 h-4 shrink-0" />
+        <strong>Bloco Omitido ({block.tipo}):</strong> {block.id}
+      </div>
+      <div>Motivo: {reason}</div>
+      {details && <pre className="mt-2 text-[10px] bg-yellow-100/50 p-2 rounded overflow-auto max-h-32">{JSON.stringify(details, null, 2)}</pre>}
+    </div>
+  );
  BlockRenderer.displayName = "BlockRenderer";
  
  interface DynamicHomeRendererProps {
