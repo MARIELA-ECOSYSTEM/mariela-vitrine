@@ -1,13 +1,27 @@
  import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
  
- const corsHeaders = {
+ const CORS_HEADERS = {
    "Access-Control-Allow-Origin": "*",
-   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-customer-id",
+   "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE, PATCH",
+   "Access-Control-Max-Age": "86400",
  };
+ 
+ const JSON_HEADER = { "Content-Type": "application/json; charset=utf-8" };
+ 
+ function createResponse(data: unknown, status = 200) {
+   return new Response(JSON.stringify(data), {
+     status,
+     headers: {
+       ...CORS_HEADERS,
+       ...JSON_HEADER,
+     },
+   });
+ }
  
  serve(async (req) => {
    if (req.method === "OPTIONS") {
-     return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
    }
  
    const url = new URL(req.url);
@@ -48,15 +62,13 @@
            prioridade: 20,
            config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
          }
-       ];
-       return new Response(JSON.stringify({ data: blocks }), {
-         headers: { ...corsHeaders, "Content-Type": "application/json" },
-       });
+        ];
+        return createResponse({ data: blocks });
      }
  
      // Rota: /config
      if (pathname.includes("/config")) {
-       return new Response(JSON.stringify({
+        return createResponse({
          data: {
            nome_loja: "Mariela Moda Feminina",
            logo_url: null,
@@ -66,50 +78,34 @@
            whatsapp: "5511999999999",
            instagram: "marielamoda",
          }
-       }), {
-         headers: { ...corsHeaders, "Content-Type": "application/json" },
-       });
+        });
      }
  
      // Rota: /destaques
      if (pathname.includes("/destaques")) {
-       return new Response(JSON.stringify({ items: [] }), {
-         headers: { ...corsHeaders, "Content-Type": "application/json" },
-       });
+        return createResponse({ items: [] });
      }
  
      // Rota: /colecoes
      if (pathname.includes("/colecoes")) {
-       return new Response(JSON.stringify({ data: [] }), {
-         headers: { ...corsHeaders, "Content-Type": "application/json" },
-       });
+        return createResponse({ data: [] });
      }
  
      // Rota: /categorias
      if (pathname.includes("/categorias")) {
-       return new Response(JSON.stringify({ data: ["Blusas", "Vestidos", "Calças", "Acessórios"] }), {
-         headers: { ...corsHeaders, "Content-Type": "application/json" },
-       });
+        return createResponse({ data: ["Blusas", "Vestidos", "Calças", "Acessórios"] });
      }
  
      // Rota: /produtos
      if (pathname.includes("/produtos")) {
-       return new Response(JSON.stringify({ data: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
-         headers: { ...corsHeaders, "Content-Type": "application/json" },
-       });
+        return createResponse({ data: [], total: 0, limit: 20, offset: 0, hasMore: false });
      }
  
      // Fallback para rotas não encontradas
-     return new Response(JSON.stringify({ error: "Rota não encontrada", path: pathname }), {
-       status: 404,
-       headers: { ...corsHeaders, "Content-Type": "application/json" },
-     });
+      return createResponse({ error: "Rota não encontrada", path: pathname }, 404);
  
    } catch (error) {
      console.error(`[vitrine-api] Error:`, error);
-     return new Response(JSON.stringify({ error: error.message }), {
-       status: 500,
-       headers: { ...corsHeaders, "Content-Type": "application/json" },
-     });
+      return createResponse({ error: error.message }, 500);
    }
  });
