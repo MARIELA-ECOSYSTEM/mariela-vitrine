@@ -39,22 +39,38 @@ serve(async (req) => {
        return new Response(
          JSON.stringify({
            data: [
-             {
-               id: "novidades",
-               tipo: "produtos",
-               titulo: "Novidades",
-               subtitulo: "Recém-chegadas à coleção",
-               prioridade: 10,
-               config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-             },
-             {
-               id: "em_alta",
-               tipo: "produtos",
-               titulo: "Em alta",
-               subtitulo: "Peças em destaque na vitrine",
-               prioridade: 20,
-               config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-             }
+              {
+                id: "novidades",
+                tipo: "produtos",
+                titulo: "Novidades",
+                subtitulo: "Recém-chegadas à coleção",
+                prioridade: 10,
+                config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+              },
+              {
+                id: "colecoes_destaque",
+                tipo: "colecoes",
+                titulo: "Coleções em Destaque",
+                subtitulo: "Confira nossas últimas campanhas",
+                prioridade: 15,
+                config: { style: "grid" }
+              },
+              {
+                id: "em_alta",
+                tipo: "produtos",
+                titulo: "Em alta",
+                subtitulo: "Peças em destaque na vitrine",
+                prioridade: 20,
+                config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
+              },
+              {
+                id: "promocoes",
+                tipo: "produtos",
+                titulo: "Promoções",
+                subtitulo: "Peças com descontos especiais",
+                prioridade: 30,
+                config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
+              }
            ]
          }),
          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
