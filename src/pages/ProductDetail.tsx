@@ -22,7 +22,7 @@ import { ProductDetailSkeleton } from "@/components/ProductDetailSkeleton";
 import { getPublicProductBadge } from "@/services/productInsightsService";
 import { getUtm, trackProdutoVisualizadoOnce, trackWhatsappClick } from "@/services/vitrineTrackingService";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
-import type { Produto } from "@/data/products";
+  import type { Produto, ProdutoMidia } from "@/data/products";
 import { preloadImagesPrioritized } from "@/components/ProductImageSkeleton";
 import { normalizeSizeLabel, sortSizes } from "@/lib/sizeUtils";
 
@@ -152,7 +152,8 @@ const ProductDetail = () => {
     tamanhos: string[];
     imagem_full: string | null;
     imagem_thumb: string | null;
-    imagens: Array<{ url_full: string; url_thumb: string }>;
+    imagens: ProdutoMidia[];
+    galeria_midia?: ProdutoMidia[];
   };
   const coresList = useMemo<CorListItem[]>(() => {
     if (!produto) return [];
@@ -160,19 +161,21 @@ const ProductDetail = () => {
       return produto.cores
         .filter((c) => c.tamanhos.some((t) => t.disponibilidade > 0))
         .map((c) => {
-          // Galeria da cor: prioriza `imagens[]` do detalhe; senão deriva de imagem_full/thumb.
-          const galeria = (c.imagens && c.imagens.length > 0
-            ? c.imagens
-            : c.imagem_full || c.imagem_thumb
-              ? [{ url_full: c.imagem_full, url_thumb: c.imagem_thumb, principal: true, ordem: 0 }]
-              : []
-          )
-            .map((img) => {
-              const full = img.url_full || img.url_thumb || "";
-              const thumb = img.url_thumb || img.url_full || "";
-              return full ? { url_full: full, url_thumb: thumb || full } : null;
-            })
-            .filter((x): x is { url_full: string; url_thumb: string } => !!x);
+          // Galeria híbrida da cor: prioriza galeria_midia -> imagens
+          const galeria = (c.galeria_midia && c.galeria_midia.length > 0)
+            ? c.galeria_midia
+            : (c.imagens && c.imagens.length > 0)
+              ? c.imagens
+              : (c.imagem_full || c.imagem_thumb)
+                ? [{ 
+                    url: c.imagem_full || c.imagem_thumb || "", 
+                    tipo: "image", 
+                    url_full: c.imagem_full, 
+                    url_thumb: c.imagem_thumb, 
+                    principal: true, 
+                    ordem: 0 
+                  } as ProdutoMidia]
+                : [];
           return {
             produto_cor_id: c.produto_cor_id,
             cor: c.cor,
@@ -183,7 +186,8 @@ const ProductDetail = () => {
             ),
             imagem_full: c.imagem_full,
             imagem_thumb: c.imagem_thumb,
-            imagens: galeria,
+            imagens: galeria as ProdutoMidia[],
+            galeria_midia: c.galeria_midia,
           };
         });
     }
@@ -221,9 +225,7 @@ const ProductDetail = () => {
   // Galeria UNIFICADA exibida no <ImageGallery>:
   // Mostra TODAS as imagens do produto (todas as cores) como uma só lista,
   // permitindo que o usuário navegue por setas e thumbnails entre cores.
-  // Cada entrada carrega a `cor` à qual pertence — usado para sincronização
-  // bidirecional cor ↔ imagem (mesma regra do ProductCard).
-  type GalleryEntry = { url: string; cor: string | null };
+  type GalleryEntry = ProdutoMidia & { cor: string | null };
   // Normaliza URLs para deduplicação: remove querystring de redimensionamento
   // (ex.: ?w=800&q=75 vs ?w=300&q=70 são variantes da MESMA foto e não devem
   // virar duas miniaturas distintas na galeria).
@@ -244,13 +246,13 @@ const ProductDetail = () => {
     if (!produto) return [];
     const entries: GalleryEntry[] = [];
     const seen = new Set<string>();
-    const push = (url: string | null | undefined, cor: string | null) => {
-      const u = (url || "").trim();
+    const push = (m: ProdutoMidia, cor: string | null) => {
+      const u = (m.url || m.url_full || m.url_thumb || "").trim();
       if (!u) return;
-      const key = normalizeImageKey(u);
+      const key = m.tipo === "image" ? normalizeImageKey(u) : u;
       if (seen.has(key)) return;
       seen.add(key);
-      entries.push({ url: u, cor });
+      entries.push({ ...m, url: u, cor });
     };
     // Verifica se TODAS as cores trazem `imagens[]` próprio (caso típico do
     // detalhe completo) — nesse caso a galeria por cor é canônica e não
@@ -260,12 +262,16 @@ const ProductDetail = () => {
       coresList.length > 0 && coresList.every((c) => c.imagens.length > 0);
     if (coresList.length > 0) {
       coresList.forEach((c) => {
-        if (c.imagens.length > 0) {
-          c.imagens.forEach((img) => push(img.url_full, c.cor));
-        } else {
-          // Só uma das duas — full tem prioridade, thumb é variante da mesma
-          // foto e não deve gerar entrada extra.
-          push(c.imagem_full || c.imagem_thumb, c.cor);
+        const mList = c.galeria_midia || c.imagens;
+        if (mList && mList.length > 0) {
+          mList.forEach((m) => push(m, c.cor));
+        } else if (c.imagem_full || c.imagem_thumb) {
+          push({ 
+            url: c.imagem_full || c.imagem_thumb || "", 
+            tipo: "image", 
+            url_full: c.imagem_full, 
+            url_thumb: c.imagem_thumb 
+          }, c.cor);
         }
       });
     }
@@ -273,25 +279,22 @@ const ProductDetail = () => {
     // `imagens[]` ou catálogo sem cores). Caso contrário, a galeria por cor
     // já é completa e canônica.
     if (!todasCoresTemImagens) {
-      (produto.imagens || []).forEach((img) => push(img, null));
+      (produto.imagens || []).forEach((img) => push({ url: img, tipo: "image" }, null));
     }
     // Sem fallback local. Se a API não entregou imagens, a galeria fica vazia
     // e o ProductImageSkeleton exibe seu próprio estado de erro.
     return entries;
   }, [produto, coresList]);
 
-  const imagensParaMostrar = useMemo(() => {
-    // Se o usuário selecionou uma cor, a galeria deve ser filtrada para mostrar APENAS
-    // as imagens dessa cor (se houver imagens vinculadas a cores).
-    // Se a galeria unificada não tem vínculos de cor, mostra tudo.
+  const midiaParaMostrar = useMemo(() => {
     if (corSelecionadaObj && galeriaUnificada.some(g => g.cor !== null)) {
-      const filtrada = galeriaUnificada
-        .filter(g => g.cor === corSelecionadaObj.cor)
-        .map(g => g.url);
+      const filtrada = galeriaUnificada.filter(g => g.cor === corSelecionadaObj.cor);
       if (filtrada.length > 0) return filtrada;
     }
-    return galeriaUnificada.map((g) => g.url);
+    return galeriaUnificada;
   }, [galeriaUnificada, corSelecionadaObj]);
+
+  const imagensParaMostrar = useMemo(() => midiaParaMostrar.map(m => m.url), [midiaParaMostrar]);
 
   // Mapas auxiliares para sync bidirecional cor ↔ imagem.
   const primeiraImagemPorCor = useMemo(() => {
@@ -840,6 +843,7 @@ const ProductDetail = () => {
             <div className="animate-fade-in">
               <ImageGallery
                 images={imagensParaMostrar}
+                media={midiaParaMostrar}
                 imageColors={galeriaUnificada.map((g) => g.cor)}
                 colorSwatchMap={COLOR_MAP}
                 productName={

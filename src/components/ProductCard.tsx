@@ -7,8 +7,9 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
-import { getProductImageByColor } from "@/lib/productImage";
+import { getProductImageByColor, getProductVideoByColor } from "@/lib/productImage";
 import { ProductImageSkeleton, preloadAdjacentImage, preloadImagesPrioritized, type PreloadPriority } from "./ProductImageSkeleton";
+import { ProductMedia } from "./ProductMedia";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
@@ -172,7 +173,19 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   const [corSelecionadaId, setCorSelecionadaId] = useState(primeiraCorIdDisponivel);
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+
+  // Mídia Híbrida: resolve vídeo se disponível (card/vitrine)
+  const videoAtual = useMemo(
+    () => getProductVideoByColor(produto, corSelecionada),
+    [produto, corSelecionada],
+  );
+
+  const isDebug = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const search = window.location.search;
+    return search.includes("debugProducts=1");
+  }, []);
   const { addToCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -539,16 +552,28 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
               onPointerLeave={cancelPreloadNeighbors}
               onBlur={cancelPreloadNeighbors}
             >
-              <ProductImageSkeleton 
-                src={imagemAtual} 
-                alt={altImagem}
-                className="transition-transform duration-700 group-hover:scale-110"
-                slideDirection={slideDirection}
-                images={imagensValidas}
-                currentIndex={currentImageIndex}
-              />
-              {/* Navigation Arrows */}
-              {imagensValidas.length > 1 && (
+              {videoAtual ? (
+                <ProductMedia
+                  type="video"
+                  url={videoAtual.url}
+                  posterUrl={videoAtual.poster || imagemAtual}
+                  alt={altImagem}
+                  className="transition-transform duration-700 group-hover:scale-110"
+                  autoPlayOnHover={true}
+                  debug={import.meta.env.DEV && isDebug}
+                />
+              ) : (
+                <ProductImageSkeleton 
+                  src={imagemAtual} 
+                  alt={altImagem}
+                  className="transition-transform duration-700 group-hover:scale-110"
+                  slideDirection={slideDirection}
+                  images={imagensValidas}
+                  currentIndex={currentImageIndex}
+                />
+              )}
+              {/* Navigation Arrows (ocultas se houver vídeo no card por clareza visual) */}
+              {imagensValidas.length > 1 && !videoAtual && (
                 <>
                   <button
                     onClick={handlePrevImage}
@@ -721,16 +746,28 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
           onPointerLeave={cancelPreloadNeighbors}
           onBlur={cancelPreloadNeighbors}
         >
-          <ProductImageSkeleton 
-            src={imagemAtual} 
-            alt={altImagem}
-            className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
-            slideDirection={slideDirection}
-            images={imagensValidas}
-            currentIndex={currentImageIndex}
-          />
-          {/* Navigation Arrows - sempre visíveis em mobile */}
-          {imagensValidas.length > 1 && (
+          {videoAtual ? (
+            <ProductMedia
+              type="video"
+              url={videoAtual.url}
+              posterUrl={videoAtual.poster || imagemAtual}
+              alt={altImagem}
+              className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
+              autoPlayOnHover={true}
+              debug={import.meta.env.DEV && isDebug}
+            />
+          ) : (
+            <ProductImageSkeleton 
+              src={imagemAtual} 
+              alt={altImagem}
+              className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
+              slideDirection={slideDirection}
+              images={imagensValidas}
+              currentIndex={currentImageIndex}
+            />
+          )}
+          {/* Navigation Arrows - sempre visíveis em mobile (ocultas se houver vídeo) */}
+          {imagensValidas.length > 1 && !videoAtual && (
             <>
               <button
                 onClick={handlePrevImage}

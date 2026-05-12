@@ -11,18 +11,27 @@ export interface ProdutoCorTamanho {
   disponibilidade: number;
 }
 
-export interface ProdutoCorImagem {
-  /** Identificador da imagem na vitrine-api. */
+export interface ProdutoMidia {
+  /** Identificador da mídia na vitrine-api. */
   id?: string;
-  /** URL da miniatura (300px). Pode ser null em casos legados. */
-  url_thumb: string | null;
-  /** URL da versão grande (800px). Pode ser null em casos legados. */
-  url_full: string | null;
-  /** Marca a imagem principal da cor (deve aparecer primeiro na galeria). */
+  /** URL principal da mídia (imagem ou vídeo). */
+  url: string;
+  /** Tipo da mídia: image ou video. */
+  tipo: "image" | "video";
+  /** URL da miniatura (300px) se for imagem. */
+  url_thumb?: string | null;
+  /** URL da versão grande (800px) se for imagem. */
+  url_full?: string | null;
+  /** URL do poster se for vídeo. */
+  poster_url?: string | null;
+  /** Marca a mídia principal (deve aparecer primeiro). */
   principal?: boolean;
   /** Ordem de exibição (asc). */
   ordem?: number;
 }
+
+/** @deprecated Usar ProdutoMidia para suporte híbrido. */
+export type ProdutoCorImagem = ProdutoMidia;
 
 export interface ProdutoCor {
   produto_cor_id: string;
@@ -31,6 +40,10 @@ export interface ProdutoCor {
   imagem_full: string | null;
   /** Mídia específica para cards/vitrines (prioritária). */
   imagem_card_url?: string | null;
+  /** Vídeo específico para cards (autoplay no hover). */
+  video_card_url?: string | null;
+  /** Poster do vídeo do card. */
+  poster_url?: string | null;
   /** Mídia específica para o Monte Seu Look (editorial). */
   imagem_look_url?: string | null;
   tamanhos: ProdutoCorTamanho[];
@@ -41,6 +54,8 @@ export interface ProdutoCor {
    * ordene por `principal` desc → `ordem` asc → estável.
    */
   imagens?: ProdutoCorImagem[];
+  /** Galeria híbrida (fotos + vídeos) da cor. */
+  galeria_midia?: ProdutoMidia[];
 }
 
 export interface Produto {
@@ -57,6 +72,10 @@ export interface Produto {
   cores?: ProdutoCor[];
   /** URL da mídia específica para o card (nível produto). */
   imagem_card_url?: string | null;
+  /** Vídeo específico para o card (autoplay no hover). */
+  video_card_url?: string | null;
+  /** Poster do vídeo do card. */
+  poster_url?: string | null;
   /** URL da mídia específica para o Monte Seu Look (editorial, nível produto). */
   imagem_look_url?: string | null;
   precoCusto: number;

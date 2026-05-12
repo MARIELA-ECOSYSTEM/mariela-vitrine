@@ -6,6 +6,41 @@ export interface ProductImageResult {
   alt: string;
 }
 
+export interface ProductVideoResult {
+  url: string;
+  poster: string | null;
+}
+
+/**
+ * Resolve o vídeo do card por cor.
+ * Regra: prioriza cores[].video_card_url -> produto.video_card_url.
+ */
+export function getProductVideoByColor(
+  produto: Produto | null | undefined,
+  corSelecionada?: string | null,
+): ProductVideoResult | null {
+  if (!produto) return null;
+  const cor = corSelecionada?.trim() || "";
+  
+  let videoUrl = "";
+  let posterUrl = "";
+  
+  if (cor && produto.cores) {
+    const corMatch = produto.cores.find((c) => c.cor === cor);
+    if (corMatch?.video_card_url) {
+      videoUrl = corMatch.video_card_url;
+      posterUrl = corMatch.poster_url || "";
+    }
+  }
+  
+  if (!videoUrl && produto.video_card_url) {
+    videoUrl = produto.video_card_url;
+    posterUrl = posterUrl || produto.poster_url || "";
+  }
+  
+  return videoUrl ? { url: videoUrl, poster: posterUrl || null } : null;
+}
+
 /**
  * Fonte única de verdade para imagem por cor + alt acessível.
  *

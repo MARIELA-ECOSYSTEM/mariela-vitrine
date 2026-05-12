@@ -1,4 +1,4 @@
-import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
+import type { Produto, ProdutoCor, ProdutoCorImagem, ProdutoMidia, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
@@ -935,7 +935,10 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       imagem_card_url: readString(corRec, ["imagem_card_url", "imagemCardUrl", "card_url", "midia_card"]),
       imagem_look_url: readString(corRec, ["imagem_look_url", "imagemLookUrl", "look_url", "midia_look"]),
       tamanhos,
+      video_card_url: readString(corRec, ["video_card_url", "videoCardUrl", "video_url", "midia_video"]),
+      poster_url: readString(corRec, ["poster_url", "posterUrl", "poster"]),
       imagens: extractCorImagens(corRec),
+      galeria_midia: extractCorImagens(corRec),
     });
   });
 
@@ -948,25 +951,31 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
  * `thumb/full`. Filtra entradas inválidas (sem nenhuma URL utilizável) e ordena
  * por `principal` desc → `ordem` asc, mantendo estabilidade.
  */
-function extractCorImagens(corRec: ApiRecord): ProdutoCorImagem[] | undefined {
+function extractCorImagens(corRec: ApiRecord): ProdutoMidia[] | undefined {
   const arr = asArray(corRec.imagens ?? corRec.fotos ?? corRec.images);
   if (arr.length === 0) return undefined;
 
-  const mapped: ProdutoCorImagem[] = arr
+  const mapped: ProdutoMidia[] = arr
     .map(asRecord)
-    .map((rec, idx): ProdutoCorImagem | null => {
+    .map((rec, idx): ProdutoMidia | null => {
+      const tipo = readString(rec, ["tipo", "type"], "image").toLowerCase() as "image" | "video";
+      const url = readString(rec, ["url", "src", "url_full", "imagem_full", "full"]) || "";
       const urlFull = readString(rec, ["url_full", "imagem_full", "full", "url", "src"]) || null;
       const urlThumb = readString(rec, ["url_thumb", "imagem_thumb", "thumb", "thumbnail"]) || urlFull;
-      if (!urlFull && !urlThumb) return null;
+      if (!url && !urlFull && !urlThumb) return null;
+
       return {
         id: readString(rec, ["id", "uuid"]) || undefined,
+        url: url || urlFull || urlThumb || "",
+        tipo: tipo === "video" ? "video" : "image",
         url_thumb: urlThumb && isValidImageUrl(urlThumb) ? urlThumb : null,
         url_full: urlFull && isValidImageUrl(urlFull) ? urlFull : (urlThumb && isValidImageUrl(urlThumb) ? urlThumb : null),
+        poster_url: readString(rec, ["poster_url", "posterUrl", "poster", "thumb", "imagem_thumb"]),
         principal: readBoolean(rec, ["principal", "main", "primary"], false),
         ordem: readNumber(rec, ["ordem", "order", "posicao", "position"], idx),
       };
     })
-    .filter((img): img is ProdutoCorImagem => !!img && (!!img.url_full || !!img.url_thumb));
+    .filter((img): img is ProdutoMidia => !!img && (!!img.url || !!img.url_full || !!img.url_thumb));
 
   if (mapped.length === 0) return undefined;
 
@@ -1312,6 +1321,8 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
     publicBadge: readOptionalString(product, ["publicBadge", "public_badge"]),
     destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),
     recomendacao_publica: readOptionalString(product, ["recomendacao_publica", "recomendacaoPublica"]),
+    video_card_url: readString(product, ["video_card_url", "videoCardUrl", "video_url", "midia_video"]),
+    poster_url: readString(product, ["poster_url", "posterUrl", "poster"]),
     createdAt,
   };
 }

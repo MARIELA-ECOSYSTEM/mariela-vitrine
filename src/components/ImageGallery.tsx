@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Hand } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, X, Maximize2, Hand, Play } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProductImageSkeleton, preloadAdjacentImage, type PreloadPriority } from "@/components/ProductImageSkeleton";
+import { ProductMedia } from "@/components/ProductMedia";
+import type { ProdutoMidia } from "@/data/products";
 
 /**
  * Helpers HOISTED (fora do componente) para garantir referência estável
@@ -110,7 +112,8 @@ function getBadgeStyle(size: "md" | "sm" | "xs", swatchHex: string | undefined):
 }
 
 interface ImageGalleryProps {
-  images: string[];
+  images: string[]; // Mantido para compatibilidade
+  media?: ProdutoMidia[];
   productName: string;
   emPromocao?: boolean;
   isNovidade?: boolean;
@@ -136,7 +139,8 @@ interface ImageGalleryProps {
 }
 
 export const ImageGallery = ({ 
-  images, 
+  images,
+  media, 
   productName, 
   emPromocao, 
   isNovidade,
@@ -226,9 +230,23 @@ export const ImageGallery = ({
   // SEM fallback local: a Vitrine consome estritamente o que a vitrine-api
   // entregou. Se a API não enviar imagens, a galeria fica vazia e o
   // ProductImageSkeleton exibe seu próprio estado de erro acessível.
+  const isDebug = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return window.location.search.includes("debugPDP=1");
+  }, []);
+
+  const midiaValida = useMemo(() => {
+    if (media && media.length > 0) {
+      return media.filter(m => !!(m.url || m.url_full || m.url_thumb));
+    }
+    return images
+      .filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+      .map(u => ({ url: u, tipo: "image" } as ProdutoMidia));
+  }, [media, images]);
+
   const imagensValidas = useMemo(
-    () => images.filter((u): u is string => typeof u === "string" && u.trim().length > 0),
-    [images],
+    () => midiaValida.map(m => m.url || m.url_full || m.url_thumb || ""),
+    [midiaValida],
   );
   const temMultiplasImagens = imagensValidas.length > 1;
   // Sem imagens da API: NÃO injetamos placeholder local. Renderizamos um
@@ -372,15 +390,28 @@ export const ImageGallery = ({
           className="relative h-full overflow-hidden cursor-pointer"
           onClick={() => setIsDialogOpen(true)}
         >
-          <ProductImageSkeleton
-            src={imagensValidas[indiceAtual]}
-            alt={`${productName} - imagem ${indiceAtual + 1}`}
-            className="w-full h-full transition-transform duration-500 group-hover:scale-105"
-            priority={indiceAtual === 0}
-            enableBlurUp
-            images={imagensValidas}
-            currentIndex={indiceAtual}
-          />
+          {midiaValida[indiceAtual]?.tipo === "video" ? (
+            <ProductMedia
+              type="video"
+              url={midiaValida[indiceAtual].url}
+              posterUrl={midiaValida[indiceAtual].poster_url || imagensValidas[indiceAtual]}
+              alt={`${productName} - vídeo ${indiceAtual + 1}`}
+              className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+              autoPlayOnVisible={true}
+              priority={indiceAtual === 0}
+              debug={import.meta.env.DEV && isDebug}
+            />
+          ) : (
+            <ProductImageSkeleton
+              src={imagensValidas[indiceAtual]}
+              alt={`${productName} - imagem ${indiceAtual + 1}`}
+              className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+              priority={indiceAtual === 0}
+              enableBlurUp
+              images={imagensValidas}
+              currentIndex={indiceAtual}
+            />
+          )}
           
           {/* Overlay com botão de zoom */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -597,11 +628,18 @@ export const ImageGallery = ({
                 }`}
                 aria-label={`Ver imagem ${index + 1}`}
               >
-                <img
-                  src={img}
-                  alt={`${productName} miniatura ${index + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
-                />
+                <div className="relative w-full h-full">
+                  <img
+                    src={img}
+                    alt={`${productName} miniatura ${index + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110"
+                  />
+                  {midiaValida[index]?.tipo === "video" && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <Play className="w-4 h-4 text-white fill-current opacity-80" />
+                    </div>
+                  )}
+                </div>
               </button>
               {(() => {
                 const cor = canonicalColorName(imageColors?.[index]);
@@ -631,11 +669,18 @@ export const ImageGallery = ({
                 }`}
                 aria-label={`Ver imagem ${index + 1}`}
               >
-                <img
-                  src={img}
-                  alt={`${productName} miniatura ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                <div className="relative w-full h-full">
+                  <img
+                    src={img}
+                    alt={`${productName} miniatura ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {midiaValida[index]?.tipo === "video" && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <Play className="w-4 h-4 text-white fill-current opacity-80" />
+                    </div>
+                  )}
+                </div>
               </button>
               {(() => {
                 const cor = canonicalColorName(imageColors?.[index]);
