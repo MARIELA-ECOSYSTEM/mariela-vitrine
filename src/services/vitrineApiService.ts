@@ -14,7 +14,7 @@ const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v7";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v8";
 const LEGACY_CACHE_KEYS = [
   "mariela_vitrine_api_cache_v6",
   "mariela_vitrine_api_cache_v5",
@@ -218,32 +218,40 @@ const DEFAULT_CONFIG: VitrineConfig = {
   instagram: null,
 };
 
- const DEFAULT_HOME_BLOCKS: HomeBlock[] = [
-   {
-     id: "novidades",
-     tipo: "produtos",
-     titulo: "Novidades",
-     subtitulo: "Recém-chegadas à coleção",
-     prioridade: 10,
-     config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-   },
-   {
-     id: "em_alta",
-     tipo: "produtos",
-     titulo: "Em alta",
-     subtitulo: "Peças em destaque na vitrine",
-     prioridade: 20,
-     config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-   },
-   {
-     id: "promocoes",
-     tipo: "produtos",
-     titulo: "Promoções",
-     subtitulo: "Descontos em peças selecionadas",
-     prioridade: 100,
-     config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
-   }
- ];
+  const DEFAULT_HOME_BLOCKS: HomeBlock[] = [
+    {
+      id: "colecoes_destaque",
+      tipo: "colecoes",
+      titulo: "Coleções em Destaque",
+      subtitulo: "Confira nossas últimas campanhas",
+      prioridade: 5,
+      config: { estilo: "grade" }
+    },
+    {
+      id: "novidades",
+      tipo: "produtos",
+      titulo: "Novidades",
+      subtitulo: "Recém-chegadas à coleção",
+      prioridade: 10,
+      config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+    },
+    {
+      id: "em_alta",
+      tipo: "produtos",
+      titulo: "Em alta",
+      subtitulo: "Peças em destaque na vitrine",
+      prioridade: 20,
+      config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
+    },
+    {
+      id: "promocoes",
+      tipo: "produtos",
+      titulo: "Promoções",
+      subtitulo: "Descontos em peças selecionadas",
+      prioridade: 30,
+      config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
+    }
+  ];
  
 const memoryCache = new Map<string, CacheEntry<unknown>>();
 const inFlightDestaques = new Map<string, Promise<ProdutoDestaquePublico[]>>();
@@ -1339,7 +1347,8 @@ export const vitrineApiService = {
          throw createInvalidPayloadError("getHomeBlocks");
        }
  
-       return response.data.sort((a, b) => a.prioridade - b.prioridade);
+        const sorted = response.data.sort((a, b) => a.prioridade - b.prioridade);
+        return sorted;
      } catch (error) {
        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
        return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);

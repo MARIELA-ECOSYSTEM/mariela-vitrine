@@ -31,6 +31,14 @@ serve(async (req) => {
    try {
       const blocksData = [
         {
+          id: "colecoes_destaque",
+          tipo: "colecoes",
+          titulo: "Coleções em Destaque",
+          subtitulo: "Confira nossas últimas campanhas",
+          prioridade: 5,
+          config: { estilo: "grade" }
+        },
+        {
           id: "novidades",
           tipo: "produtos",
           titulo: "Novidades",
@@ -39,19 +47,11 @@ serve(async (req) => {
           config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
         },
         {
-          id: "colecoes_destaque",
-          tipo: "colecoes",
-          titulo: "Coleções em Destaque",
-          subtitulo: "Confira nossas últimas campanhas",
-          prioridade: 15,
-          config: { style: "grid" }
-        },
-        {
           id: "promocoes",
           tipo: "produtos",
           titulo: "Promoções",
           subtitulo: "Peças com descontos especiais",
-          prioridade: 30,
+          prioridade: 20,
           config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
         }
       ];
@@ -60,7 +60,7 @@ serve(async (req) => {
      if (path === '/' || path === '/home/blocks' || path === '/home/blocks/') {
        return new Response(
          JSON.stringify({ data: blocksData, status: "preview_mode" }),
-         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } }
        );
      }
  

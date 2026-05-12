@@ -30,7 +30,7 @@ serve(async (req) => {
      if (path === '/config' || path === '/config/') {
        return new Response(
          JSON.stringify({ data: { nome: "Mariela Vitrine (Preview)", features: { monte_seu_look: true } } }),
-         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } }
        );
      }
  
@@ -40,6 +40,14 @@ serve(async (req) => {
          JSON.stringify({
             data: [
               {
+                id: "colecoes_destaque",
+                tipo: "colecoes",
+                titulo: "Coleções em Destaque",
+                subtitulo: "Confira nossas últimas campanhas",
+                prioridade: 5,
+                config: { estilo: "grade" }
+              },
+              {
                 id: "novidades",
                 tipo: "produtos",
                 titulo: "Novidades",
@@ -48,19 +56,11 @@ serve(async (req) => {
                 config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
               },
               {
-                id: "colecoes_destaque",
-                tipo: "colecoes",
-                titulo: "Coleções em Destaque",
-                subtitulo: "Confira nossas últimas campanhas",
-                prioridade: 15,
-                config: { style: "grid" }
-              },
-              {
                 id: "promocoes",
                 tipo: "produtos",
                 titulo: "Promoções",
                 subtitulo: "Peças com descontos especiais",
-                prioridade: 30,
+                prioridade: 20,
                 config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
               }
             ]

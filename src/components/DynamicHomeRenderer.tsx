@@ -10,7 +10,7 @@
    debug?: boolean;
  }
  
- export const DynamicHomeRenderer = memo(({ blocks, loading, debug }: DynamicHomeRendererProps) => {
+  export const DynamicHomeRenderer = memo(({ blocks, loading, debug }: DynamicHomeRendererProps) => {
    if (loading) {
      return (
        <>
