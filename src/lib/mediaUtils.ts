@@ -9,6 +9,7 @@
    loading?: "lazy" | "eager";
    decoding?: "async" | "sync" | "auto";
    fetchPriority?: MediaPriority;
+   preload?: "auto" | "metadata" | "none";
  }
  
  /**
@@ -40,8 +41,26 @@
    return {
      loading: props.loading,
      decoding: props.decoding,
-     // Usamos fetchPriority camelCase pois o usuário solicitou esta grafia como padrão.
-     // Estendemos os tipos globais para suportar esta prop no React 18.
      fetchPriority: props.fetchPriority,
+     preload: isAboveFold ? "auto" : "metadata",
    };
+ }
+ 
+ /**
+  * Injeta um <link rel="preload"> no head de forma padronizada.
+  */
+ export function injectMediaPreload(url: string, as: "image" | "video", priority: MediaPriority = "high"): void {
+   if (typeof document === "undefined") return;
+   const selector = `link[data-media-preload="${CSS.escape(url)}"]`;
+   if (document.head.querySelector(selector)) return;
+ 
+   const link = document.createElement("link");
+   link.rel = "preload";
+   link.as = as;
+   link.href = url;
+   if (priority !== "auto") {
+     link.setAttribute("fetchpriority", priority); // Atributo HTML nativo é sempre lowercase
+   }
+   link.dataset.mediaPreload = url;
+   document.head.appendChild(link);
  }
