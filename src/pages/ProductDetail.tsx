@@ -546,7 +546,7 @@ const ProductDetail = () => {
   const handleImageSelect = useCallback(
     (index: number) => {
       setImagemSelecionadaIndex(index);
-      const entry = galeriaUnificada[index];
+      const entry = galeriaFiltrada[index];
       if (!entry?.cor) return;
       if (entry.cor === corSelecionada) return;
       const corItem = coresList.find((c) => c.cor === entry.cor);
