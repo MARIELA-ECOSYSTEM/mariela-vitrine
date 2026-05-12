@@ -43,7 +43,113 @@
          whatsapp: "5583999999999",
          instagram: "mariela",
        }),
-       getProdutos: vi.fn().mockResolvedValue([]),
+        getProdutos: vi.fn().mockResolvedValue([]),
+        getProdutosByIds: vi.fn().mockResolvedValue([]),
+   it("renders banner blocks with valid media", async () => {
+     const mockBlocks = [
+       {
+         id: "banner-1",
+         tipo: "banner",
+         titulo: "Promoção de Verão",
+         subtitulo: "Confira as ofertas",
+         prioridade: 1,
+         config: { 
+           mediaUrl: "banner.jpg", 
+           mediaType: "image",
+           ctaLabel: "Ver Ofertas",
+           ctaUrl: "/products?filter=promocoes"
+         },
+       },
+     ];
+     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+ 
+     render(
+       <MemoryRouter>
+         <Index />
+       </MemoryRouter>
+     );
+ 
+     await waitFor(() => {
+       expect(screen.getByText("Promoção de Verão")).toBeInTheDocument();
+       expect(screen.getByText("Ver Ofertas")).toBeInTheDocument();
+     });
+   });
+ 
+   it("omits banner blocks without mediaUrl", async () => {
+     const mockBlocks = [
+       {
+         id: "banner-invalid",
+         tipo: "banner",
+         titulo: "Banner Inválido",
+         prioridade: 1,
+         config: {},
+       },
+     ];
+     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+ 
+     render(
+       <MemoryRouter>
+         <Index />
+       </MemoryRouter>
+     );
+ 
+     await waitFor(() => {
+       expect(screen.queryByText("Banner Inválido")).not.toBeInTheDocument();
+     });
+   });
+ 
+   it("renders instagram blocks with posts", async () => {
+     const mockBlocks = [
+       {
+         id: "insta-1",
+         tipo: "instagram",
+         titulo: "Siga-nos",
+         prioridade: 1,
+         config: { 
+           posts: [
+             { id: "p1", url: "https://insta/p1", mediaUrl: "post1.jpg" }
+           ]
+         },
+       },
+     ];
+     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+ 
+     render(
+       <MemoryRouter>
+         <Index />
+       </MemoryRouter>
+     );
+ 
+     await waitFor(() => {
+       expect(screen.getByText("Siga-nos")).toBeInTheDocument();
+       expect(screen.getByText(/Seguir no Instagram/i)).toBeInTheDocument();
+     });
+   });
+ 
+   it("handles products with estilo 'lista'", async () => {
+     const mockBlocks = [
+       {
+         id: "block-lista",
+         tipo: "produtos",
+         titulo: "Lista de Produtos",
+         prioridade: 1,
+         config: { filter: "novidades", estilo: "lista" },
+       },
+     ];
+     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+ 
+     render(
+       <MemoryRouter>
+         <Index />
+       </MemoryRouter>
+     );
+ 
+     await waitFor(() => {
+       expect(screen.getByText("Lista de Produtos")).toBeInTheDocument();
+       // Verifica se o layout em lista foi aplicado (procurando pela descrição que aparece no modo lista)
+       expect(screen.getByText("Produto Novidade")).toBeInTheDocument();
+     });
+   });
      },
    };
  });
