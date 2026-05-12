@@ -18,13 +18,19 @@
  
    console.log(`[blocks] Redirecting to vitrine-api/home/blocks`);
  
-   try {
-     const response = await fetch("https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api/home/blocks", {
-       method: req.method,
-       headers: req.headers,
-     });
+    try {
+      // Proxy limpo: evita repassar headers de controle que podem quebrar a requisição interna
+      const headers = new Headers();
+      headers.set("Accept", "application/json");
+      
+      // Usa variável de ambiente para garantir que aponte para o projeto correto
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "https://zbmdrncgsuvjexpiezbr.supabase.co";
+      const response = await fetch(`${supabaseUrl}/functions/v1/vitrine-api/home/blocks`, {
+        method: "GET",
+        headers,
+      });
  
-     const data = await response.json();
+      const data = await response.json();
       return new Response(JSON.stringify(data), {
         status: response.status,
         headers: { ...CORS_HEADERS, ...JSON_HEADER },
