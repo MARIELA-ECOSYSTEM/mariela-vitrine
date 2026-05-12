@@ -102,19 +102,21 @@ export const HeroBannerCarousel = () => {
     setCurrentIndex(prev => (prev - 1 + colecoes.length) % colecoes.length);
   };
 
-  const handleBannerClick = () => {
-    if (!currentColecao) return;
-    const params = new URLSearchParams();
-    try {
-      const current = new URLSearchParams(search);
-      current.forEach((value, key) => {
-        if (key.toLowerCase().startsWith("utm_")) params.set(key, value);
-      });
-    } catch {}
+   const handleBannerClick = () => {
+     if (!currentColecao) return;
+     const params = new URLSearchParams();
+     try {
+       const current = new URLSearchParams(search);
+       current.forEach((value, key) => {
+         if (key.toLowerCase().startsWith("utm_")) params.set(key, value);
+       });
+     } catch (err) {
+       console.error("[HeroBannerCarousel] Error parsing UTMs:", err);
+     }
      const baseUrl = `/collections/${currentColecao.id}`;
      const queryString = params.toString();
      navigate(queryString ? `${baseUrl}?${queryString}` : baseUrl);
-  };
+   };
 
   // Loading state com Skeleton para evitar layout shift
   if (colecoes === null && !failed) {

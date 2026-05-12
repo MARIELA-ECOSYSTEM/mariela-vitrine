@@ -49,12 +49,7 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
   const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  if (mediaError) {
-    if (import.meta.env.DEV) {
-      console.warn(`[MonteSeuLook] Sugestão "${sugestao.titulo}" (${sugestao.id}): Mídia editorial falhou ao carregar. Item omitido.`);
-    }
-    return null;
-  }
+   const isDev = import.meta.env.DEV;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -71,15 +66,22 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    if (sugestao.midia_tipo === "video" && videoRef.current && isInView) {
-      if (isPlaying || !isPlaying) { // If it's in view, we try to play if intended
-        videoRef.current.play().catch(() => setIsPlaying(false));
-      }
-    } else if (videoRef.current && !isInView) {
-      videoRef.current.pause();
-    }
-  }, [isPlaying, sugestao.midia_tipo, isInView]);
+   useEffect(() => {
+     if (sugestao.midia_tipo === "video" && videoRef.current) {
+       if (isInView) {
+         videoRef.current.play().catch(() => setIsPlaying(false));
+       } else {
+         videoRef.current.pause();
+       }
+     }
+   }, [sugestao.midia_tipo, isInView]);
+
+   if (mediaError) {
+     if (isDev) {
+       console.warn(`[MonteSeuLook] Sugestão "${sugestao.titulo}" (${sugestao.id}): Mídia editorial falhou ao carregar. Item omitido.`);
+     }
+     return null;
+   }
 
   const handleMontarLook = () => {
     // Emit an event to select products in the builder
