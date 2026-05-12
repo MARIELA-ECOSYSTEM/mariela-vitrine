@@ -1,1 +1,7 @@
 project_id = "zbmdrncgsuvjexpiezbr"
+
+[functions.vitrine-api]
+verify_jwt = false
+
+[functions.blocks]
+verify_jwt = false
