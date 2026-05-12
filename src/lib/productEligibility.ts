@@ -37,23 +37,32 @@ export function isProdutoPublicavel(produto: Partial<Produto> | any): ProdutoEle
     motivos.push(ProdutoExclusionReason.ARQUIVADO);
   }
 
-  // Variantes / Estoque
-  const variants = (produto.variants || []) as VarianteProduto[];
-  const hasValidVariants = variants.length > 0 && variants.some(v => v.disponibilidade > 0);
-  if (!hasValidVariants) {
-    motivos.push(ProdutoExclusionReason.SEM_VARIANTE);
-  }
-
   // Imagens
-  const hasImages = Array.isArray(produto.imagens) && produto.imagens.length > 0 && produto.imagens.some(img => typeof img === 'string' && img.length > 0);
+  const hasImages = (Array.isArray(produto.imagens) && produto.imagens.length > 0 && produto.imagens.some((img: any) => typeof img === 'string' && img.length > 0)) ||
+                    (typeof produto.imagem_principal === 'string' && produto.imagem_principal.length > 0) ||
+                    (typeof produto.imagem_thumb === 'string' && produto.imagem_thumb.length > 0);
+
   if (!hasImages) {
     motivos.push(ProdutoExclusionReason.SEM_IMAGEM);
   }
 
-  // Preço
-  const precoVenda = produto.precoVenda ?? produto.preco_venda ?? 0;
+  // Preço - aceitamos precoVenda, preco_venda ou precoAtual
+  const precoVenda = produto.precoVenda ?? produto.preco_venda ?? produto.precoAtual ?? 0;
   if (typeof precoVenda !== 'number' || precoVenda <= 0) {
     motivos.push(ProdutoExclusionReason.PRECO_INVALIDO);
+  }
+
+  // Variantes / Estoque - relaxado: se não houver variants mas tiver dados básicos, permitimos
+  // mas registramos como motivo se quisermos filtrar depois. 
+  // Para a Vitrine Mariela, a regra é: sem variant = não vende, mas o usuário pediu para não descartar se tiver dados básicos.
+  const variants = (produto.variants || []) as VarianteProduto[];
+  const hasValidVariants = variants.length > 0 && variants.some(v => v.disponibilidade > 0);
+  
+  // Se o produto for de catálogo público (tem ID, nome, preço e imagem), permitimos exibir mesmo sem grade explícita
+  const isBasicValid = produto.id && produto.nome && precoVenda > 0 && hasImages;
+  
+  if (!hasValidVariants && !isBasicValid) {
+    motivos.push(ProdutoExclusionReason.SEM_VARIANTE);
   }
 
   return {
