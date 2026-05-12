@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import Index from "./Index";
 import { vitrineApiService } from "@/services/vitrineApiService";
 
@@ -59,7 +59,7 @@ describe("Index Dynamic Blocks", () => {
       {
         id: "block-1",
         tipo: "produtos",
-        titulo: "Bloco Dinâmico 1",
+        titulo: "Bloco Dinamico 1",
         prioridade: 1,
         config: { filter: "novidades", limit: 4 },
       },
@@ -73,7 +73,7 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Bloco Dinâmico 1")).toBeInTheDocument();
+      expect(screen.getByText("Bloco Dinamico 1")).toBeInTheDocument();
     });
   });
 
@@ -94,7 +94,6 @@ describe("Index Dynamic Blocks", () => {
         config: { filter: "novidades" },
       },
     ];
-    // vitrineApiService sorts them
     (vitrineApiService.getHomeBlocks as any).mockResolvedValue([...mockBlocks].sort((a, b) => a.prioridade - b.prioridade));
 
     render(
@@ -119,7 +118,7 @@ describe("Index Dynamic Blocks", () => {
       {
         id: "banner-1",
         tipo: "banner",
-        titulo: "Promoção de Verão",
+        titulo: "Promocao de Verao",
         subtitulo: "Confira as ofertas",
         prioridade: 1,
         config: { 
@@ -139,7 +138,7 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Promoção de Verão")).toBeInTheDocument();
+      expect(screen.getByText("Promocao de Verao")).toBeInTheDocument();
       expect(screen.getByText("Ver Ofertas")).toBeInTheDocument();
     });
   });
@@ -149,7 +148,7 @@ describe("Index Dynamic Blocks", () => {
       {
         id: "banner-invalid",
         tipo: "banner",
-        titulo: "Banner Inválido",
+        titulo: "Banner Invalido",
         prioridade: 1,
         config: {},
       },
@@ -163,7 +162,7 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-      expect(screen.queryByText("Banner Inválido")).not.toBeInTheDocument();
+      expect(screen.queryByText("Banner Invalido")).not.toBeInTheDocument();
     });
   });
 
@@ -214,7 +213,6 @@ describe("Index Dynamic Blocks", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Carrossel de Produtos")).toBeInTheDocument();
-      // Check for carousel specific class/structure
       const carousel = container.querySelector('.snap-x');
       expect(carousel).toBeInTheDocument();
     });
@@ -240,13 +238,13 @@ describe("Index Dynamic Blocks", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Produtos Limitados")).toBeInTheDocument();
-      // Only one product card should be visible for this block
       const productCards = screen.getAllByText("Produto Novidade");
       expect(productCards.length).toBe(1);
     });
   });
 
   it("deduplicates simultaneous getProdutosByIds calls", async () => {
+    const mockProduct = { id: 100, nome: "Manual", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: false, isNovidade: true };
     const mockBlocks = [
       {
         id: "block-manual",
@@ -258,7 +256,7 @@ describe("Index Dynamic Blocks", () => {
     ];
     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
     
-    const fetchSpy = vi.spyOn(vitrineApiService, 'getProdutosByIds').mockResolvedValue([]);
+    const fetchSpy = vi.spyOn(vitrineApiService, 'getProdutosByIds').mockResolvedValue([mockProduct]);
 
     render(
       <MemoryRouter>
@@ -270,7 +268,6 @@ describe("Index Dynamic Blocks", () => {
       expect(screen.getByText("Produtos Manuais")).toBeInTheDocument();
     });
 
-    // Should only be called once despite potential re-renders during mount/state updates
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -286,7 +283,6 @@ describe("Index Dynamic Blocks", () => {
     ];
     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
 
-    // Mock DEV as true
     vi.stubGlobal("import.meta", { env: { DEV: true } });
 
     const { rerender } = render(
@@ -299,15 +295,19 @@ describe("Index Dynamic Blocks", () => {
       expect(screen.getByText(/\[DEBUG\] ID: debug-block/)).toBeInTheDocument();
     });
 
-    // Rerender without debug param
-    rerender(
+    // To test removal, we need a fresh render or a way to trigger location change that Index responds to.
+    // In this component, it uses useLocation().search in a useMemo.
+    
+    render(
       <MemoryRouter initialEntries={["/"]}>
         <Index />
       </MemoryRouter>
     );
 
     await waitFor(() => {
-      expect(screen.queryByText(/\[DEBUG\] ID: debug-block/)).not.toBeInTheDocument();
+       // Should find the banner but NOT the debug info
+       expect(screen.getByText("Banner Debug")).toBeInTheDocument();
+       expect(screen.queryByText(/\[DEBUG\] ID: debug-block/)).not.toBeInTheDocument();
     });
   });
 });
