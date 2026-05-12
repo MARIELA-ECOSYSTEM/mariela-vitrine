@@ -29,6 +29,10 @@ export interface ProdutoCor {
   cor: string;
   imagem_thumb: string | null;
   imagem_full: string | null;
+  /** Mídia específica para cards/vitrines (prioritária). */
+  imagem_card_url?: string | null;
+  /** Mídia específica para o Monte Seu Look (editorial). */
+  imagem_look_url?: string | null;
   tamanhos: ProdutoCorTamanho[];
   /**
    * Galeria completa da cor — vem somente no endpoint de detalhe
@@ -51,6 +55,10 @@ export interface Produto {
   variants: VarianteProduto[];
   /** Novo contrato: cores do produto com tamanhos e imagens próprias. */
   cores?: ProdutoCor[];
+  /** URL da mídia específica para o card (nível produto). */
+  imagem_card_url?: string | null;
+  /** URL da mídia específica para o Monte Seu Look (editorial, nível produto). */
+  imagem_look_url?: string | null;
   precoCusto: number;
   precoVenda: number;
   precoPromocional?: number;

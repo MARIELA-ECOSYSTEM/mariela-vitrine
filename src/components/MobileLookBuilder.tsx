@@ -1032,6 +1032,7 @@ const PreviewPanel = ({
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={getProductImageByColor(selectedProducts.bolsa, selectedColors.bolsa).alt}
+                  onError={handleProductImageError}
                   className="w-full h-full object-contain"
                 />
               </div>

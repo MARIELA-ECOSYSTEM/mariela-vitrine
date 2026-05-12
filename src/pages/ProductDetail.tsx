@@ -15,7 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
 import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
-import { getProductPath, getProductShareMessage, getTrackedProductUrl, matchesProductSlug } from "@/lib/productLinks";
+import { getProductPath, matchesProductSlug, getTrackedProductUrl, getProductShareMessage } from "@/lib/productLinks";
+import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER, handleProductImageError } from "@/lib/productImage";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
 import { ProductDetailSkeleton } from "@/components/ProductDetailSkeleton";
 import { getPublicProductBadge } from "@/services/productInsightsService";
@@ -279,10 +280,18 @@ const ProductDetail = () => {
     return entries;
   }, [produto, coresList]);
 
-  const imagensParaMostrar = useMemo(
-    () => galeriaUnificada.map((g) => g.url),
-    [galeriaUnificada],
-  );
+  const imagensParaMostrar = useMemo(() => {
+    // Se o usuário selecionou uma cor, a galeria deve ser filtrada para mostrar APENAS
+    // as imagens dessa cor (se houver imagens vinculadas a cores).
+    // Se a galeria unificada não tem vínculos de cor, mostra tudo.
+    if (corSelecionadaObj && galeriaUnificada.some(g => g.cor !== null)) {
+      const filtrada = galeriaUnificada
+        .filter(g => g.cor === corSelecionadaObj.cor)
+        .map(g => g.url);
+      if (filtrada.length > 0) return filtrada;
+    }
+    return galeriaUnificada.map((g) => g.url);
+  }, [galeriaUnificada, corSelecionadaObj]);
 
   // Mapas auxiliares para sync bidirecional cor ↔ imagem.
   const primeiraImagemPorCor = useMemo(() => {

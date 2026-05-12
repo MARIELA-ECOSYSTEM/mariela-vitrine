@@ -34,34 +34,78 @@ export function getProductImageByColor(
   const cor = corSelecionada?.trim() || "";
   const alt = cor ? `${nome} — cor ${cor}` : nome;
 
-  // 1. Contrato novo: cores[] com imagem própria
-  if (cor && Array.isArray(produto.cores) && produto.cores.length > 0) {
-    const corMatch = produto.cores.find((c) => c?.cor === cor);
-    const candidates = [
+  const isDev = import.meta.env.DEV;
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  const isDebug = search.includes("debugPDP=1") || search.includes("debugProducts=1") || search.includes("debugLooks=1");
+
+  // 1. Contexto Monte Seu Look (imagem_look_url)
+  if (search.includes("debugLooks=1") || window.location.pathname === "/monte-seu-look") {
+    let lookUrl = "";
+    let origin = "";
+    
+    if (cor && produto.cores) {
+      const corMatch = produto.cores.find((c) => c.cor === cor);
+      if (corMatch?.imagem_look_url) {
+        lookUrl = corMatch.imagem_look_url;
+        origin = `cor (${cor}) look_url`;
+      }
+    }
+    
+    if (!lookUrl && produto.imagem_look_url) {
+      lookUrl = produto.imagem_look_url;
+      origin = "produto look_url";
+    }
+    
+    if (lookUrl) {
+      if (isDev && isDebug) console.debug(`[ProductImage] Look: ${origin}`, { lookUrl });
+      return { src: lookUrl, alt };
+    }
+  }
+
+  // 2. Contexto Card/Vitrine (imagem_card_url)
+  if (search.includes("debugProducts=1") || (!search.includes("debugPDP=1") && window.location.pathname !== `/products/${produto.id}` && !window.location.pathname.startsWith("/products/"))) {
+    let cardUrl = "";
+    let origin = "";
+
+    if (cor && produto.cores) {
+      const corMatch = produto.cores.find((c) => c.cor === cor);
+      if (corMatch?.imagem_card_url) {
+        cardUrl = corMatch.imagem_card_url;
+        origin = `cor (${cor}) card_url`;
+      }
+    }
+
+    if (!cardUrl && produto.imagem_card_url) {
+      cardUrl = produto.imagem_card_url;
+      origin = "produto card_url";
+    }
+
+    if (cardUrl) {
+      if (isDev && isDebug) console.debug(`[ProductImage] Card: ${origin}`, { cardUrl });
+      return { src: cardUrl, alt };
+    }
+  }
+
+  // 3. Contrato novo: cores[] com imagem principal (fallback resolvido pela API)
+  if (cor && Array.isArray(produto.cores)) {
+    const corMatch = produto.cores.find((c) => c.cor === cor);
+    const fromCor = [
       corMatch?.imagem_full,
       corMatch?.imagem_thumb,
       corMatch?.imagens?.[0]?.url_full,
       corMatch?.imagens?.[0]?.url_thumb,
-    ];
-    const fromCor = candidates
-      .map((value) => (typeof value === "string" ? value.trim() : ""))
-      .find((value) => value.length > 0);
-    if (fromCor) return { src: fromCor, alt };
+    ].find((v) => typeof v === "string" && v.trim().length > 0);
+
+    if (fromCor) {
+      if (isDev && isDebug) console.debug(`[ProductImage] Cor: ${cor} fallback`, { fromCor });
+      return { src: fromCor, alt };
+    }
   }
 
-  const imagens = produto.imagens ?? [];
-
-  // 2. Primeira imagem do produto retornada pela API (já inclui a genérica
-  //    quando o PDV decidir aplicá-la).
-  if (imagens[0]) {
-    return { src: imagens[0], alt };
-  }
-
-  // 3. Sem imagem da API — devolve string vazia. O onError do <img> vai
-  //    aplicar o fallback extremo local (handleProductImageError) caso o
-  //    navegador tente carregar e falhe. Isso evita "inventar" imagem
-  //    genérica antes de saber se a API realmente não entregou nada.
-  return { src: "", alt };
+  // 4. Fallback final resolvido pela API (imagens[0])
+  const fallbackApi = (produto.imagens || [])[0] || "";
+  if (isDev && isDebug) console.debug("[ProductImage] Fallback API", { fallbackApi });
+  return { src: fallbackApi, alt };
 }
 
 /**

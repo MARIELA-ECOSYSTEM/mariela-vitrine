@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      produto_cor_imagens: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_monte_look: boolean | null
+          is_principal: boolean | null
+          ordem: number | null
+          produto_cor_id: string
+          updated_at: string | null
+          url_full: string | null
+          url_thumb: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_monte_look?: boolean | null
+          is_principal?: boolean | null
+          ordem?: number | null
+          produto_cor_id: string
+          updated_at?: string | null
+          url_full?: string | null
+          url_thumb?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_monte_look?: boolean | null
+          is_principal?: boolean | null
+          ordem?: number | null
+          produto_cor_id?: string
+          updated_at?: string | null
+          url_full?: string | null
+          url_thumb?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
