@@ -130,9 +130,29 @@ export interface ColecaoResponse {
    };
  }
  
- export interface HomeBlocksResponse {
-   data: HomeBlock[];
- }
+  export interface HomeBlocksResponse {
+    data: HomeBlock[];
+  }
+
+  export interface LookSugestao {
+    id: string;
+    titulo: string;
+    subtitulo?: string;
+    mediaUrl: string;
+    mediaType: "image" | "video" | "gif";
+    posterUrl?: string;
+    produtos: string[];
+    ctaLabel?: string;
+  }
+
+  export interface LookManual {
+    id: string;
+    nome: string;
+    mediaUrl?: string;
+    mediaType?: "image" | "video" | "gif";
+    posterUrl?: string;
+    produtos: string[];
+  }
 
  // Schemas de Validação (Zod) para detecção rápida de falhas de contrato
  const ConfigSchema = z.object({
@@ -153,27 +173,46 @@ export interface ColecaoResponse {
    titulo: z.string().nullable(),
    subtitulo: z.string().nullable(),
    prioridade: z.number(),
-   config: z.object({
-     filter: z.string().optional(),
-     colecoes: z.array(z.string()).optional(),
-     produtos: z.array(z.string()).optional(),
-     linkLabel: z.string().optional(),
-     linkTo: z.string().optional(),
-     estilo: z.enum(["grade", "carrossel", "lista"]).optional(),
-     limit: z.number().optional(),
-     max_items: z.number().optional(),
-     mediaUrl: z.string().optional(),
-     mediaType: z.enum(["image", "video", "gif"]).optional(),
-     posterUrl: z.string().optional(),
-     ctaLabel: z.string().optional(),
-     ctaUrl: z.string().optional(),
-     posts: z.array(z.object({
-       id: z.string(),
-       url: z.string(),
-       mediaUrl: z.string(),
-       caption: z.string().optional(),
-     })).optional(),
-   }),
+    config: z.object({
+      filter: z.string().optional(),
+      colecoes: z.array(z.string()).optional(),
+      produtos: z.array(z.string()).optional(),
+      linkLabel: z.string().optional(),
+      linkTo: z.string().optional(),
+      estilo: z.enum(["grade", "carrossel", "lista"]).optional(),
+      limit: z.number().optional(),
+      max_items: z.number().optional(),
+      mediaUrl: z.string().optional(),
+      mediaType: z.enum(["image", "video", "gif"]).optional(),
+      posterUrl: z.string().optional(),
+      ctaLabel: z.string().optional(),
+      ctaUrl: z.string().optional(),
+      posts: z.array(z.object({
+        id: z.string(),
+        url: z.string(),
+        mediaUrl: z.string(),
+        caption: z.string().optional(),
+      })).optional(),
+      // Campos para Monte Seu Look
+      sugestoes_monte_look: z.array(z.object({
+        id: z.string(),
+        titulo: z.string(),
+        subtitulo: z.string().optional(),
+        mediaUrl: z.string(),
+        mediaType: z.enum(["image", "video", "gif"]),
+        posterUrl: z.string().optional(),
+        produtos: z.array(z.string()),
+        ctaLabel: z.string().optional(),
+      })).optional(),
+      looks_manuais: z.array(z.object({
+        id: z.string(),
+        nome: z.string(),
+        mediaUrl: z.string().optional(),
+        mediaType: z.enum(["image", "video", "gif"]).optional(),
+        posterUrl: z.string().optional(),
+        produtos: z.array(z.string()),
+      })).optional(),
+    }),
    validade: z.object({
      inicio: z.string().nullable(),
      fim: z.string().nullable(),
@@ -193,6 +232,8 @@ export interface ColecaoResponse {
     preco_venda: z.number(),
     imagem_thumb: z.string().nullable(),
     imagem_principal: z.string().nullable(),
+    imagem_card_url: z.string().nullable().optional(),
+    imagem_look_url: z.string().nullable().optional(),
   });
 
   const PaginationResponseSchema = z.object({
@@ -212,6 +253,8 @@ export interface ColecaoResponse {
     preco_venda: z.number(),
     imagem_thumb: z.string().nullable(),
     imagem_principal: z.string().nullable(),
+    imagem_card_url: z.string().nullable().optional(),
+    imagem_look_url: z.string().nullable().optional(),
     imagens: z.array(z.string()),
     variantes_disponiveis: z.array(z.object({
       id: z.string(),
@@ -1377,6 +1420,8 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
     destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),
     recomendacao_publica: readOptionalString(product, ["recomendacao_publica", "recomendacaoPublica"]),
     createdAt,
+    imagem_look_url: readOptionalString(product, ["imagem_look_url", "imagemLookUrl", "look_image"]),
+    imagem_card_url: readOptionalString(product, ["imagem_card_url", "imagemCardUrl", "card_image"]),
   };
 }
 

@@ -26,7 +26,9 @@ import {
   getProductImageByColor,
   handleProductImageError,
   PRODUCT_IMAGE_PLACEHOLDER,
+  getProductImageByColor,
 } from "@/lib/productImage";
+import { vitrineApiService, LookSugestao, LookManual } from "@/services/vitrineApiService";
 
 // Ícone oficial do WhatsApp (inline SVG) — deixa explícito o canal de envio.
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -367,10 +369,30 @@ export const MobileLookBuilder = () => {
     setSelectedSizes({ ...selectedSizes, [category]: "" });
   };
 
-  // Wrapper fino sobre o utilitário central — mantém a assinatura usada
-  // pelos componentes filhos (que esperam apenas a URL).
-  const getImageForColor = (produto: Produto | null, cor: string) =>
-    getProductImageByColor(produto, cor).src;
+  // Implementa a regra de fallback da Vitrine: 
+  // 1. imagem_look_url -> 2. imagem_card_url -> 3. imagem principal (da cor ou produto)
+  const getImageForLook = (produto: Produto | null, cor: string) => {
+    if (!produto) return PRODUCT_IMAGE_PLACEHOLDER;
+    
+    // 1. Tenta imagem editorial específica para Look
+    if (produto.imagem_look_url) return produto.imagem_look_url;
+    
+    // 2. Tenta imagem de card (fallback editorial intermediário)
+    if (produto.imagem_card_url) return produto.imagem_card_url;
+    
+    // 3. Fallback para imagem principal da cor ou produto
+    return getProductImageByColor(produto, cor).src;
+  };
+
+  // Wrapper para cards e listagens (Vitrine comum)
+  const getImageForCard = (produto: Produto | null, cor: string) => {
+    if (!produto) return PRODUCT_IMAGE_PLACEHOLDER;
+    if (produto.imagem_card_url) return produto.imagem_card_url;
+    return getProductImageByColor(produto, cor).src;
+  };
+
+  // Mantém compatibilidade com a assinatura antiga usada nos componentes internos
+  const getImageForColor = getImageForCard;
 
   // Leva o usuário até o card da categoria correspondente para escolher o
   // tamanho ali (sem dialog separado). Usado tanto pela validação do envio
