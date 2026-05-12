@@ -8,7 +8,7 @@
  interface MediaProps {
    loading?: "lazy" | "eager";
    decoding?: "async" | "sync" | "auto";
-   fetchpriority?: MediaPriority;
+   fetchPriority?: MediaPriority;
  }
  
  /**
@@ -26,7 +26,7 @@
    return {
      loading: isAboveFold ? "eager" : "lazy",
      decoding: "async",
-     fetchpriority: effectivePriority,
+     fetchPriority: effectivePriority,
    };
  }
  
@@ -40,8 +40,8 @@
    return {
      loading: props.loading,
      decoding: props.decoding,
-     // Usamos fetchpriority (lowercase) para evitar avisos no React 18 e garantir 
-     // que o atributo seja passado corretamente para o DOM.
-     fetchpriority: props.fetchpriority,
+     // Usamos fetchPriority camelCase pois o usuário solicitou esta grafia como padrão.
+     // Estendemos os tipos globais para suportar esta prop no React 18.
+     fetchPriority: props.fetchPriority,
    };
  }
