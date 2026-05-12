@@ -1265,7 +1265,7 @@ export const vitrineApiService = {
        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
        return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
      }
-   }
+    },
  
   async getConfig(): Promise<VitrineConfig> {
     try {
