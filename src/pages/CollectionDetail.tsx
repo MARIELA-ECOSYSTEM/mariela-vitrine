@@ -7,9 +7,9 @@
  import { ProductsLoadingSkeleton } from "@/components/ProductSkeleton";
  import { 
    vitrineApiService, 
-   type ColecaoDestaque, 
-   type Produto 
+   type ColecaoDestaque 
  } from "@/services/vitrineApiService";
+ import type { Produto } from "@/data/products";
  import { updateSeo } from "@/lib/seo";
  import { ArrowLeft, Sparkles, ImageOff } from "lucide-react";
  import { cn } from "@/lib/utils";
@@ -168,8 +168,8 @@
              <ProductsLoadingSkeleton count={8} />
            ) : produtos.length > 0 ? (
              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12">
-               {produtos.map((product) => (
-                 <ProductCard key={product.id} product={product} />
+               {produtos.map((produto) => (
+                 <ProductCard key={produto.id} produto={produto} />
                ))}
              </div>
            ) : (
