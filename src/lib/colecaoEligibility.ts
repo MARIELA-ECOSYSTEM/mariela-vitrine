@@ -80,24 +80,29 @@ export interface ColecaoElegibilidadeRaw {
       motivos.push(ColecaoExclusionReason.PRODUTOS_NAO_PUBLICAVEIS);
     }
 
-     const temMidia = (colecao.home_destaque_url?.trim() || 
-                      colecao.banner_url?.trim() || 
-                      colecao.imagem_capa_url?.trim());
-
-     if (!temMidia) {
-       motivos.push(ColecaoExclusionReason.SEM_MIDIA);
-     }
+      // Relaxado: permitimos coleções sem mídia se tiverem produtos. 
+      // A UI deve tratar a ausência de imagem (usando placeholder ou ocultando o banner).
+      // Mas para a vitrine ser funcional, melhor mostrar o que tem.
+      const temMidia = Boolean(colecao.home_destaque_url?.trim() || 
+                               colecao.banner_url?.trim() || 
+                               colecao.imagem_capa_url?.trim());
+ 
+      if (!temMidia && !colecao.home_destaque_url) {
+        // Apenas um aviso, não bloqueia a elegibilidade se o usuário quiser ver a coleção
+        // mas para a HOME especificamente costuma ser obrigatório.
+        // Vamos manter como motivo mas não tornar crítico.
+        motivos.push(ColecaoExclusionReason.SEM_MIDIA);
+      }
 
    let status: "HEALTHY" | "WARNING" | "INVALID" = "HEALTHY";
    
    if (motivos.length > 0) {
-     const criticos = [
-        ColecaoExclusionReason.ID_NOME_AUSENTE,
-        ColecaoExclusionReason.NAO_DESTAQUE,
-        ColecaoExclusionReason.INATIVA,
-        ColecaoExclusionReason.SEM_PRODUTOS,
-         ColecaoExclusionReason.SEM_MIDIA
-     ];
+      const criticos = [
+         ColecaoExclusionReason.ID_NOME_AUSENTE,
+         ColecaoExclusionReason.NAO_DESTAQUE,
+         ColecaoExclusionReason.INATIVA,
+         ColecaoExclusionReason.SEM_PRODUTOS,
+      ];
      
      const temCritico = motivos.some(m => criticos.includes(m));
      
