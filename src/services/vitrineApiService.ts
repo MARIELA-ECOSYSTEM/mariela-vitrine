@@ -103,27 +103,29 @@ export interface ColecaoResponse {
    titulo: string | null;
    subtitulo: string | null;
    prioridade: number;
-   config: {
-      filter?: string;
-      colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
-      produtos?: string[];
-      linkLabel?: string;
-      linkTo?: string;
-      estilo?: "grade" | "carrossel" | "lista";
-      limit?: number;
-      max_items?: number;
-      mediaUrl?: string;
+    config: {
+       filter?: string;
+       colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
+       produtos?: string[];
+       linkLabel?: string;
+       linkTo?: string;
+       estilo?: "grade" | "carrossel" | "lista";
+       limit?: number;
+       max_items?: number;
+       mediaUrl?: string;
        mediaType?: "image" | "video" | "gif";
        posterUrl?: string;
-      ctaLabel?: string;
-      ctaUrl?: string;
-      posts?: Array<{
-        id: string;
-        url: string;
-        mediaUrl: string;
-        caption?: string;
-      }>;
-    };
+       ctaLabel?: string;
+       ctaUrl?: string;
+       posts?: Array<{
+         id: string;
+         url: string;
+         mediaUrl: string;
+         caption?: string;
+       }>;
+       sugestoes_monte_look?: LookSugestao[];
+       looks_manuais?: LookManual[];
+     };
    validade?: {
      inicio: string | null;
      fim: string | null;

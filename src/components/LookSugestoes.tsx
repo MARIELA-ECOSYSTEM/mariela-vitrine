@@ -60,14 +60,12 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
               {sugestao.mediaType === "video" ? (
                 <div className="relative w-full h-full">
                   <video
-                    {...applyMediaProps({
-                      src: sugestao.mediaUrl,
-                      poster: sugestao.posterUrl,
-                      autoPlay: true,
-                      loop: true,
-                      muted: muted,
-                      playsInline: true,
-                    }, { priority: "high" })}
+                    {...applyMediaProps(sugestao.mediaUrl, true, "high")}
+                    poster={sugestao.posterUrl}
+                    autoPlay
+                    loop
+                    muted={muted}
+                    playsInline
                     className="w-full h-full object-cover"
                   />
                   <Button

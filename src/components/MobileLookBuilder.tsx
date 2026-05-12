@@ -80,7 +80,7 @@ const categoryConfig: Array<{
   { key: 'bolsa', label: 'Bolsas & Acessórios', emoji: '👜' },
 ];
 
-export const MobileLookBuilder = () => {
+export const MobileLookBuilder = ({ preSelectedIds = [] }: { preSelectedIds?: string[] }) => {
   const { produtos, loading } = useProducts();
   const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
@@ -206,6 +206,41 @@ export const MobileLookBuilder = () => {
     vestido: null,
     conjunto: null,
   });
+
+  // Efeito para carregar look sugerido
+  useEffect(() => {
+    if (preSelectedIds.length > 0 && produtos.length > 0) {
+      const newSelections: SelectedItems = { blusa: null, bottom: null, bolsa: null, vestido: null, conjunto: null };
+      const newSizes: SelectedSizes = { blusa: "", bottom: "", bolsa: "", vestido: "", conjunto: "" };
+      const newColors: SelectedColors = { blusa: "", bottom: "", bolsa: "", vestido: "", conjunto: "" };
+
+      preSelectedIds.forEach(id => {
+        const product = produtos.find(p => p.produtoId === id || String(p.id) === id);
+        if (product) {
+          // Determina categoria
+          let cat: CategoryKey | null = null;
+          if (product.categoria === "vestidos") cat = "vestido";
+          else if (product.categoria === "conjuntos") cat = "conjunto";
+          else if (product.categoria === "blusas") cat = "blusa";
+          else if (["shorts", "calças", "saias", "short-saias"].includes(product.categoria)) cat = "bottom";
+          else if (["bolsas", "acessorios"].includes(product.categoria)) cat = "bolsa";
+
+          if (cat) {
+            newSelections[cat] = product.id;
+          }
+        }
+      });
+
+      setSelectedItems(newSelections);
+      setSelectedSizes(newSizes);
+      setSelectedColors(newColors);
+      
+      toast({
+        title: "Look Carregado",
+        description: "As peças sugeridas foram adicionadas ao seu look.",
+      });
+    }
+  }, [preSelectedIds, produtos]);
 
   const [selectedSizes, setSelectedSizes] = useState<SelectedSizes>({
     blusa: "",
@@ -545,8 +580,8 @@ export const MobileLookBuilder = () => {
                   >
                     <img
                       key={`${product.id}-${color || "default"}`}
-                      src={getImageForColor(product, color)}
-                      alt={getProductImageByColor(product, color).alt}
+                  src={getImageForLook(product, color)}
+                  alt={getProductImageByColor(product, color).alt}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -998,7 +1033,7 @@ const PreviewPanel = ({
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
                 <img
                   key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
-                  src={getImageForColor(
+                  src={getImageForLook(
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
                   )}
@@ -1017,7 +1052,7 @@ const PreviewPanel = ({
                   {selectedProducts.blusa ? (
                     <img
                       key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
-                      src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
+                      src={getImageForLook(selectedProducts.blusa, selectedColors.blusa)}
                       alt={getProductImageByColor(selectedProducts.blusa, selectedColors.blusa).alt}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
@@ -1033,7 +1068,7 @@ const PreviewPanel = ({
                   {selectedProducts.bottom ? (
                     <img
                       key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
-                      src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
+                      src={getImageForLook(selectedProducts.bottom, selectedColors.bottom)}
                       alt={getProductImageByColor(selectedProducts.bottom, selectedColors.bottom).alt}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
@@ -1051,7 +1086,7 @@ const PreviewPanel = ({
               <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in">
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
-                  src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
+                  src={getImageForLook(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={getProductImageByColor(selectedProducts.bolsa, selectedColors.bolsa).alt}
                   className="w-full h-full object-contain"
                 />
@@ -1116,7 +1151,7 @@ const PreviewPanel = ({
                   <div className="flex items-center gap-2 min-w-0">
                     <img
                       key={`${product.id}-${color || "default"}`}
-                      src={getImageForColor(product, color)}
+                      src={getImageForLook(product, color)}
                       alt={getProductImageByColor(product, color).alt}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
                     />
