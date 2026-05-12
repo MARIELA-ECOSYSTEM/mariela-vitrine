@@ -112,7 +112,8 @@ export interface ColecaoResponse {
       limit?: number;
       max_items?: number;
       mediaUrl?: string;
-      mediaType?: "image" | "video" | "gif";
+       mediaType?: "image" | "video" | "gif";
+       posterUrl?: string;
       ctaLabel?: string;
       ctaUrl?: string;
       posts?: Array<{
