@@ -597,7 +597,12 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
                   </button>
                 </>
               )}
-              <div className="absolute top-3 right-3 flex flex-col gap-2">
+               <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
+                 {produto.isNovidade && (
+                   <Badge className="bg-primary text-primary-foreground shadow-md border-none text-[10px] uppercase font-bold px-1.5 py-0.5">
+                     Novidade
+                   </Badge>
+                 )}
                 {promo.isPromo && (
                   <Badge variant="destructive" className="shadow-sm">
                     {promo.badgeLabel}
@@ -795,7 +800,12 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none hidden sm:block">
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
           </div>
-          <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2">
+           <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-1.5 items-end">
+             {produto.isNovidade && (
+               <Badge className="bg-primary text-primary-foreground shadow-md border-none text-[10px] uppercase font-bold px-1.5 py-0.5">
+                 Novidade
+               </Badge>
+             )}
             {promo.isPromo && (
               <Badge
                 variant="destructive"

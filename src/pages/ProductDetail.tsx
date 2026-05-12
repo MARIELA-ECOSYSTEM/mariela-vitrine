@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, ShoppingCart, ArrowLeft } from "lucide-react";
+ import { MessageCircle, ShoppingCart, ArrowLeft, Sparkles } from "lucide-react";
 import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, matchesProductSlug, getTrackedProductUrl, getProductShareMessage } from "@/lib/productLinks";
@@ -721,8 +721,20 @@ const ProductDetail = () => {
     );
   }
 
-  const isAcessorio = (produto.categoria === "bolsas" || produto.categoria === "acessorios") && coresList.length === 0;
-  const publicBadge = getPublicProductBadge(produto);
+   const isAcessorio = (produto.categoria === "bolsas" || produto.categoria === "acessorios") && coresList.length === 0;
+   const publicBadge = getPublicProductBadge(produto);
+ 
+   // Contexto de Campanha/Coleção para contexto editorial
+   const campanhaAtiva = useMemo(() => {
+     if (!produto?.colecao) return null;
+     return {
+       nome: produto.colecao,
+       label: produto.colecao.toLowerCase().includes("verão") || produto.colecao.toLowerCase().includes("inverno") 
+         ? `Parte da coleção ${produto.colecao}` 
+         : `Campanha ${produto.colecao}`,
+       isDestaque: produto.destaque_publico === "destaque" || produto.isNovidade
+     };
+   }, [produto]);
 
   // Estado seguro: produto sem variações reais (sem cores válidas para roupas
   // ou sem nenhum tamanho disponível) é tratado como indisponível.
@@ -845,14 +857,14 @@ const ProductDetail = () => {
                 images={imagensParaMostrar}
                 media={midiaParaMostrar}
                 imageColors={galeriaUnificada.map((g) => g.cor)}
-                colorSwatchMap={COLOR_MAP}
-                productName={
-                  corSelecionada
-                    ? `${produto.nome} — cor ${corSelecionada}`
-                    : produto.nome
-                }
-                emPromocao={produto.emPromocao}
-                isNovidade={produto.isNovidade}
+                 colorSwatchMap={COLOR_MAP}
+                 productName={
+                   corSelecionada
+                     ? `${produto.nome} — cor ${corSelecionada}`
+                     : produto.nome
+                 }
+                 emPromocao={produto.emPromocao}
+                 isNovidade={produto.isNovidade}
                   publicBadge={publicBadge}
                 selectedIndex={imagemSelecionadaIndex}
                 onImageSelect={handleImageSelect}
@@ -1036,8 +1048,24 @@ const ProductDetail = () => {
                   )}
                 </div>
 
-              {/* Botões de Ação */}
-              <div className="space-y-3 pt-4">
+               {/* Botões de Ação */}
+               <div className="space-y-3 pt-4">
+                 {/* CTA Monte Seu Look - Integrado naturalmente */}
+                 {!produtoIndisponivel && (
+                   <Link 
+                     to={`/monte-seu-look?produtoBase=${produto.produtoId || produto.id}`}
+                     className="block animate-fade-in"
+                   >
+                     <Button 
+                       variant="outline" 
+                       className="w-full h-12 md:h-14 border-primary/30 text-primary hover:bg-primary/5 font-medium flex items-center justify-center gap-2 group transition-all"
+                     >
+                       <Sparkles className="h-5 w-5 transition-transform group-hover:scale-110" />
+                       Montar look com esta peça
+                     </Button>
+                   </Link>
+                 )}
+ 
                 {/* Região acessível para anunciar a necessidade de selecionar
                     um tamanho a leitores de tela. Visualmente oculta. */}
                 <p
@@ -1080,8 +1108,24 @@ const ProductDetail = () => {
                 </Button>
               </div>
 
-              {/* Info adicional mobile */}
-              <div className="md:hidden pt-4 border-t border-border">
+               {/* Contexto de Coleção/Campanha */}
+               {campanhaAtiva && (
+                 <div className="mt-6 pt-6 border-t border-border/50 animate-fade-in">
+                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                     <span>{campanhaAtiva.label}</span>
+                     {campanhaAtiva.isDestaque && (
+                       <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] uppercase tracking-wider font-bold px-1.5 py-0">
+                         Destaque
+                       </Badge>
+                     )}
+                   </div>
+                   <p className="text-xs text-muted-foreground/70 mt-1 italic">Edição limitada disponível enquanto durar o estoque.</p>
+                 </div>
+               )}
+ 
+               {/* Info adicional mobile */}
+               <div className="md:hidden pt-4 border-t border-border">
                 <p className="text-xs text-muted-foreground text-center">
                   Toque na imagem para ampliar • Deslize para ver mais fotos
                 </p>

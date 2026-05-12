@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+ import { useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -81,8 +82,29 @@ const categoryConfig: Array<{
   { key: 'bolsa', label: 'Bolsas & Acessórios', emoji: '👜' },
 ];
 
-export const MobileLookBuilder = () => {
-  const { produtos, loading } = useProducts();
+ export const MobileLookBuilder = () => {
+   const { produtos, loading } = useProducts();
+   const location = useLocation();
+ 
+   // Handle initial product from URL (?produtoBase=...)
+   const autoSelectBaseRef = useRef(false);
+   useEffect(() => {
+     if (loading || produtos.length === 0 || autoSelectBaseRef.current) return;
+     
+     const params = new URLSearchParams(location.search);
+     const produtoBaseId = params.get("produtoBase");
+     
+     if (produtoBaseId) {
+       const product = produtos.find(p => p.produtoId === produtoBaseId || String(p.id) === produtoBaseId);
+       if (product) {
+         autoSelectBaseRef.current = true;
+         const event = new CustomEvent("monte-seu-look:select-products", {
+           detail: { products: [produtoBaseId] }
+         });
+         window.dispatchEvent(event);
+       }
+     }
+   }, [produtos, loading, location.search]);
 
   // Handle external product selection (from suggestions)
   useEffect(() => {
@@ -300,7 +322,31 @@ export const MobileLookBuilder = () => {
   }), [selectedItems, produtos]);
 
   const isFullOutfit = selectedProducts.vestido !== null || selectedProducts.conjunto !== null;
-  const hasAnySelection = Object.values(selectedItems).some(v => v !== null);
+   const hasAnySelection = Object.values(selectedItems).some(v => v !== null);
+ 
+   // Produtos Relacionados Sugeridos (mesma coleção ou categoria)
+   const relatedSuggestions = useMemo(() => {
+     if (!hasAnySelection || produtos.length === 0) return [];
+     
+     // Pega o primeiro item selecionado para servir de base
+     const firstSelectedEntry = Object.entries(selectedProducts).find(([_, p]) => p !== null);
+     if (!firstSelectedEntry) return [];
+     
+     const [catKey, baseProduct] = firstSelectedEntry as [CategoryKey, Produto];
+     const baseColecao = baseProduct.colecao;
+     
+     // Filtra produtos da mesma coleção que não estão selecionados
+     return produtos
+       .filter(p => {
+         if (!p.colecao || !baseColecao) return false;
+         if (p.colecao !== baseColecao) return false;
+         
+         // Já está no builder?
+         const isAlreadySelected = Object.values(selectedItems).includes(p.id);
+         return !isAlreadySelected;
+       })
+       .slice(0, 4);
+   }, [produtos, selectedProducts, selectedItems, hasAnySelection]);
 
   // Indica se há produto selecionado em alguma categoria de roupa sem tamanho.
   // Bolsa/acessório não exige tamanho.
@@ -523,8 +569,10 @@ export const MobileLookBuilder = () => {
             onWhatsApp={handleWhatsApp}
             getImageForColor={getImageForColor}
             missingSize={missingSize}
-            onPickSize={(cat) => goToCategorySize(cat)}
-          />
+             onPickSize={(cat) => goToCategorySize(cat)}
+             relatedSuggestions={relatedSuggestions}
+             onSelectItem={selectItem}
+           />
           {/* aria-live region (desktop) — anuncia falta de tamanho ao tentar enviar. */}
           <p aria-live="polite" aria-atomic="true" className="sr-only">
             {sizeGuide.announceMessage}
@@ -744,9 +792,11 @@ export const MobileLookBuilder = () => {
                   // Fecha a prévia mobile e leva o usuário até o card da
                   // categoria correspondente para escolher o tamanho lá.
                   closePreview();
-                  goToCategorySize(cat);
-                }}
-              />
+                   goToCategorySize(cat);
+                 }}
+                 relatedSuggestions={relatedSuggestions}
+                 onSelectItem={selectItem}
+               />
             </div>
           </div>
         </div>,
@@ -996,27 +1046,31 @@ interface PreviewPanelProps {
   onWhatsApp: () => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
   isMobile?: boolean;
-  missingSize?: boolean;
-  /** Categorias que exigem tamanho. Usado para destacar items sem tamanho na prévia. */
-  sizedCategories?: CategoryKey[];
-  /** Acionado quando o usuário toca num item incompleto na prévia. */
-  onPickSize?: (category: CategoryKey) => void;
+   missingSize?: boolean;
+   /** Categorias que exigem tamanho. Usado para destacar items sem tamanho na prévia. */
+   sizedCategories?: CategoryKey[];
+   /** Acionado quando o usuário toca num item incompleto na prévia. */
+   onPickSize?: (category: CategoryKey) => void;
+   relatedSuggestions?: Produto[];
+   onSelectItem?: (category: CategoryKey, productId: number, clearCategories?: CategoryKey[]) => void;
 }
 
-const PreviewPanel = ({
-  selectedProducts,
-  selectedColors,
-  selectedSizes,
-  totalValue,
-  hasAnySelection,
-  onClear,
-  onWhatsApp,
-  getImageForColor,
-  isMobile = false,
-  missingSize = false,
-  sizedCategories = ["blusa", "bottom", "vestido", "conjunto"],
-  onPickSize,
-}: PreviewPanelProps) => {
+ const PreviewPanel = ({
+   selectedProducts,
+   selectedColors,
+   selectedSizes,
+   totalValue,
+   hasAnySelection,
+   onClear,
+   onWhatsApp,
+   getImageForColor,
+   isMobile = false,
+   missingSize = false,
+   sizedCategories = ["blusa", "bottom", "vestido", "conjunto"],
+   onPickSize,
+   relatedSuggestions = [],
+   onSelectItem,
+ }: PreviewPanelProps) => {
   const isFullOutfit = selectedProducts.vestido || selectedProducts.conjunto;
   
   return (
@@ -1202,7 +1256,42 @@ const PreviewPanel = ({
             })}
           </div>
 
-          <div className="pt-2 sm:pt-3 border-t border-border">
+           {/* Related Suggestions Section */}
+           {relatedSuggestions.length > 0 && (
+             <div className="pt-4 border-t border-border/50">
+               <h5 className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
+                 <Sparkles className="h-3 w-3" />
+                 Combina com este look
+               </h5>
+               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                 {relatedSuggestions.map((p) => (
+                   <button
+                     key={p.id}
+                      onClick={() => {
+                        if (!onSelectItem) return;
+                        const category = p.categoria === "vestidos" ? "vestido" :
+                                       p.categoria === "conjuntos" ? "conjunto" :
+                                       p.categoria === "blusas" ? "blusa" :
+                                       ["shorts", "calças", "saias", "short-saias"].includes(p.categoria) ? "bottom" : "bolsa";
+                        onSelectItem(category, p.id, categoryConfig.find(c => c.key === category)?.clearOnSelect);
+                      }}
+                     className="shrink-0 w-16 group relative"
+                   >
+                     <div className="aspect-[3/4] rounded-lg overflow-hidden border border-border group-hover:border-primary/50 transition-all">
+                       <img 
+                         src={p.imagens[0]} 
+                         alt={p.nome}
+                         className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                       />
+                     </div>
+                     <p className="text-[9px] truncate mt-1 text-muted-foreground">{p.nome}</p>
+                   </button>
+                 ))}
+               </div>
+             </div>
+           )}
+ 
+           <div className="pt-2 sm:pt-3 border-t border-border">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sm sm:text-base">Total:</span>
               <span className="text-xl sm:text-2xl font-bold text-primary">
