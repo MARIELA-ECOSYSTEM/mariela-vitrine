@@ -106,7 +106,7 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
            if (layoutMode === "carrossel") {
              return (
                <div className="relative group/carousel">
-                 <div className="flex gap-3 sm:gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+                 <div className="flex gap-3 sm:gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                    {isLoading
                      ? Array.from({ length: skeletonCount }).map((_, i) => (
                          <div key={`skeleton-${i}`} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
