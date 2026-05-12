@@ -76,6 +76,20 @@
                   produtos: ["1", "2", "3"],
                   ctaLabel: "Montar este Look"
                 }
+              ],
+              looks_manuais: [
+                {
+                  id: "manual-1",
+                  nome: "Combo Street",
+                  mediaUrl: "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&q=80&w=400",
+                  produtos: ["1", "2"]
+                },
+                {
+                  id: "manual-2",
+                  nome: "Office Chic",
+                  mediaUrl: "https://images.unsplash.com/photo-1539109132381-31a15b2247ea?auto=format&fit=crop&q=80&w=400",
+                  produtos: ["3", "4"]
+                }
               ]
             }
           },
