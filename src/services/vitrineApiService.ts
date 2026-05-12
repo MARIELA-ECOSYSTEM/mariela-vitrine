@@ -1371,6 +1371,8 @@ export const vitrineApiService = {
          data_inicio: readOptionalString(item, ["data_inicio", "dataInicio", "inicio", "start_date", "starts_at"]),
           data_fim: readOptionalString(item, ["data_fim", "dataFim", "fim", "end_date", "ends_at"]),
           quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count", "quantidadeProdutos"], -1),
+          home_destaque_url: readOptionalString(item, ["home_destaque_url", "homeDestaqueUrl", "midia_home"]),
+          banner_url: readOptionalString(item, ["banner_url", "bannerUrl", "imagem_banner"]),
           imagem_capa_url: readOptionalString(item, [
             "imagem_capa_url",
             "imagemCapaUrl",
