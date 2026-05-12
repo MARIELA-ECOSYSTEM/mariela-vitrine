@@ -45,36 +45,48 @@
    try {
      // Rota: /home/blocks
       if (pathname === "/home/blocks") {
-       const blocks = [
-         {
-           id: "banner-principal",
-           tipo: "banner",
-           titulo: null,
-           subtitulo: null,
-           prioridade: 0,
-           config: {
-             mediaUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1920",
-             mediaType: "image",
-             ctaLabel: "Ver Coleção",
-             ctaUrl: "/products",
-           }
-         },
-         {
-           id: "novidades",
-           tipo: "produtos",
-           titulo: "Novidades",
-           subtitulo: "Recém-chegadas à coleção",
-           prioridade: 10,
-           config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-         },
-         {
-           id: "em_alta",
-           tipo: "produtos",
-           titulo: "Em alta",
-           subtitulo: "Peças em destaque na vitrine",
-           prioridade: 20,
-           config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-         }
+        const blocks = [
+          {
+            id: "banner-principal",
+            tipo: "banner",
+            titulo: null,
+            subtitulo: null,
+            prioridade: 0,
+            config: {
+              mediaUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1920",
+              mediaType: "image",
+              ctaLabel: "Ver Coleção",
+              ctaUrl: "/products",
+            }
+          },
+          {
+            id: "sugestoes-look",
+            tipo: "banner",
+            titulo: "Monte Seu Look",
+            subtitulo: "Sugestões editoriais",
+            prioridade: 5,
+            config: {
+              sugestoes_monte_look: [
+                {
+                  id: "look-1",
+                  titulo: "Look Noite Casual",
+                  subtitulo: "Peças selecionadas para arrasar",
+                  mediaUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800",
+                  mediaType: "image",
+                  produtos: ["1", "2", "3"],
+                  ctaLabel: "Montar este Look"
+                }
+              ]
+            }
+          },
+          {
+            id: "novidades",
+            tipo: "produtos",
+            titulo: "Novidades",
+            subtitulo: "Recém-chegadas à coleção",
+            prioridade: 10,
+            config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+          }
         ];
         return createResponse({ data: blocks });
      }
