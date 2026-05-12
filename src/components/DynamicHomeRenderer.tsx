@@ -4,7 +4,8 @@
  import { BannerBlock, InstagramBlock } from "./HomeDynamicBlocks";
  import { vitrineApiService, HomeBlock } from "@/services/vitrineApiService";
  import { Produto } from "@/data/products";
- import { PackageOpen, AlertCircle } from "lucide-react";
+ import { PackageOpen, AlertCircle, BarChart3, ShieldCheck, Zap } from "lucide-react";
+ import { getMediaPerformanceReport, validateHeadPreloads } from "@/lib/mediaUtils";
  
  interface BlockRendererProps {
    block: HomeBlock;
@@ -163,9 +164,70 @@
      return null;
    }
  
-   return (
-     <div className="space-y-6 sm:space-y-10">
-       {blocks.map((block, idx) => {
+    const mediaReport = useMemo(() => debug ? getMediaPerformanceReport() : null, [debug, blocks, manualProducts]);
+    const headIssues = useMemo(() => debug ? validateHeadPreloads() : [], [debug, blocks]);
+ 
+    return (
+      <div className="space-y-6 sm:space-y-10">
+        {debug && mediaReport && (
+          <section className="bg-slate-900 text-slate-100 p-6 rounded-xl font-mono text-[11px] shadow-2xl border border-slate-700 mx-4">
+            <div className="flex items-center gap-2 mb-4 border-b border-slate-700 pb-3">
+              <BarChart3 className="w-5 h-5 text-blue-400" />
+              <h3 className="text-sm font-bold uppercase tracking-wider">Relatório de Performance de Mídia</h3>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                <div className="text-slate-400 mb-1 flex items-center gap-1.5"><ShieldCheck className="w-3 h-3" /> Total Mídias</div>
+                <div className="text-xl font-bold">{mediaReport.total}</div>
+              </div>
+              <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                <div className="text-slate-400 mb-1 flex items-center gap-1.5"><Zap className="w-3 h-3 text-yellow-400" /> Prioridade High</div>
+                <div className="text-xl font-bold text-yellow-400">{mediaReport.highPriority}</div>
+              </div>
+              <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                <div className="text-slate-400 mb-1 flex items-center gap-1.5"><PackageOpen className="w-3 h-3 text-green-400" /> Preloaded</div>
+                <div className="text-xl font-bold text-green-400">{mediaReport.preloaded}</div>
+              </div>
+            </div>
+ 
+            {headIssues.length > 0 && (
+              <div className="mb-6 bg-red-950/30 border border-red-900/50 p-3 rounded-lg">
+                <div className="text-red-400 font-bold mb-2 flex items-center gap-1.5">
+                  <AlertCircle className="w-3 h-3" /> Inconsistências Detectadas:
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-red-300">
+                  {headIssues.map((issue, i) => <li key={i}>{issue}</li>)}
+                </ul>
+              </div>
+            )}
+ 
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {mediaReport.items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                  <div className="truncate flex-1 mr-4">
+                    <span className="text-slate-500">...</span>{item.url}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] ${item.priority === 'high' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-slate-700 text-slate-300'}`}>
+                      {item.priority}
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] ${item.isAboveFold ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-300'}`}>
+                      {item.isAboveFold ? 'fold' : 'lazy'}
+                    </span>
+                    {item.preloaded && (
+                      <span className="bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded text-[9px]">
+                        preloaded
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        
+        {blocks.map((block, idx) => {
          // Detecção confiável de "acima da dobra" (LCP candidates):
          // - Se for o primeiro bloco da lista dinâmica
          // - E não estivermos em um estado de loading massivo que empurre o conteúdo
