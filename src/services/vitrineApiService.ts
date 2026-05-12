@@ -16,7 +16,8 @@ const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
 const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v11";
 
-const isDebugIntegracao = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugIntegracao") === "1";
+const getIsDebug = () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugIntegracao") === "1";
+const isDebugIntegracao = getIsDebug();
 
 const CACHE_TTL = {
   config: 5 * 60 * 1000,
@@ -372,11 +373,25 @@ function logVitrineWarning(message: string, details?: unknown, level: 'warn' | '
 }
 
 export function clearVitrineCache(): void {
-  if (typeof localStorage !== "undefined") {
-    localStorage.removeItem(LOCAL_STORAGE_CACHE_KEY);
-    memoryCache.clear();
-    logVitrineWarning("Cache da vitrine limpo com sucesso.", null, 'info');
-  }
+  if (typeof localStorage === "undefined") return;
+  
+  // Limpa localStorage
+  localStorage.removeItem(LOCAL_STORAGE_CACHE_KEY);
+  
+  // Limpa cache em memória
+  memoryCache.clear();
+  inflightRequests.clear();
+  inFlightDestaques.clear();
+  
+  // Força revalidação via ETag removendo qualquer referência persistente
+  const keys = Object.keys(localStorage);
+  keys.forEach(key => {
+    if (key.includes("vitrine_api_cache") || key.includes("etag_")) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  logVitrineWarning("Cache da vitrine, localStorage e ETags limpos com sucesso.", null, 'info');
 }
 
 export function getVitrineApiErrorMessage(error: unknown): string {
@@ -449,8 +464,12 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
 
  async function fetchCachedJson<T>(path: string, params: QueryParams | undefined, ttl: number, validate?: ResponseValidator<T>): Promise<T> {
    const url = buildUrl(path, params);
-   const freshEntry = getCachedEntry<unknown>(url, ttl);
-   if (freshEntry) {
+   const isDebug = getIsDebug();
+   
+   // Bypass cache se debugIntegracao=1 estiver ativo
+   const freshEntry = isDebug ? null : getCachedEntry<unknown>(url, ttl);
+   
+   if (freshEntry && !isDebug) {
      try {
        return validate ? validate(freshEntry.value) : (freshEntry.value as T);
      } catch (error) {
@@ -462,8 +481,8 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
    const staleEntry = getStaleCachedEntry<unknown>(url);
    let ifNoneMatch = staleEntry?.etag;
  
-   // Se o cache stale for antigo demais (STALE_MAX_AGE), ignoramos o ETag para forçar fetch full.
-   if (staleEntry && (Date.now() - staleEntry.timestamp > STALE_MAX_AGE)) {
+    // Se debug ou cache stale antigo demais (STALE_MAX_AGE), ignoramos o ETag para forçar fetch full.
+    if (isDebug || (staleEntry && (Date.now() - staleEntry.timestamp > STALE_MAX_AGE))) {
      ifNoneMatch = undefined;
    }
  
@@ -495,9 +514,24 @@ async function requestJson<T>(url: string, ifNoneMatch?: string): Promise<Reques
        return validatedRetry;
      }
      // result aqui é { notModified: false; data; etag? }
-     const fresh = result as Extract<RequestResult<unknown>, { notModified: false }>;
-     const validated = validate ? validate(fresh.data) : (fresh.data as T);
-     setCached(url, validated, fresh.etag);
+      const fresh = result as { notModified: false; data: unknown; etag?: string };
+      
+      if (isDebug) {
+        console.info(`[vitrine-api] [DEBUG] Resposta recebida para ${path}:`, {
+          total_bruto: Array.isArray(fresh.data) ? fresh.data.length : (asRecord(fresh.data).items ? asArray(asRecord(fresh.data).items).length : 'N/A'),
+          status: 200,
+          etag: fresh.etag
+        });
+      }
+
+      const validated = validate ? validate(fresh.data) : (fresh.data as T);
+      
+      if (isDebug) {
+        const count = Array.isArray(validated) ? validated.length : (asRecord(validated).items ? asArray(asRecord(validated).items).length : 0);
+        console.info(`[vitrine-api] [DEBUG] Após parser em ${path}:`, { total_renderizavel: count });
+      }
+
+      setCached(url, validated, fresh.etag);
      return validated;
    } catch (error) {
      const fallback = getCached<unknown>(url, ttl + FALLBACK_STALE_WINDOW);
