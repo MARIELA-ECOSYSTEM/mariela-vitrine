@@ -1,5 +1,33 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { applyMediaProps, injectMediaPreload, getMediaPerformanceProps } from "./mediaUtils";
+ import { describe, it, expect, vi, beforeEach } from "vitest";
+ import { applyMediaProps, injectMediaPreload, getMediaPerformanceProps, getMediaPerformanceReport, validateHeadPreloads } from "./mediaUtils";
+   describe("getMediaPerformanceReport", () => {
+     it("returns a report of registered media (DEV only)", () => {
+       applyMediaProps("report.jpg", true);
+       injectMediaPreload("preloaded.mp4", "video");
+       
+       const report = getMediaPerformanceReport();
+       expect(report).not.toBeNull();
+       expect(report?.total).toBeGreaterThanOrEqual(2);
+       expect(report?.highPriority).toBeGreaterThanOrEqual(1);
+     });
+   });
+ 
+   describe("validateHeadPreloads", () => {
+     it("detects duplicates in the head", () => {
+       const link1 = document.createElement("link");
+       link1.rel = "preload";
+       link1.href = "dup.jpg";
+       document.head.appendChild(link1);
+ 
+       const link2 = document.createElement("link");
+       link2.rel = "preload";
+       link2.href = "dup.jpg";
+       document.head.appendChild(link2);
+ 
+       const issues = validateHeadPreloads();
+       expect(issues).toContain("Preload duplicado para: dup.jpg");
+     });
+   });
 
 describe("mediaUtils", () => {
   beforeEach(() => {
