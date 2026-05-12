@@ -1034,8 +1034,6 @@ const PreviewPanel = ({
             {isFullOutfit ? (
               /* Full Outfit - Larger display */
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
-                <img
-                  key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
                   <a
                     href={`/products/${(selectedProducts.vestido || selectedProducts.conjunto)?.id}`}
                     onClick={(e) => {
