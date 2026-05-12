@@ -213,10 +213,12 @@ function delay(ms: number): Promise<void> {
 }
 
 function buildUrl(path: string, params?: QueryParams): string {
-   // Rotas editoriais novas usam o Supabase local (preview) para permitir testes sem quebrar o catálogo real.
-   // Rotas de catálogo (produtos, colecoes) sempre usam a URL de produção para garantir dados reais.
-   const isEditorial = EDITORIAL_PATHS.some(p => path === p || path.startsWith(`${p}/`));
-   const baseUrl = (isEditorial && import.meta.env.DEV) ? VITRINE_API_LOCAL_URL : VITRINE_API_PRODUCTION_URL;
+   // Sempre usamos o Proxy Local (vitrine-api) para todas as rotas.
+   // O Proxy Local é responsável por:
+   // 1. Decidir se vai para Produção ou Mock (editorial)
+   // 2. Tratar erros do PDV (500) e retornar dados resilientes
+   // 3. Resolver incompatibilidades de contrato
+   const baseUrl = VITRINE_API_LOCAL_URL;
    
    const url = new URL(`${baseUrl}${path}`);
   if (params) {

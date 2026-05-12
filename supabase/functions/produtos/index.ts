@@ -13,33 +13,29 @@ serve(async (req) => {
   const url = new URL(req.url);
   const queryParams = url.search;
   
-  // Em vez de redirect, fazemos o fetch direto para evitar problemas de roteamento/cors no browser
-  // e permitir um controle melhor do erro.
-  console.log(`[produtos-proxy] Fetching from vitrine-api: /produtos${queryParams}`);
+  // Consolidamos tudo na vitrine-api. Esta função 'produtos' é mantida apenas por retrocompatibilidade
+  // caso algum link antigo ou cache de browser ainda a utilize.
+  console.log(`[produtos-proxy] Forwarding to vitrine-api/produtos${queryParams}`);
   
   try {
-    const PROJECT_URL = "https://zbmdrncgsuvjexpiezbr.supabase.co";
-    const targetUrl = `${PROJECT_URL}/functions/v1/vitrine-api/produtos${queryParams}`;
+    // Usamos a URL interna do Supabase se disponível, ou o hostname atual
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || url.origin;
+    const targetUrl = `${supabaseUrl}/functions/v1/vitrine-api/produtos${queryParams}`;
     
-    const response = await fetch(targetUrl, {
+    // Repassamos a requisição para a vitrine-api que já possui a lógica de resiliência
+    return await fetch(targetUrl, {
       method: req.method,
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'apikey': req.headers.get('apikey') || '',
+        'Authorization': req.headers.get('authorization') || ''
       }
-    });
-    
-    const data = await response.text();
-    
-    return new Response(data, {
-      status: response.status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
     console.error(`[produtos-proxy] Error: ${error.message}`);
     return new Response(
-      JSON.stringify({ error: "Erro no proxy de produtos", details: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ items: [], total: 0, limit: 12, offset: 0, hasMore: false }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
