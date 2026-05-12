@@ -119,7 +119,7 @@ export function getProductLookImage(
 /**
  * Helper de diagnóstico para console (Dev only)
  */
-export function debugProductImage(context: string, result: ProductImageResult) {
+export function debugProductImage(context: string, result: ProductImageResult, extra?: any) {
   if (import.meta.env.DEV) {
     const debugPDP = new URLSearchParams(window.location.search).get("debugPDP") === "1";
     const debugProducts = new URLSearchParams(window.location.search).get("debugProducts") === "1";
@@ -127,9 +127,10 @@ export function debugProductImage(context: string, result: ProductImageResult) {
 
     if ((context === "PDP" && debugPDP) || (context === "Products" && debugProducts) || (context === "Looks" && debugLooks)) {
       console.group(`[debug-midia] ${context}`);
-      console.info("Mídia usada:", result.src);
+      console.info("Mídia:", result.src);
       console.info("Origem:", result.origin);
-      console.info("Alt:", result.alt);
+      console.info("Info:", result.alt);
+      if (extra) console.info("Contrato:", extra);
       console.groupEnd();
     }
   }
