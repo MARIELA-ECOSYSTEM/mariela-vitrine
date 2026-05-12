@@ -40,25 +40,39 @@ export function getProductImageByColor(
 
   // 1. Contexto Monte Seu Look (imagem_look_url)
   if (search.includes("debugLooks=1") || window.location.pathname === "/monte-seu-look") {
-    let lookUrl = "";
+    let targetUrl = "";
     let origin = "";
     
     if (cor && produto.cores) {
       const corMatch = produto.cores.find((c) => c.cor === cor);
       if (corMatch?.imagem_look_url) {
-        lookUrl = corMatch.imagem_look_url;
+        targetUrl = corMatch.imagem_look_url;
         origin = `cor (${cor}) look_url`;
       }
     }
     
-    if (!lookUrl && produto.imagem_look_url) {
-      lookUrl = produto.imagem_look_url;
+    if (!targetUrl && produto.imagem_look_url) {
+      targetUrl = produto.imagem_look_url;
       origin = "produto look_url";
     }
     
-    if (lookUrl) {
-      if (isDev && isDebug) console.debug(`[ProductImage] Look: ${origin}`, { lookUrl });
-      return { src: lookUrl, alt };
+    // Fallback para card_url se look_url não existir (Regra PDV/Editorial)
+    if (!targetUrl && cor && produto.cores) {
+      const corMatch = produto.cores.find((c) => c.cor === cor);
+      if (corMatch?.imagem_card_url) {
+        targetUrl = corMatch.imagem_card_url;
+        origin = `cor (${cor}) card_url (fallback look)`;
+      }
+    }
+
+    if (!targetUrl && produto.imagem_card_url) {
+      targetUrl = produto.imagem_card_url;
+      origin = "produto card_url (fallback look)";
+    }
+
+    if (targetUrl) {
+      if (isDev && isDebug) console.debug(`[ProductImage] Look: ${origin}`, { targetUrl });
+      return { src: targetUrl, alt };
     }
   }
 

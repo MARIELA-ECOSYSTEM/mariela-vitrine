@@ -74,6 +74,33 @@ export interface Produto {
   createdAt?: string | null;
 }
 
+export interface LookSuggestion {
+  id: string;
+  titulo: string;
+  subtitulo?: string | null;
+  midia_url: string;
+  midia_tipo: "image" | "gif" | "video";
+  poster_url?: string | null;
+  produtos_vinculados: string[]; // IDs de produtos
+  ordem: number;
+  ativo: boolean;
+  data_inicio?: string | null;
+  data_fim?: string | null;
+}
+
+export interface LookManual {
+  id: string;
+  nome: string;
+  midia_editorial_url?: string | null;
+  midia_editorial_tipo?: "image" | "gif" | "video" | null;
+  produtos_vinculados: string[]; // IDs de produtos
+}
+
+export interface MonteSeuLookData {
+  sugestoes: LookSuggestion[];
+  looks_manuais: LookManual[];
+}
+
 export async function fetchProdutos(params?: Record<string, string | number | boolean | null | undefined>): Promise<Produto[]> {
   try {
     const produtos = await vitrineApiService.getProdutos({ limit: 100, offset: 0, ...params });
