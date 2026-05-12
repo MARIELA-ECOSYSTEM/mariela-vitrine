@@ -143,7 +143,10 @@ export const HeroBannerCarousel = () => {
                 ref={(el) => {
                   if (!el) return;
                   if (isActive && isVisible) {
-                    el.play().catch(() => {});
+                    const playPromise = el.play();
+                    if (playPromise !== undefined) {
+                      playPromise.catch(() => {});
+                    }
                   } else {
                     el.pause();
                   }
