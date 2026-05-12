@@ -71,7 +71,7 @@
         imagem_capa_url: null
       });
       expect(result.elegivel).toBe(false);
-      expect(result.motivos).toContain(ColecaoExclusionReason.SEM_IMAGEM_CAPA);
+      expect(result.motivos).toContain(ColecaoExclusionReason.SEM_MIDIA);
     });
 
     it("deve rejeitar coleção que não é destaque", () => {

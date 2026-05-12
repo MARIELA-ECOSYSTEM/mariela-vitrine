@@ -104,6 +104,12 @@ export interface ColecaoResponse {
    id: string;
    nome: string;
    descricao: string | null;
+   /** URL da mídia otimizada para o banner principal da Home (campanhas). */
+   home_destaque_url: string | null;
+   /** Tipo da mídia: image, gif ou video. */
+   home_destaque_tipo: "image" | "gif" | "video" | null;
+   /** Banner institucional da coleção (formato paisagem). */
+   banner_url: string | null;
    imagem_capa_url: string | null;
    destaque: boolean;
    ordem: number;
@@ -1006,7 +1012,15 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
          return null;
        }
  
+        const homeDestaqueUrl = readOptionalString(item, ["home_destaque_url", "homeDestaqueUrl", "midia_home"]);
+        const homeDestaqueTipoRaw = readString(item, ["home_destaque_tipo", "homeDestaqueTipo", "tipo_midia_home", "tipo_midia"], "image").toLowerCase();
+        const homeDestaqueTipo = (homeDestaqueTipoRaw === "video" || homeDestaqueTipoRaw === "gif") ? homeDestaqueTipoRaw : "image";
+
+        const bannerUrl = readOptionalString(item, ["banner_url", "bannerUrl", "imagem_banner"]);
         const imagemCapaValida = rawData.imagem_capa_url && isValidImageUrl(rawData.imagem_capa_url) ? rawData.imagem_capa_url : null;
+
+        const finalHomeDestaqueUrl = homeDestaqueUrl && (isValidImageUrl(homeDestaqueUrl) || homeDestaqueTipo === "video") ? homeDestaqueUrl : null;
+        const finalBannerUrl = bannerUrl && isValidImageUrl(bannerUrl) ? bannerUrl : null;
  
        const corDestaqueRaw = readOptionalString(item, [
          "cor_destaque",
@@ -1026,7 +1040,10 @@ function validateColecaoResponse(payload: unknown): ColecaoResponse {
          id,
          nome,
          descricao: readOptionalString(item, ["descricao", "description", "subtitulo", "subtitle"]),
-         imagem_capa_url: imagemCapaValida,
+          home_destaque_url: finalHomeDestaqueUrl,
+          home_destaque_tipo: finalHomeDestaqueUrl ? (homeDestaqueTipo as "image" | "gif" | "video") : null,
+          banner_url: finalBannerUrl,
+          imagem_capa_url: imagemCapaValida,
          destaque: rawData.destaque!,
          ordem: readNumber(item, ["ordem", "order", "posicao", "position"], 0),
          cor_destaque: corDestaque,
@@ -1354,6 +1371,8 @@ export const vitrineApiService = {
          data_inicio: readOptionalString(item, ["data_inicio", "dataInicio", "inicio", "start_date", "starts_at"]),
           data_fim: readOptionalString(item, ["data_fim", "dataFim", "fim", "end_date", "ends_at"]),
           quantidade_produtos: readNumber(item, ["quantidade_produtos", "total_produtos", "count", "quantidadeProdutos"], -1),
+          home_destaque_url: readOptionalString(item, ["home_destaque_url", "homeDestaqueUrl", "midia_home"]),
+          banner_url: readOptionalString(item, ["banner_url", "bannerUrl", "imagem_banner"]),
           imagem_capa_url: readOptionalString(item, [
             "imagem_capa_url",
             "imagemCapaUrl",

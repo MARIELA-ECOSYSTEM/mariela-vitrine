@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import logoSimple from "@/assets/logo-simple.png";
 import { useHeaderOverlay } from "@/contexts/HeaderOverlayContext";
@@ -14,7 +14,20 @@ export const HeroBannerCarousel = () => {
   const [colecoes, setColecoes] = useState<ColecaoDestaque[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [failed, setFailed] = useState(false);
-  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
+  const [mediaErrors, setMediaErrors] = useState<Record<string, boolean>>({});
+  const isDebug = new URLSearchParams(search).get("debugColecoes") === "1";
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,8 +41,24 @@ export const HeroBannerCarousel = () => {
     return () => { cancelled = true; };
   }, []);
 
-  const currentBanner = colecoes?.[currentIndex];
-  const bannerImage = currentBanner?.imagem_capa_url;
+  const currentColecao = colecoes?.[currentIndex];
+  
+  // Fallback priority: home_destaque_url > banner_url > imagem_capa_url
+  const getBestMedia = (col: ColecaoDestaque) => {
+    if (col.home_destaque_url && !mediaErrors[col.id]) {
+      return { url: col.home_destaque_url, type: col.home_destaque_tipo || "image" };
+    }
+    if (col.banner_url && !mediaErrors[`${col.id}-banner`]) {
+      return { url: col.banner_url, type: "image" as const };
+    }
+    if (col.imagem_capa_url && !mediaErrors[`${col.id}-capa`]) {
+      return { url: col.imagem_capa_url, type: "image" as const };
+    }
+    return null;
+  };
+
+  const currentMedia = currentColecao ? getBestMedia(currentColecao) : null;
+  const bannerImage = currentMedia?.type !== "video" ? currentMedia?.url : (currentColecao?.banner_url || currentColecao?.imagem_capa_url);
 
   useEffect(() => {
     setBannerImage(bannerImage || null);
@@ -58,7 +87,7 @@ export const HeroBannerCarousel = () => {
   };
 
   const handleBannerClick = () => {
-    if (!currentBanner) return;
+    if (!currentColecao) return;
     const params = new URLSearchParams();
     try {
       const current = new URLSearchParams(search);
@@ -66,7 +95,7 @@ export const HeroBannerCarousel = () => {
         if (key.toLowerCase().startsWith("utm_")) params.set(key, value);
       });
     } catch {}
-    params.set("colecaoId", currentBanner.id);
+    params.set("colecaoId", currentColecao.id);
     navigate(`/products?${params.toString()}`);
   };
 
@@ -85,57 +114,102 @@ export const HeroBannerCarousel = () => {
   return (
     <section
       id="home"
+      ref={containerRef}
       className="relative w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] overflow-hidden cursor-pointer"
       onClick={handleBannerClick}
     >
-      {colecoes.map((colecao, idx) => (
-        <div
-          key={colecao.id}
-          className={cn(
-            "absolute inset-0 transition-opacity duration-1000",
-            idx === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-          )}
-        >
-          {colecao.imagem_capa_url && !imgErrors[colecao.id] ? (
-            <img
-              src={colecao.imagem_capa_url}
-              alt={colecao.nome}
-              className="w-full h-full object-cover"
-              onError={() => setImgErrors(prev => ({ ...prev, [colecao.id]: true }))}
-            />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              <ImageOff className="w-12 h-12 text-muted-foreground/30" />
-            </div>
-          )}
-          
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-          
-          {colecao.cor_destaque && (
-            <div 
-              className="absolute top-0 left-0 right-0 h-1.5 opacity-80" 
-              style={{ backgroundColor: colecao.cor_destaque }}
-              aria-hidden
-            />
-          )}
+      {colecoes.map((colecao, idx) => {
+        const media = getBestMedia(colecao);
+        const isActive = idx === currentIndex;
 
-          <div className="absolute bottom-6 left-6 sm:bottom-10 sm:left-10 lg:bottom-14 lg:left-14 max-w-[85%] sm:max-w-[70%] animate-fade-in">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-white uppercase tracking-wider">
-                <Sparkles className="w-3 h-3" /> Destaque
-              </span>
-            </div>
-            <h1 className="font-serif text-white text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold drop-shadow-lg leading-tight">
-              {colecao.nome}
-            </h1>
-            {colecao.descricao && (
-              <p className="text-white/90 text-xs sm:text-base md:text-lg mt-2 sm:mt-3 drop-shadow line-clamp-2 max-w-2xl font-medium">
-                {colecao.descricao}
-              </p>
+        return (
+          <div
+            key={colecao.id}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`Slide ${idx + 1} de ${colecoes.length}: ${colecao.nome}`}
+            className={cn(
+              "absolute inset-0 transition-opacity duration-1000",
+              isActive ? "opacity-100 z-10" : "opacity-0 z-0"
             )}
+          >
+            {media?.type === "video" ? (
+              <video
+                src={media.url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+                onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: true }))}
+                ref={(el) => {
+                  if (!el) return;
+                  if (isActive && isVisible) {
+                    const playPromise = el.play();
+                    if (playPromise !== undefined) {
+                      playPromise.catch(() => {});
+                    }
+                  } else {
+                    el.pause();
+                  }
+                }}
+              />
+            ) : media?.url ? (
+              <img
+                src={media.url}
+                alt={colecao.nome}
+                className="w-full h-full object-cover"
+                onError={() => {
+                  const key = media.url === colecao.home_destaque_url ? colecao.id : 
+                             media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
+                  setMediaErrors(prev => ({ ...prev, [key]: true }));
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <ImageOff className="w-12 h-12 text-muted-foreground/30" />
+              </div>
+            )}
+            
+            {isDebug && (
+              <div className="absolute top-4 left-4 z-50 bg-black/80 text-white p-2 text-[10px] rounded font-mono">
+                <p>Tipo: {media?.type || "N/A"}</p>
+                <p>URL: {media?.url?.split('/').pop() || "N/A"}</p>
+                <p>Origem: {media?.url === colecao.home_destaque_url ? "home_destaque" : 
+                           media?.url === colecao.banner_url ? "banner" : 
+                           media?.url === colecao.imagem_capa_url ? "capa" : "fallback"}</p>
+              </div>
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            
+            {colecao.cor_destaque && (
+              <div 
+                className="absolute top-0 left-0 right-0 h-1.5 opacity-80" 
+                style={{ backgroundColor: colecao.cor_destaque }}
+                aria-hidden
+              />
+            )}
+
+            <div className="absolute bottom-6 left-6 sm:bottom-10 sm:left-10 lg:bottom-14 lg:left-14 max-w-[85%] sm:max-w-[70%] animate-fade-in">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-white uppercase tracking-wider">
+                  <Sparkles className="w-3 h-3" /> Destaque
+                </span>
+              </div>
+              <h1 className="font-serif text-white text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold drop-shadow-lg leading-tight">
+                {colecao.nome}
+              </h1>
+              {colecao.descricao && (
+                <p className="text-white/90 text-xs sm:text-base md:text-lg mt-2 sm:mt-3 drop-shadow line-clamp-2 max-w-2xl font-medium">
+                  {colecao.descricao}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {colecoes.length > 1 && (
         <>
