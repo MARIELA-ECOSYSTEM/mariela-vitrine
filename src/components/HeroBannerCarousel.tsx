@@ -203,7 +203,7 @@ export const HeroBannerCarousel = () => {
               </p>
             )}
           </div>
-        </div>
+        );
       })}
 
       {colecoes.length > 1 && (
