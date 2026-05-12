@@ -9,6 +9,11 @@ import { getProductImageByColor } from "@/lib/productImage";
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 window.HTMLMediaElement.prototype.pause = vi.fn();
 window.HTMLMediaElement.prototype.play = vi.fn(async () => {});
+window.IntersectionObserver = vi.fn(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+})) as any;
 
 // Mocks
 vi.mock("@/services/vitrineApiService", () => ({
@@ -135,5 +140,41 @@ describe("Monte Seu Look - Editorial", () => {
     const result = getProductImageByColor(mockProduto);
     // Deve cair no fallback card.jpg pois look_url é null
     expect(result.src).toBe("card.jpg");
+  });
+
+  it("deve lidar corretamente com estado vazio de sugestões", async () => {
+    (vitrineApiService.getMonteSeuLookData as any).mockResolvedValue({
+      sugestoes: [],
+      looks_manuais: []
+    });
+
+    render(
+      <MemoryRouter>
+        <MonteSeuLook />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Sugestões de Looks")).not.toBeInTheDocument();
+      expect(screen.queryByText("Looks Prontos")).not.toBeInTheDocument();
+      // Builder ainda deve estar lá
+      expect(screen.getByText("Monte Seu Look")).toBeInTheDocument();
+    });
+  });
+
+  it("deve navegar por teclado nos cards de looks", async () => {
+    render(
+      <MemoryRouter>
+        <MonteSeuLook />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText("Look Verão"));
+    
+    const suggestionCard = screen.getByText("Look Verão").closest("[tabindex='0']");
+    expect(suggestionCard).toHaveAttribute("tabindex", "0");
+    
+    const manualCard = screen.getByText("Look Noite").closest("[tabindex='0']");
+    expect(manualCard).toHaveAttribute("tabindex", "0");
   });
 });
