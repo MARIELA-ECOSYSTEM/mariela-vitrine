@@ -548,9 +548,9 @@ function createInvalidPayloadError(context: string): VitrineApiError {
   return new VitrineApiError(`Resposta inválida da vitrine em ${context}.`);
 }
 
-function logVitrineWarning(message: string): void {
+function logVitrineWarning(message: string, details?: unknown): void {
   if (import.meta.env.DEV) {
-    console.warn(`[vitrine-api] ${message}`);
+    console.warn(`[vitrine-api] ${message}`, details ?? "");
   }
 }
 
