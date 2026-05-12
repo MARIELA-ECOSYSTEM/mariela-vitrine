@@ -21,22 +21,34 @@
    const containerRef = useRef<HTMLDivElement>(null);
    const [isNearViewport, setIsNearViewport] = useState(priority);
  
-   useEffect(() => {
-     if (priority || !containerRef.current) return;
+    useEffect(() => {
+      if (priority) {
+        // Se for prioritário (acima da dobra), injeta preload imediatamente
+        if (mediaUrl) {
+          injectMediaPreload(mediaUrl, mediaType === "video" ? "video" : "image", "high");
+        }
+        if (posterUrl) {
+          injectMediaPreload(posterUrl, "image", "high");
+        }
+        setIsNearViewport(true);
+        return;
+      }
  
-     const observer = new IntersectionObserver(
-       ([entry]) => {
-         if (entry.isIntersecting) {
-           setIsNearViewport(true);
-           observer.disconnect();
-         }
-       },
-       { rootMargin: "200px" } // Detecta antes de entrar na tela
-     );
- 
-     observer.observe(containerRef.current);
-     return () => observer.disconnect();
-   }, [priority]);
+      if (!containerRef.current) return;
+  
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsNearViewport(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: "300px" } // Margem maior para dar tempo de carregar antes do scroll chegar
+      );
+  
+      observer.observe(containerRef.current);
+      return () => observer.disconnect();
+    }, [priority, mediaUrl, mediaType, posterUrl]);
  
    useEffect(() => {
      if (mediaType === "video" && videoRef.current) {
