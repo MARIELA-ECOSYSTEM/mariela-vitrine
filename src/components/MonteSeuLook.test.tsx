@@ -157,8 +157,9 @@ describe("Monte Seu Look - Editorial", () => {
     await waitFor(() => {
       expect(screen.queryByText("Sugestões de Looks")).not.toBeInTheDocument();
       expect(screen.queryByText("Looks Prontos")).not.toBeInTheDocument();
-      // Builder ainda deve estar lá
-      expect(screen.getByText("Monte Seu Look")).toBeInTheDocument();
+      // Builder ainda deve estar lá (título H1 da página)
+      const titles = screen.getAllByText("Monte Seu Look");
+      expect(titles.some(el => el.tagName === "H1")).toBe(true);
     });
   });
 
