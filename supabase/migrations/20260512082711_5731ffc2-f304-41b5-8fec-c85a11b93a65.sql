@@ -1,1 +1,0 @@
-ALTER FUNCTION public.fn_ensure_single_context_image() SET search_path = public;
