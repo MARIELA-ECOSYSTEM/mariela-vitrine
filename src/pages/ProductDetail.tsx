@@ -282,12 +282,16 @@ const ProductDetail = () => {
 
   // Filtra a galeria para mostrar apenas a cor selecionada (PDP exclusiva)
   // se houver imagens vinculadas a essa cor.
-  const imagensParaMostrar = useMemo(() => {
+  const galeriaFiltrada = useMemo(() => {
     const porCor = galeriaUnificada.filter((g) => !corSelecionada || g.cor === corSelecionada);
     // Se a cor selecionada não tiver imagens próprias (raro no detalhe), cai para a galeria unificada
-    const result = porCor.length > 0 ? porCor : galeriaUnificada;
-    return result.map((g) => g.url);
+    return porCor.length > 0 ? porCor : galeriaUnificada;
   }, [galeriaUnificada, corSelecionada]);
+
+  const imagensParaMostrar = useMemo(
+    () => galeriaFiltrada.map((g) => g.url),
+    [galeriaFiltrada]
+  );
 
   // Diagnóstico em DEV
   useEffect(() => {
@@ -844,7 +848,7 @@ const ProductDetail = () => {
             <div className="animate-fade-in">
               <ImageGallery
                 images={imagensParaMostrar}
-                imageColors={galeriaUnificada.map((g) => g.cor)}
+                imageColors={galeriaFiltrada.map((g) => g.cor)}
                 colorSwatchMap={COLOR_MAP}
                 productName={
                   corSelecionada
