@@ -241,6 +241,20 @@ export interface ColecaoResponse {
     }))
   });
 
+  /**
+   * Estrutura centralizada para registro de validadores por rota.
+   * Facilita a manutenção e garante que novas rotas usem validação por padrão.
+   */
+  const ROUTE_VALIDATORS = {
+    config: validateConfigResponse,
+    homeBlocks: validateHomeBlocksResponse,
+    produtos: validatePaginationResponse,
+    produtoDetail: validateProdutoDetailResponse,
+    categorias: validateCategoriaResponse,
+    colecoes: validateColecaoResponse,
+    destaques: validateDestaquesResponse,
+  } as const;
+
   function applyValidation<T>(payload: unknown, schema: z.ZodSchema<T>, context: string, fallback: () => T): T {
     const result = schema.safeParse(payload);
     if (!result.success) {
