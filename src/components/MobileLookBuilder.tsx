@@ -953,7 +953,7 @@ const CategorySection = ({
                     )}
                   >
                     <img
-                      src={produto.imagens[0] || PRODUCT_IMAGE_PLACEHOLDER}
+                      src={getProductCardImage(produto, null).src || PRODUCT_IMAGE_PLACEHOLDER}
                       alt={getProductImageByColor(produto, null).alt}
                       className="w-full h-full object-cover transition-transform duration-300"
                       onError={handleProductImageError}
