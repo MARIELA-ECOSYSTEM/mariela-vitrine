@@ -130,12 +130,12 @@ interface ImageGalleryProps {
    * sobre a imagem principal.
    */
   imageColors?: (string | null)[];
-  /**
-   * Mapa cor → HEX usado para renderizar o "swatch dot" dentro da badge.
-   * Quando a cor não está no mapa, a badge é exibida sem o ponto colorido
-   * (apenas com o nome). Vem do `COLOR_MAP` do `ProductDetail`.
-   */
-  colorSwatchMap?: Record<string, string>;
+   /** Mapa cor -> HEX usado para renderizar o "swatch dot". */
+   colorSwatchMap?: Record<string, string>;
+   /** Indica se o produto é uma novidade. */
+   isNovidade?: boolean;
+   /** Indica se o produto está em promoção. */
+   emPromocao?: boolean;
 }
 
 export const ImageGallery = ({ 
@@ -570,8 +570,21 @@ export const ImageGallery = ({
           </>
         )}
         
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+         {/* Badges Editoriais */}
+         <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end z-10">
+           {isNovidade && (
+             <Badge className="bg-primary text-primary-foreground shadow-md border-none text-[10px] sm:text-xs uppercase font-bold px-2 py-0.5 animate-pop-in">
+               Novidade
+             </Badge>
+           )}
+           {emPromocao && (
+             <Badge variant="destructive" className="shadow-md text-[10px] sm:text-xs uppercase font-bold px-2 py-0.5 animate-pop-in">
+               Oferta
+             </Badge>
+           )}
+         </div>
+ 
+         <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
           {publicBadge && (
             <Badge title={publicBadge.description} className="bg-background/90 text-foreground border border-primary/30 shadow-sm backdrop-blur-sm text-xs md:text-sm px-2 md:px-3">
               {publicBadge.label}
