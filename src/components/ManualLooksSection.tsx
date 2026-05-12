@@ -2,7 +2,7 @@ import { LookManual, Produto } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, Sparkles, ChevronRight } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
-import { getProductImageByColor } from "@/lib/productImage";
+import { getProductImageByColor, handleProductImageError } from "@/lib/productImage";
 import { cn } from "@/lib/utils";
 
 interface ManualLooksSectionProps {
@@ -71,6 +71,7 @@ const ManualLookCard = ({ look, allProducts }: ManualLookCardProps) => {
               <img
                 src={getProductImageByColor(product).src}
                 alt={product.nome}
+                onError={handleProductImageError}
                 className="w-full h-full object-cover"
               />
             </div>

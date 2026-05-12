@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Play, Volume2, VolumeX } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { handleProductImageError } from "@/lib/productImage";
 
 interface LookSuggestionsSectionProps {
   sugestoes: LookSuggestion[];
@@ -108,6 +109,7 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
             src={sugestao.midia_url}
             alt={sugestao.titulo}
             loading="lazy"
+            onError={handleProductImageError}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
         )}
