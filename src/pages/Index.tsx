@@ -19,7 +19,7 @@ import { PackageOpen, RefreshCw } from "lucide-react";
    // 1. Tem variantes com estoque (modelo detalhado)
    // 2. OU tem preço de venda válido (modelo de listagem simplificada)
    const hasStock = produto.variants && produto.variants.length > 0 && produto.variants.some((variant) => variant.disponibilidade > 0);
-   const hasPrice = (produto.precoVenda ?? produto.preco_venda ?? 0) > 0;
+   const hasPrice = (produto.precoVenda ?? 0) > 0;
    
    return hasStock || hasPrice;
  }
