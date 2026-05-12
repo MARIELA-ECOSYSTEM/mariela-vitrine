@@ -1263,13 +1263,14 @@ interface PreviewPanelProps {
                  {relatedSuggestions.map((p) => (
                    <button
                      key={p.id}
-                     onClick={() => {
-                       const category = p.categoria === "vestidos" ? "vestido" :
-                                      p.categoria === "conjuntos" ? "conjunto" :
-                                      p.categoria === "blusas" ? "blusa" :
-                                      ["shorts", "calças", "saias", "short-saias"].includes(p.categoria) ? "bottom" : "bolsa";
-                       selectItem(category, p.id, categoryConfig.find(c => c.key === category)?.clearOnSelect);
-                     }}
+                      onClick={() => {
+                        if (!onSelectItem) return;
+                        const category = p.categoria === "vestidos" ? "vestido" :
+                                       p.categoria === "conjuntos" ? "conjunto" :
+                                       p.categoria === "blusas" ? "blusa" :
+                                       ["shorts", "calças", "saias", "short-saias"].includes(p.categoria) ? "bottom" : "bolsa";
+                        onSelectItem(category, p.id, categoryConfig.find(c => c.key === category)?.clearOnSelect);
+                      }}
                      className="shrink-0 w-16 group relative"
                    >
                      <div className="aspect-[3/4] rounded-lg overflow-hidden border border-border group-hover:border-primary/50 transition-all">
