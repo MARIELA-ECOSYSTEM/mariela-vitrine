@@ -103,6 +103,26 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
              );
            }
  
+           if (layoutMode === "carrossel") {
+             return (
+               <div className="relative group/carousel">
+                 <div className="flex gap-3 sm:gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+                   {isLoading
+                     ? Array.from({ length: skeletonCount }).map((_, i) => (
+                         <div key={`skeleton-${i}`} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
+                           <ProductSkeleton />
+                         </div>
+                       ))
+                     : displayed.map((produto) => (
+                         <div key={produto.id} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
+                           <ProductCard produto={produto} layoutMode="grade" />
+                         </div>
+                       ))}
+                 </div>
+               </div>
+             );
+           }
+ 
            return (
              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-fr gap-2.5 sm:gap-4 md:gap-5">
                {isLoading
