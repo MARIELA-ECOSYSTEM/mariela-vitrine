@@ -4,7 +4,12 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
  import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
 
-const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
+ const VITRINE_API_PRODUCTION_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
+ // Usamos o VITE_SUPABASE_URL do ambiente atual para recursos em desenvolvimento (editorial).
+ // Em produção, ambos serão o mesmo projeto. Em preview, isso permite testar novos contratos.
+ const VITRINE_API_LOCAL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vitrine-api`;
+ 
+ const EDITORIAL_PATHS = ['/home/blocks', '/monte-seu-look', '/config'];
 const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
@@ -248,7 +253,12 @@ function delay(ms: number): Promise<void> {
 }
 
 function buildUrl(path: string, params?: QueryParams): string {
-  const url = new URL(`${VITRINE_API_BASE_URL}${path}`);
+   // Rotas editoriais novas usam o Supabase local (preview) para permitir testes sem quebrar o catálogo real.
+   // Rotas de catálogo (produtos, colecoes) sempre usam a URL de produção para garantir dados reais.
+   const isEditorial = EDITORIAL_PATHS.some(p => path === p || path.startsWith(`${p}/`));
+   const baseUrl = isEditorial ? VITRINE_API_LOCAL_URL : VITRINE_API_PRODUCTION_URL;
+   
+   const url = new URL(`${baseUrl}${path}`);
   if (params) {
     Object.entries(params).sort(([a], [b]) => a.localeCompare(b)).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== "") {
