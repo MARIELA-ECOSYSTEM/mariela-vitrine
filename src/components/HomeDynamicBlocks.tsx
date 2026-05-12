@@ -3,6 +3,7 @@
  import { Link } from "react-router-dom";
  import { cn } from "@/lib/utils";
  import { Instagram, ArrowRight } from "lucide-react";
+ import { applyMediaProps } from "@/lib/mediaUtils";
  
  interface BannerBlockProps {
    titulo: string | null;
@@ -42,16 +43,16 @@
            muted
            loop
            playsInline
+           {...applyMediaProps(priority)}
            preload={priority ? "auto" : "metadata"}
            poster={posterUrl}
            className="absolute inset-0 w-full h-full object-cover"
          />
        ) : (
-         <img
+          <img
             src={mediaUrl}
             alt={titulo || "Banner"}
-            loading={priority ? "eager" : "lazy"}
-            fetchpriority={priority ? "high" : "auto"}
+            {...applyMediaProps(priority)}
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
        )}
