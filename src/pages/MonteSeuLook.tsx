@@ -3,8 +3,20 @@ import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageContainer } from "@/components/PageContainer";
 import { MobileLookBuilder } from "@/components/MobileLookBuilder";
+import { useMonteSeuLookData } from "@/hooks/useMonteSeuLookData";
+import { LookSuggestionsSection } from "@/components/LookSuggestionsSection";
 
 const MonteSeuLook = () => {
+  const { data, loading } = useMonteSeuLookData();
+  const isDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugLooks") === "1";
+
+  if (import.meta.env.DEV && isDebug) {
+    console.group("[MonteSeuLook] Debug Data");
+    console.log("Suggestions:", data.sugestoes);
+    console.log("Manual Looks:", data.looks_manuais);
+    console.groupEnd();
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/10 to-background pt-[60px] sm:pt-[68px]">
       <Header />
@@ -22,7 +34,11 @@ const MonteSeuLook = () => {
             </p>
           </div>
           
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto space-y-12">
+            {data.sugestoes.length > 0 && (
+              <LookSuggestionsSection sugestoes={data.sugestoes} />
+            )}
+
             <MobileLookBuilder />
           </div>
         </PageContainer>
