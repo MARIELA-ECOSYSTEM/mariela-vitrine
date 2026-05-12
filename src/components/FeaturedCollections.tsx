@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
  import { ArrowRight, ImageOff, Sparkles } from "lucide-react";
- import { applyMediaProps } from "@/lib/mediaUtils";
-import {
-  vitrineApiService,
-  type ColecaoDestaque,
-} from "@/services/vitrineApiService";
+ import {
+   vitrineApiService,
+   type ColecaoDestaque,
+ } from "@/services/vitrineApiService";
  import { cn } from "@/lib/utils";
  import { applyMediaProps, injectMediaPreload } from "@/lib/mediaUtils";
 
