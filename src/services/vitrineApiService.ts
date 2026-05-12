@@ -110,6 +110,8 @@ export interface ColecaoResponse {
       linkLabel?: string;
       linkTo?: string;
       estilo?: "grade" | "carrossel" | "lista";
+      limit?: number;
+      max_items?: number;
       mediaUrl?: string;
       mediaType?: "image" | "video" | "gif";
       ctaLabel?: string;
