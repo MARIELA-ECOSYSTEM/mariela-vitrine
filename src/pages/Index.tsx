@@ -1,7 +1,5 @@
 import { Header } from "@/components/Header";
 import { HeroBannerCarousel } from "@/components/HeroBannerCarousel";
-import { FeaturedProducts } from "@/components/FeaturedProducts";
-import { FeaturedCollections } from "@/components/FeaturedCollections";
 import { QuickActions } from "@/components/QuickActions";
 import { Footer } from "@/components/Footer";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
@@ -82,41 +80,41 @@ function isAvailable(produto: Produto) {
        {(loadingProducts || loadingBlocks) && <LoadingOverlay />}
        <WelcomeDialog />
        <Header />
-       <HeroBannerCarousel />
- 
-       <div id="home-content">
-         <DynamicHomeRenderer 
-           blocks={homeBlocks} 
-           loading={loadingBlocks} 
-           debug={isDebugHome} 
-         />
- 
-         {isEmpty && (
-           <section className="py-12 sm:py-20 bg-background">
-             <div className="container mx-auto px-4 sm:px-6">
-               <div className="max-w-md mx-auto text-center animate-fade-in">
-                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-secondary/40 flex items-center justify-center mx-auto mb-4">
-                   <PackageOpen className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" aria-hidden />
-                 </div>
-                 <h2 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-2">
-                   Em breve, novidades por aqui
-                 </h2>
-                 <p className="text-sm sm:text-base text-muted-foreground mb-5">
-                   Estamos preparando nossa próxima coleção. Volte em instantes para conferir as novas peças.
-                 </p>
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   className="gap-1.5"
-                   onClick={() => window.location.reload()}
-                 >
-                   <RefreshCw className="w-3.5 h-3.5" /> Atualizar
-                 </Button>
-               </div>
-             </div>
-           </section>
-         )}
-       </div>
+        <HeroBannerCarousel />
+
+        <div id="home-content">
+          <DynamicHomeRenderer 
+            blocks={homeBlocks} 
+            loading={loadingBlocks} 
+            debug={isDebugHome} 
+          />
+
+          {!loadingBlocks && !loadingProducts && homeBlocks.length === 0 && (
+            <section className="py-12 sm:py-20 bg-background">
+              <div className="container mx-auto px-4 sm:px-6">
+                <div className="max-w-md mx-auto text-center animate-fade-in">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-secondary/40 flex items-center justify-center mx-auto mb-4">
+                    <PackageOpen className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" aria-hidden />
+                  </div>
+                  <h2 className="font-serif text-xl sm:text-2xl font-bold text-foreground mb-2">
+                    Aguardando novidades
+                  </h2>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-5">
+                    Nossa vitrine está sendo atualizada. Volte em instantes para conferir as novas peças e coleções.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => window.location.reload()}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Atualizar
+                  </Button>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
       <QuickActions />
       <Footer />
     </div>
