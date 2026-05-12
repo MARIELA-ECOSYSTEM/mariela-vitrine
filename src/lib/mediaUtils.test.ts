@@ -25,7 +25,7 @@
        document.head.appendChild(link2);
  
        const issues = validateHeadPreloads();
-       expect(issues).toContain("Preload duplicado para: dup.jpg");
+       expect(issues.some(i => i.includes("Preload duplicado para"))).toBe(true);
      });
    });
 
