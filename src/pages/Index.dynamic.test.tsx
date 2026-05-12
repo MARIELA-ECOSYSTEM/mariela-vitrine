@@ -3,7 +3,6 @@ import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Index from "./Index";
 import { vitrineApiService } from "@/services/vitrineApiService";
-import { Produto } from "@/data/products";
 
 // Mock components to simplify testing
 vi.mock("@/components/Header", () => ({ Header: () => <div data-testid="header" /> }));
@@ -13,27 +12,28 @@ vi.mock("@/components/WelcomeDialog", () => ({ WelcomeDialog: () => <div data-te
 vi.mock("@/components/LoadingOverlay", () => ({ LoadingOverlay: () => <div data-testid="loading-overlay" /> }));
 vi.mock("@/components/QuickActions", () => ({ QuickActions: () => <div data-testid="quick-actions" /> }));
 
-const mockProdutoBase: Partial<Produto> = {
-  codigoProduto: "TEST-01",
-  descricao: "Descricao teste",
-  categoria: "vestidos",
-  precoCusto: 50,
-  imagens: ["img.jpg"],
-  precoVenda: 100,
-  emPromocao: false,
-  isNovidade: true,
-  variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }]
-};
-
-vi.mock("@/hooks/useProducts", () => ({
-  useProducts: vi.fn().mockReturnValue({ 
-    loading: false, 
-    produtos: [
-      { id: 1, nome: "Produto Novidade", ...mockProdutoBase },
-      { id: 2, nome: "Produto Promo", ...mockProdutoBase, emPromocao: true, isNovidade: false }
-    ] 
-  }),
-}));
+vi.mock("@/hooks/useProducts", () => {
+  const base = {
+    codigoProduto: "TEST-01",
+    descricao: "Descricao teste",
+    categoria: "vestidos",
+    precoCusto: 50,
+    imagens: ["img.jpg"],
+    precoVenda: 100,
+    emPromocao: false,
+    isNovidade: true,
+    variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }]
+  };
+  return {
+    useProducts: vi.fn().mockReturnValue({ 
+      loading: false, 
+      produtos: [
+        { id: 1, nome: "Produto Novidade", ...base },
+        { id: 2, nome: "Produto Promo", ...base, emPromocao: true, isNovidade: false }
+      ] 
+    }),
+  };
+});
 
 vi.mock("@/contexts/CartContext", () => ({
   useCart: () => ({ addToCart: vi.fn() }),
@@ -66,7 +66,6 @@ describe("Index Dynamic Blocks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     cleanup();
-    // Default to production environment for most tests to check silent behavior
     vi.stubGlobal("import.meta", { env: { DEV: false } });
   });
 
@@ -100,7 +99,7 @@ describe("Index Dynamic Blocks", () => {
         tipo: "banner",
         titulo: "Banner Invisivel",
         prioridade: 1,
-        config: {}, // Missing mediaUrl
+        config: {}, 
       },
       {
         id: "block-next",
@@ -190,7 +189,6 @@ describe("Index Dynamic Blocks", () => {
     const mockBlocks = [{ id: "dbg", tipo: "banner", titulo: "D", prioridade: 1, config: { mediaUrl: "b.jpg" } }];
     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
 
-    // Mock DEV mode
     vi.stubGlobal("import.meta", { env: { DEV: true } });
 
     render(
@@ -204,7 +202,6 @@ describe("Index Dynamic Blocks", () => {
     });
 
     cleanup();
-    // Production mode
     vi.stubGlobal("import.meta", { env: { DEV: false } });
 
     render(
