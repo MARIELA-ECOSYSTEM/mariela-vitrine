@@ -746,16 +746,28 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
           onPointerLeave={cancelPreloadNeighbors}
           onBlur={cancelPreloadNeighbors}
         >
-          <ProductImageSkeleton 
-            src={imagemAtual} 
-            alt={altImagem}
-            className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
-            slideDirection={slideDirection}
-            images={imagensValidas}
-            currentIndex={currentImageIndex}
-          />
-          {/* Navigation Arrows - sempre visíveis em mobile */}
-          {imagensValidas.length > 1 && (
+          {videoAtual ? (
+            <ProductMedia
+              type="video"
+              url={videoAtual.url}
+              posterUrl={videoAtual.poster || imagemAtual}
+              alt={altImagem}
+              className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
+              autoPlayOnHover={true}
+              debug={import.meta.env.DEV && isDebug}
+            />
+          ) : (
+            <ProductImageSkeleton 
+              src={imagemAtual} 
+              alt={altImagem}
+              className="transition-all duration-700 group-hover:scale-105 sm:group-hover:scale-110 group-hover:brightness-110"
+              slideDirection={slideDirection}
+              images={imagensValidas}
+              currentIndex={currentImageIndex}
+            />
+          )}
+          {/* Navigation Arrows - sempre visíveis em mobile (ocultas se houver vídeo) */}
+          {imagensValidas.length > 1 && !videoAtual && (
             <>
               <button
                 onClick={handlePrevImage}
