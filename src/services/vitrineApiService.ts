@@ -106,11 +106,21 @@ export interface ColecaoResponse {
      filter?: string;
      limit?: number;
      colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
-     produtos?: string[]; // IDs de produtos se tipo for "produtos" (manual)
-     linkLabel?: string;
-     linkTo?: string;
-     estilo?: "grade" | "carrossel" | "lista";
-   };
+      produtos?: string[];
+      linkLabel?: string;
+      linkTo?: string;
+      estilo?: "grade" | "carrossel" | "lista";
+      mediaUrl?: string;
+      mediaType?: "image" | "video" | "gif";
+      ctaLabel?: string;
+      ctaUrl?: string;
+      posts?: Array<{
+        id: string;
+        url: string;
+        mediaUrl: string;
+        caption?: string;
+      }>;
+    };
    validade?: {
      inicio: string | null;
      fim: string | null;
