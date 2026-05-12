@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+ import { useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -81,8 +82,29 @@ const categoryConfig: Array<{
   { key: 'bolsa', label: 'Bolsas & Acessórios', emoji: '👜' },
 ];
 
-export const MobileLookBuilder = () => {
-  const { produtos, loading } = useProducts();
+ export const MobileLookBuilder = () => {
+   const { produtos, loading } = useProducts();
+   const location = useLocation();
+ 
+   // Handle initial product from URL (?produtoBase=...)
+   const autoSelectBaseRef = useRef(false);
+   useEffect(() => {
+     if (loading || produtos.length === 0 || autoSelectBaseRef.current) return;
+     
+     const params = new URLSearchParams(location.search);
+     const produtoBaseId = params.get("produtoBase");
+     
+     if (produtoBaseId) {
+       const product = produtos.find(p => p.produtoId === produtoBaseId || String(p.id) === produtoBaseId);
+       if (product) {
+         autoSelectBaseRef.current = true;
+         const event = new CustomEvent("monte-seu-look:select-products", {
+           detail: { products: [produtoBaseId] }
+         });
+         window.dispatchEvent(event);
+       }
+     }
+   }, [produtos, loading, location.search]);
 
   // Handle external product selection (from suggestions)
   useEffect(() => {
@@ -300,7 +322,31 @@ export const MobileLookBuilder = () => {
   }), [selectedItems, produtos]);
 
   const isFullOutfit = selectedProducts.vestido !== null || selectedProducts.conjunto !== null;
-  const hasAnySelection = Object.values(selectedItems).some(v => v !== null);
+   const hasAnySelection = Object.values(selectedItems).some(v => v !== null);
+ 
+   // Produtos Relacionados Sugeridos (mesma coleção ou categoria)
+   const relatedSuggestions = useMemo(() => {
+     if (!hasAnySelection || produtos.length === 0) return [];
+     
+     // Pega o primeiro item selecionado para servir de base
+     const firstSelectedEntry = Object.entries(selectedProducts).find(([_, p]) => p !== null);
+     if (!firstSelectedEntry) return [];
+     
+     const [catKey, baseProduct] = firstSelectedEntry as [CategoryKey, Produto];
+     const baseColecao = baseProduct.colecao;
+     
+     // Filtra produtos da mesma coleção que não estão selecionados
+     return produtos
+       .filter(p => {
+         if (!p.colecao || !baseColecao) return false;
+         if (p.colecao !== baseColecao) return false;
+         
+         // Já está no builder?
+         const isAlreadySelected = Object.values(selectedItems).includes(p.id);
+         return !isAlreadySelected;
+       })
+       .slice(0, 4);
+   }, [produtos, selectedProducts, selectedItems, hasAnySelection]);
 
   // Indica se há produto selecionado em alguma categoria de roupa sem tamanho.
   // Bolsa/acessório não exige tamanho.
