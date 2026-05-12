@@ -24,10 +24,10 @@ function isAvailable(produto: Produto) {
    const [loadingBlocks, setLoadingBlocks] = useState(true);
    const { search } = useLocation();
  
-   const isDebugHome = useMemo(() => {
-     const params = new URLSearchParams(search);
-     return params.get("debugHome") === "1" && import.meta.env.DEV;
-   }, [search]);
+    const isDebugMode = useMemo(() => {
+      const params = new URLSearchParams(search);
+      return (params.get("debugHome") === "1" || params.get("debugVitrine") === "1");
+    }, [search]);
  
    const disponiveis = useMemo(() => produtos.filter(isAvailable), [produtos]);
    const isEmpty = !loadingBlocks && !loadingProducts && homeBlocks.length === 0 && disponiveis.length === 0;
@@ -83,11 +83,11 @@ function isAvailable(produto: Produto) {
         <HeroBannerCarousel />
 
         <div id="home-content">
-          <DynamicHomeRenderer 
-            blocks={homeBlocks} 
-            loading={loadingBlocks} 
-            debug={isDebugHome} 
-          />
+           <DynamicHomeRenderer 
+             blocks={homeBlocks} 
+             loading={loadingBlocks} 
+             debug={isDebugMode} 
+           />
 
           {!loadingBlocks && !loadingProducts && homeBlocks.length === 0 && (
             <section className="py-12 sm:py-20 bg-background">

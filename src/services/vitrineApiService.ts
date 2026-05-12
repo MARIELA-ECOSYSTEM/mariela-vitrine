@@ -794,8 +794,10 @@ export function uniqueImages(images: string[]): string[] {
       return `${u.origin}${normalizedPath}${search ? `?${search}` : ""}`;
     } catch {
       return url.split("?")[0];
-    }
-  };
+   }
+ };
+
+ vitrineApiService._setupDiagnostic();
   const seen = new Set<string>();
   const out: string[] = [];
   for (const url of images) {
