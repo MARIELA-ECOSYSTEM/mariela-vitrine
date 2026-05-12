@@ -1,27 +1,60 @@
- import { useEffect, useState, useMemo } from "react";
- import { useParams, useLocation, Link } from "react-router-dom";
+  import { useEffect, useState, useMemo, useCallback } from "react";
+  import { useParams, useLocation, Link, useSearchParams } from "react-router-dom";
  import { Header } from "@/components/Header";
  import { Footer } from "@/components/Footer";
+  import { Breadcrumbs } from "@/components/Breadcrumbs";
  import { PageContainer } from "@/components/PageContainer";
  import { ProductCard } from "@/components/ProductCard";
- import { ProductsLoadingSkeleton } from "@/components/ProductSkeleton";
+  import { ProductsLoadingSkeleton, ProductSkeleton } from "@/components/ProductSkeleton";
+  import { ProductFilters } from "@/components/ProductFilters";
  import { 
    vitrineApiService, 
-   type ColecaoDestaque 
+    type ColecaoDestaque,
+    type FilterOption
  } from "@/services/vitrineApiService";
  import type { Produto } from "@/data/products";
  import { updateSeo } from "@/lib/seo";
- import { ArrowLeft, Sparkles, ImageOff } from "lucide-react";
+  import { ArrowLeft, Sparkles, ImageOff, Filter, Grid3x3, List, ShoppingBag } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { Button } from "@/components/ui/button";
+  import { CATEGORIAS_DB } from "@/data/categories";
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select";
+  import { Badge } from "@/components/ui/badge";
+
+  const categoryEmojis: Record<string, string> = {
+    "vestidos": "👗",
+    "blusas": "👚",
+    "calças": "👖",
+    "saias": "🩱",
+    "shorts": "🩳",
+    "short-saias": "✨",
+    "conjuntos": "💎",
+    "bolsas": "👜",
+    "acessorios": "💍",
+  };
+
+  const produtosPorPagina = 12;
  
  const CollectionDetail = () => {
    const { id } = useParams<{ id: string }>();
-   const { search } = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
    const [colecao, setColecao] = useState<ColecaoDestaque | null>(null);
    const [produtos, setProdutos] = useState<Produto[]>([]);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState(false);
+    const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("todas");
+    const [ordenarPor, setOrdenarPor] = useState<string>("padrao");
+    const [coresSelecionadas, setCoresSelecionadas] = useState<string[]>([]);
+    const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
+    const [faixaPreco, setFaixaPreco] = useState<[number, number]>([0, 0]);
+    const [precoAlterado, setPrecoAlterado] = useState(false);
+    const [paginaAtual, setPaginaAtual] = useState(1);
  
    useEffect(() => {
      if (!id) return;
@@ -54,12 +87,6 @@
            setLoading(false);
          }
  
-         // 3. SEO
-         updateSeo({
-           title: `${match.nome} | Boutique Premium`,
-           description: match.descricao || `Confira a coleção ${match.nome} em nossa boutique.`,
-           image: match.banner_url || match.imagem_capa_url || undefined,
-         });
        } catch (err) {
          console.error("[CollectionDetail] Error fetching data:", err);
          if (active) {
@@ -74,117 +101,312 @@
      return () => {
        active = false;
      };
-   }, [id]);
- 
-   if (error) {
-     return (
-       <div className="min-h-screen flex flex-col">
-         <Header />
-         <main className="flex-grow flex items-center justify-center p-4">
-           <div className="text-center">
-             <h2 className="text-2xl font-serif mb-4">Coleção não encontrada</h2>
-             <Button asChild variant="outline">
-               <Link to="/">Voltar para a Home</Link>
-             </Button>
-           </div>
-         </main>
-         <Footer />
-       </div>
-     );
-   }
- 
-   return (
-     <div className="min-h-screen flex flex-col bg-background">
-       <Header />
-       
-       <main className="flex-grow">
-         {/* Hero Section Premium */}
-         <section className="relative w-full h-[60vh] min-h-[400px] overflow-hidden bg-muted">
-           {loading ? (
-             <div className="absolute inset-0 animate-pulse bg-muted-foreground/10" />
-           ) : colecao?.banner_url || colecao?.imagem_capa_url ? (
-             <>
-               <img 
-                 src={colecao.banner_url || colecao.imagem_capa_url || ""} 
-                 alt={colecao.nome}
-                 className="absolute inset-0 w-full h-full object-cover"
-               />
-               <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-             </>
-           ) : (
-             <div className="absolute inset-0 flex items-center justify-center">
-               <ImageOff className="w-12 h-12 text-muted-foreground/30" />
-             </div>
-           )}
- 
-           <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center">
-             <Link 
-               to="/" 
-               className="absolute top-8 left-8 flex items-center gap-2 text-sm uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity"
-             >
-               <ArrowLeft className="w-4 h-4" /> Voltar
-             </Link>
- 
-             {!loading && (
-               <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] uppercase tracking-[0.2em] mb-6">
-                   <Sparkles className="w-3 h-3" /> Coleção Exclusiva
-                 </span>
-                 <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-light mb-6 tracking-tight">
-                   {colecao?.nome}
-                 </h1>
-                 {colecao?.descricao && (
-                   <p className="text-lg sm:text-xl font-light text-white/90 max-w-2xl mx-auto leading-relaxed italic">
-                     "{colecao.descricao}"
-                   </p>
-                 )}
-               </div>
-             )}
-           </div>
- 
-           {/* Decorative scroll indicator */}
-           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-50">
-             <div className="w-[1px] h-12 bg-white" />
-           </div>
-         </section>
- 
-         <PageContainer className="py-16 sm:py-24">
-           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-border pb-8">
-             <div className="max-w-2xl">
-               <h2 className="font-serif text-3xl md:text-4xl font-light mb-4">Curadoria Mariela</h2>
-               <p className="text-muted-foreground font-light leading-relaxed">
-                 Cada peça desta coleção foi selecionada pensando na sofisticação e no conforto da mulher contemporânea. 
-                 Peças que transcendem tendências passageiras.
-               </p>
-             </div>
-             <div className="mt-6 md:mt-0">
-               <span className="text-sm font-light text-muted-foreground uppercase tracking-widest">
-                 {produtos.length} Peças Selecionadas
-               </span>
-             </div>
-           </div>
- 
-           {loading ? (
-             <ProductsLoadingSkeleton count={8} />
-           ) : produtos.length > 0 ? (
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12">
-               {produtos.map((produto) => (
-                 <ProductCard key={produto.id} produto={produto} />
-               ))}
-             </div>
-           ) : (
-             <div className="py-20 text-center">
-               <p className="text-muted-foreground font-light italic">
-                 Esta coleção está sendo preparada para você. Volte em breve.
-               </p>
-             </div>
-           )}
-         </PageContainer>
-       </main>
- 
-       <Footer />
-     </div>
-   );
- };
- 
- export default CollectionDetail;
+    }, [id]);
+
+    // Filtragem e Ordenação local (Premium Feel)
+    const produtosFiltrados = useMemo(() => {
+      let filtrados = [...produtos];
+
+      // Filtro de categoria
+      if (categoriaSelecionada !== "todas") {
+        filtrados = filtrados.filter(p => p.categoria.toLowerCase() === categoriaSelecionada.toLowerCase());
+      }
+
+      // Filtro de preço
+      if (precoAlterado) {
+        filtrados = filtrados.filter(p => {
+          const preco = p.emPromocao && p.precoPromocional ? p.precoPromocional : p.precoVenda;
+          return preco >= faixaPreco[0] && (faixaPreco[1] === 0 || preco <= faixaPreco[1]);
+        });
+      }
+
+      // Cores e Tamanhos
+      if (coresSelecionadas.length > 0) {
+        filtrados = filtrados.filter(p => p.cores?.some(c => coresSelecionadas.includes(c.cor)));
+      }
+      if (tamanhosSelecionados.length > 0) {
+        filtrados = filtrados.filter(p => p.variants?.some(v => tamanhosSelecionados.includes(v.tamanho)));
+      }
+
+      // Ordenação
+      if (ordenarPor === "preco-asc") {
+        filtrados.sort((a, b) => (a.precoPromocional || a.precoVenda) - (b.precoPromocional || b.precoVenda));
+      } else if (ordenarPor === "preco-desc") {
+        filtrados.sort((a, b) => (b.precoPromocional || b.precoVenda) - (a.precoPromocional || a.precoVenda));
+      }
+
+      return filtrados;
+    }, [produtos, categoriaSelecionada, ordenarPor, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado]);
+
+    // SEO Dinâmico
+    useEffect(() => {
+      if (colecao) {
+        updateSeo({
+          title: `${colecao.nome} | Boutique Premium Mariela`,
+          description: colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea.`,
+          image: colecao.banner_url || colecao.imagem_capa_url || undefined,
+          url: window.location.href,
+          jsonLd: {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": colecao.nome,
+            "description": colecao.descricao,
+            "image": colecao.banner_url || colecao.imagem_capa_url
+          }
+        });
+      }
+    }, [colecao]);
+
+    // Dados para os filtros
+    const coresDisponiveis = useMemo(() => {
+      const cores = new Set<string>();
+      produtos.forEach(p => p.cores?.forEach(c => cores.add(c.cor)));
+      return Array.from(cores).sort();
+    }, [produtos]);
+
+    const tamanhosDisponiveis = useMemo(() => {
+      const tamanhos = new Set<string>();
+      produtos.forEach(p => p.variants?.forEach(v => tamanhos.add(v.tamanho)));
+      return Array.from(tamanhos).sort();
+    }, [produtos]);
+
+    const precoMinMax = useMemo(() => {
+      if (produtos.length === 0) return { min: 0, max: 0 };
+      const precos = produtos.map(p => p.precoPromocional || p.precoVenda);
+      return { min: Math.floor(Math.min(...precos)), max: Math.ceil(Math.max(...precos)) };
+    }, [produtos]);
+
+    useEffect(() => {
+      if (precoMinMax.max > 0 && !precoAlterado) {
+        setFaixaPreco([precoMinMax.min, precoMinMax.max]);
+      }
+    }, [precoMinMax, precoAlterado]);
+
+    const handleLimparFiltros = () => {
+      setCategoriaSelecionada("todas");
+      setCoresSelecionadas([]);
+      setTamanhosSelecionados([]);
+      setFaixaPreco([precoMinMax.min, precoMinMax.max]);
+      setPrecoAlterado(false);
+      setOrdenarPor("padrao");
+    };
+
+    if (error) {
+      return (
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-grow flex items-center justify-center p-4">
+            <div className="text-center">
+              <h2 className="text-2xl font-serif mb-4 text-foreground">Coleção não encontrada</h2>
+              <Button asChild variant="outline">
+                <Link to="/">Voltar para a Home</Link>
+              </Button>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        
+        <main className="flex-grow">
+          {/* Hero Section Premium */}
+          <section className="relative w-full h-[60vh] min-h-[400px] overflow-hidden bg-muted">
+            {loading ? (
+              <div className="absolute inset-0 animate-pulse bg-muted-foreground/10" />
+            ) : (colecao?.banner_url || colecao?.imagem_capa_url) ? (
+              <>
+                <img 
+                  src={colecao.banner_url || colecao.imagem_capa_url || ""} 
+                  alt={colecao.nome}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+              </>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ImageOff className="w-12 h-12 text-muted-foreground/30" />
+              </div>
+            )}
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center">
+              <Link 
+                to="/" 
+                className="absolute top-8 left-8 flex items-center gap-2 text-sm uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity"
+              >
+                <ArrowLeft className="w-4 h-4" /> Voltar
+              </Link>
+
+              {!loading && (
+                <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] uppercase tracking-[0.2em] mb-6">
+                    <Sparkles className="w-3 h-3" /> Coleção Exclusiva
+                  </span>
+                  <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-light mb-6 tracking-tight">
+                    {colecao?.nome}
+                  </h1>
+                  {colecao?.descricao && (
+                    <p className="text-lg sm:text-xl font-light text-white/90 max-w-2xl mx-auto leading-relaxed italic">
+                      "{colecao.descricao}"
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-50">
+              <div className="w-[1px] h-12 bg-white" />
+            </div>
+          </section>
+
+          <PageContainer className="py-8 sm:py-12">
+            <Breadcrumbs currentPage={colecao?.nome || "Coleção"} />
+
+            {/* Category Icons Navigation */}
+            <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scrollbar-hide justify-start sm:justify-center mt-8 mb-12">
+              <button
+                onClick={() => setCategoriaSelecionada("todas")}
+                className={cn(
+                  "flex flex-col items-center gap-2 min-w-[64px] transition-all",
+                  categoriaSelecionada === "todas" ? "scale-105" : "opacity-60 hover:opacity-100"
+                )}
+              >
+                <div className={cn(
+                  "w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all border",
+                  categoriaSelecionada === "todas" ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-transparent"
+                )}>
+                  <ShoppingBag className="h-5 w-5 sm:h-7 sm:w-7" />
+                </div>
+                <span className="text-[10px] sm:text-xs font-medium uppercase tracking-tighter">Todos</span>
+              </button>
+
+              {CATEGORIAS_DB.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategoriaSelecionada(cat.value)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 min-w-[64px] transition-all",
+                    categoriaSelecionada === cat.value ? "scale-105" : "opacity-60 hover:opacity-100"
+                  )}
+                >
+                  <div className={cn(
+                    "w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all border text-xl sm:text-2xl",
+                    categoriaSelecionada === cat.value ? "bg-primary border-primary" : "bg-muted border-transparent"
+                  )}>
+                    {categoryEmojis[cat.value] || "✨"}
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-medium uppercase tracking-tighter">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Sidebar Filters - Desktop */}
+              <aside className="hidden lg:block w-64 space-y-8 shrink-0">
+                <div className="sticky top-24">
+                  <h3 className="font-serif text-xl mb-6 border-b pb-2">Filtros</h3>
+                  <ProductFilters 
+                    categoriaSelecionada={categoriaSelecionada}
+                    setCategoriaSelecionada={setCategoriaSelecionada}
+                    coresSelecionadas={coresSelecionadas}
+                    setCoresSelecionadas={setCoresSelecionadas}
+                    tamanhosSelecionados={tamanhosSelecionados}
+                    setTamanhosSelecionados={setTamanhosSelecionados}
+                    faixaPreco={faixaPreco}
+                    setFaixaPreco={setFaixaPreco}
+                    setPrecoAlterado={setPrecoAlterado}
+                    precoAlterado={precoAlterado}
+                    coresDisponiveis={coresDisponiveis}
+                    tamanhosDisponiveis={tamanhosDisponiveis}
+                    precoMin={precoMinMax.min}
+                    precoMax={precoMinMax.max}
+                    onLimparFiltros={handleLimparFiltros}
+                    setPaginaAtual={setPaginaAtual}
+                    activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
+                    produtosFiltradosParcial={produtos}
+                  />
+                </div>
+              </aside>
+
+              <div className="flex-grow">
+                {/* Controls Bar */}
+                <div className="flex items-center justify-between mb-8 pb-4 border-b">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-muted-foreground uppercase tracking-widest hidden sm:inline">
+                      {produtosFiltrados.length} Peças Encontradas
+                    </span>
+                    {/* Mobile Filter Trigger */}
+                    <div className="lg:hidden">
+                      <ProductFilters 
+                        categoriaSelecionada={categoriaSelecionada}
+                        setCategoriaSelecionada={setCategoriaSelecionada}
+                        coresSelecionadas={coresSelecionadas}
+                        setCoresSelecionadas={setCoresSelecionadas}
+                        tamanhosSelecionados={tamanhosSelecionados}
+                        setTamanhosSelecionados={setTamanhosSelecionados}
+                        faixaPreco={faixaPreco}
+                        setFaixaPreco={setFaixaPreco}
+                        setPrecoAlterado={setPrecoAlterado}
+                        precoAlterado={precoAlterado}
+                        coresDisponiveis={coresDisponiveis}
+                        tamanhosDisponiveis={tamanhosDisponiveis}
+                        precoMin={precoMinMax.min}
+                        precoMax={precoMinMax.max}
+                        onLimparFiltros={handleLimparFiltros}
+                        setPaginaAtual={setPaginaAtual}
+                        activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
+                        produtosFiltradosParcial={produtos}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <Select value={ordenarPor} onValueChange={setOrdenarPor}>
+                      <SelectTrigger className="w-[180px] bg-transparent border-none focus:ring-0 text-xs uppercase tracking-widest">
+                        <SelectValue placeholder="ORDENAR POR" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="padrao">LANÇAMENTOS</SelectItem>
+                        <SelectItem value="preco-asc">MENOR PREÇO</SelectItem>
+                        <SelectItem value="preco-desc">MAIOR PREÇO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <ProductsLoadingSkeleton count={6} />
+                ) : produtosFiltrados.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-12">
+                    {produtosFiltrados.map((produto) => (
+                      <ProductCard key={produto.id} produto={produto} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-24 text-center">
+                    <p className="text-muted-foreground font-light italic text-lg">
+                      Nenhum produto encontrado com estes filtros.
+                    </p>
+                    <Button 
+                      variant="link" 
+                      onClick={handleLimparFiltros}
+                      className="mt-4 uppercase tracking-widest text-xs"
+                    >
+                      Limpar todos os filtros
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </PageContainer>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  };
+
+  export default CollectionDetail;

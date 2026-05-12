@@ -18,6 +18,8 @@ const ROUTE_NAMES: Record<string, string> = {
   produtos: "Produtos",
   cart: "Carrinho",
   "monte-seu-look": "Monte Seu Look",
+  "collections": "Coleções",
+  "colecoes": "Coleções",
 };
 
 const CANONICAL_PATHS: Record<string, string> = {

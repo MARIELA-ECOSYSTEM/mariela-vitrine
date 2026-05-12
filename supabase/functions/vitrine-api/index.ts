@@ -23,9 +23,66 @@ serve(async (req) => {
   // Removemos query strings codificadas que podem vir no pathname em alguns ambientes
   path = path.split('?')[0].split('%3F')[0] || '/';
 
-  console.log(`[vitrine-api] Request: ${req.method} ${path}`);
+   const queryParams = Object.fromEntries(url.searchParams.entries());
+   console.log(`[vitrine-api] Request: ${req.method} ${path}`, queryParams);
 
    try {
+      // Rota de Produtos (Mock para Preview)
+      if (path === '/produtos' || path === '/produtos/') {
+        const colecaoFiltro = queryParams.colecao;
+        const produtosMock = [
+          {
+            id: "p1",
+            nome: `Vestido Elegante ${colecaoFiltro || ''}`,
+            descricao: "Um vestido sofisticado para ocasiões especiais.",
+            categoria: "Vestidos",
+            colecao: colecaoFiltro || "Nova Coleção",
+            preco_venda: 299.90,
+            imagem_principal: "https://images.unsplash.com/photo-1539008835154-33321e17c76a?auto=format&fit=crop&q=80&w=800",
+            imagem_thumb: "https://images.unsplash.com/photo-1539008835154-33321e17c76a?auto=format&fit=crop&q=80&w=300",
+            cores: [{ cor: "Preto", tamanhos: [{ tamanho: "P", disponibilidade: 5 }] }]
+          },
+          {
+            id: "p2",
+            nome: `Blusa de Seda ${colecaoFiltro || ''}`,
+            descricao: "Blusa leve e elegante em seda pura.",
+            categoria: "Blusas",
+            colecao: colecaoFiltro || "Nova Coleção",
+            preco_venda: 189.90,
+            imagem_principal: "https://images.unsplash.com/photo-1564252234230-c859f733ee91?auto=format&fit=crop&q=80&w=800",
+            imagem_thumb: "https://images.unsplash.com/photo-1564252234230-c859f733ee91?auto=format&fit=crop&q=80&w=300",
+            cores: [{ cor: "Branco", tamanhos: [{ tamanho: "M", disponibilidade: 3 }] }]
+          }
+        ];
+
+        return new Response(
+          JSON.stringify({
+            items: produtosMock,
+            limit: 12,
+            offset: 0,
+            total: produtosMock.length,
+            hasMore: false
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Rota de Coleções (Mock para Preview)
+      if (path === '/colecoes' || path === '/colecoes/') {
+        return new Response(
+          JSON.stringify({ data: [] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Rota de Categorias (Mock para Preview)
+      if (path === '/categorias' || path === '/categorias/') {
+        return new Response(
+          JSON.stringify({ data: ["Vestidos", "Blusas", "Calças", "Saias"] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
      // Rota de Configurações
      if (path === '/config' || path === '/config/') {
        return new Response(
