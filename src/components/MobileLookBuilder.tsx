@@ -1248,7 +1248,41 @@ const PreviewPanel = ({
             })}
           </div>
 
-          <div className="pt-2 sm:pt-3 border-t border-border">
+           {/* Related Suggestions Section */}
+           {relatedSuggestions.length > 0 && (
+             <div className="pt-4 border-t border-border/50">
+               <h5 className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-2 flex items-center gap-1.5">
+                 <Sparkles className="h-3 w-3" />
+                 Combina com este look
+               </h5>
+               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                 {relatedSuggestions.map((p) => (
+                   <button
+                     key={p.id}
+                     onClick={() => {
+                       const category = p.categoria === "vestidos" ? "vestido" :
+                                      p.categoria === "conjuntos" ? "conjunto" :
+                                      p.categoria === "blusas" ? "blusa" :
+                                      ["shorts", "calças", "saias", "short-saias"].includes(p.categoria) ? "bottom" : "bolsa";
+                       selectItem(category, p.id, categoryConfig.find(c => c.key === category)?.clearOnSelect);
+                     }}
+                     className="shrink-0 w-16 group relative"
+                   >
+                     <div className="aspect-[3/4] rounded-lg overflow-hidden border border-border group-hover:border-primary/50 transition-all">
+                       <img 
+                         src={p.imagens[0]} 
+                         alt={p.nome}
+                         className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                       />
+                     </div>
+                     <p className="text-[9px] truncate mt-1 text-muted-foreground">{p.nome}</p>
+                   </button>
+                 ))}
+               </div>
+             </div>
+           )}
+ 
+           <div className="pt-2 sm:pt-3 border-t border-border">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sm sm:text-base">Total:</span>
               <span className="text-xl sm:text-2xl font-bold text-primary">
