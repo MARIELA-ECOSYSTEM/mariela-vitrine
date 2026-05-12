@@ -17,7 +17,8 @@ export const HeroBannerCarousel = () => {
   const [mediaErrors, setMediaErrors] = useState<Record<string, { error: boolean; reason?: string }>>({});
   const [loadTimes, setLoadTimes] = useState<Record<string, number>>({});
   const loadStartTimes = useRef<Record<string, number>>({});
-  const isDebug = import.meta.env.DEV && new URLSearchParams(search).get("debugColecoes") === "1";
+  const isDebug = (import.meta.env.DEV && new URLSearchParams(search).get("debugColecoes") === "1") || 
+                  new URLSearchParams(search).get("debugIntegracao") === "1";
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
