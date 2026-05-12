@@ -1401,13 +1401,34 @@ export const vitrineApiService = {
   },
 
   async getProdutosPage(params?: QueryParams): Promise<ProdutosPage> {
+    if (isDebugIntegracao) {
+      console.group("[DEBUG] getProdutosPage");
+      console.info("Parâmetros:", params);
+    }
+
     const [response, destaques] = await Promise.all([
       fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
       this.getDestaques(),
     ]);
-    const items = unwrapList(response)
-      .map(mapProduto)
-      .filter((produto): produto is Produto => Boolean(produto));
+    const rawItems = unwrapList(response);
+    if (isDebugIntegracao) console.info(`Total de itens brutos da API: ${rawItems.length}`);
+
+    const mappedItems = rawItems.map(item => {
+      const mapped = mapProduto(item);
+      if (!mapped && isDebugIntegracao) {
+        const product = asRecord(asRecord(item).data ?? item);
+        const id = readString(product, ["id", "produto_id", "produtoId", "sku"]);
+        console.warn(`[DEBUG] Produto ${id} descartado pelo parser ou elegibilidade`);
+      }
+      return mapped;
+    });
+
+    const items = mappedItems.filter((produto): produto is Produto => Boolean(produto));
+
+    if (isDebugIntegracao) {
+      console.info(`Total de itens após mapping/elegibilidade: ${items.length}`);
+      console.groupEnd();
+    }
 
     return {
       items: applyDestaquesToProdutos(items, destaques),
