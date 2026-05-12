@@ -4,7 +4,7 @@
  import { useProducts } from "@/hooks/useProducts";
  import { Button } from "@/components/ui/button";
  import { Link } from "react-router-dom";
- import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
  import { cn } from "@/lib/utils";
 import type { Produto } from "@/data/products";
 import { isProductNovidade } from "@/lib/novidades";
