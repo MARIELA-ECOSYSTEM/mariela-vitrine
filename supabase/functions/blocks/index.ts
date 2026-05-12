@@ -2,14 +2,18 @@
  // para satisfazer chamadas que esperam a função "blocks" diretamente.
  import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
  
- const corsHeaders = {
+ const CORS_HEADERS = {
    "Access-Control-Allow-Origin": "*",
-   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-customer-id",
+   "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE, PATCH",
+   "Access-Control-Max-Age": "86400",
  };
+ 
+ const JSON_HEADER = { "Content-Type": "application/json; charset=utf-8" };
  
  serve(async (req) => {
    if (req.method === "OPTIONS") {
-     return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
    }
  
    console.log(`[blocks] Redirecting to vitrine-api/home/blocks`);
@@ -21,14 +25,14 @@
      });
  
      const data = await response.json();
-     return new Response(JSON.stringify(data), {
-       status: response.status,
-       headers: { ...corsHeaders, "Content-Type": "application/json" },
-     });
+      return new Response(JSON.stringify(data), {
+        status: response.status,
+        headers: { ...CORS_HEADERS, ...JSON_HEADER },
+      });
    } catch (error) {
-     return new Response(JSON.stringify({ error: "Falha ao redirecionar para vitrine-api" }), {
-       status: 500,
-       headers: { ...corsHeaders, "Content-Type": "application/json" },
-     });
+      return new Response(JSON.stringify({ error: "Falha ao redirecionar para vitrine-api" }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, ...JSON_HEADER },
+      });
    }
  });

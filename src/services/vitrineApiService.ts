@@ -3,6 +3,7 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
  import { isProdutoPublicavel, ProdutoExclusionReason } from "@/lib/productEligibility";
+import { z } from "zod";
 
 const VITRINE_API_BASE_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
 const API_TIMEOUT = 15000;
@@ -132,6 +133,56 @@ export interface ColecaoResponse {
  export interface HomeBlocksResponse {
    data: HomeBlock[];
  }
+
+ // Schemas de Validação (Zod) para detecção rápida de falhas de contrato
+ const ConfigSchema = z.object({
+   data: z.object({
+     nome_loja: z.string().nullable(),
+     logo_url: z.string().nullable(),
+     favicon_url: z.string().nullable(),
+     cor_primaria: z.string().nullable(),
+     cor_secundaria: z.string().nullable(),
+     whatsapp: z.string().nullable(),
+     instagram: z.string().nullable(),
+   })
+ });
+
+ const HomeBlockSchema = z.object({
+   id: z.string(),
+   tipo: z.enum(["produtos", "colecoes", "banner", "instagram"]),
+   titulo: z.string().nullable(),
+   subtitulo: z.string().nullable(),
+   prioridade: z.number(),
+   config: z.object({
+     filter: z.string().optional(),
+     colecoes: z.array(z.string()).optional(),
+     produtos: z.array(z.string()).optional(),
+     linkLabel: z.string().optional(),
+     linkTo: z.string().optional(),
+     estilo: z.enum(["grade", "carrossel", "lista"]).optional(),
+     limit: z.number().optional(),
+     max_items: z.number().optional(),
+     mediaUrl: z.string().optional(),
+     mediaType: z.enum(["image", "video", "gif"]).optional(),
+     posterUrl: z.string().optional(),
+     ctaLabel: z.string().optional(),
+     ctaUrl: z.string().optional(),
+     posts: z.array(z.object({
+       id: z.string(),
+       url: z.string(),
+       mediaUrl: z.string(),
+       caption: z.string().optional(),
+     })).optional(),
+   }),
+   validade: z.object({
+     inicio: z.string().nullable(),
+     fim: z.string().nullable(),
+   }).optional(),
+ });
+
+ const HomeBlocksResponseSchema = z.object({
+   data: z.array(HomeBlockSchema)
+ });
  
 /**
  * Coleção em destaque consumida da rota
@@ -961,13 +1012,33 @@ function unwrapList(response: unknown): unknown[] {
   return asArray(data.items ?? data.data ?? data.produtos ?? data.results);
 }
 
-function validateConfigResponse(payload: unknown): ConfigResponse {
-  const data = asRecord(asRecord(payload).data ?? payload);
-  if (Object.keys(data).length === 0) {
-    logVitrineWarning("Payload de config vazio ou inválido", payload);
-  }
-  return { data: data as ConfigResponse["data"] };
-}
+ function validateConfigResponse(payload: unknown): ConfigResponse {
+   const result = ConfigSchema.safeParse(payload);
+   if (!result.success) {
+     logVitrineWarning("Schema de config inválido (contrato quebrado)", {
+       errors: result.error.format(),
+       payload
+     });
+     // Tenta unwrap manual se falhar o schema estrito para resiliência mínima
+     const data = asRecord(asRecord(payload).data ?? payload);
+     return { data: data as ConfigResponse["data"] };
+   }
+    return result.data as ConfigResponse;
+ }
+
+ function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
+   const result = HomeBlocksResponseSchema.safeParse(payload);
+   if (!result.success) {
+     logVitrineWarning("Schema de HomeBlocks inválido (contrato quebrado)", {
+       errors: result.error.format(),
+       payload
+     });
+     // Fallback manual para resiliência
+     const data = asArray(asRecord(payload).data ?? payload);
+     return { data: data as HomeBlock[] };
+   }
+    return result.data as HomeBlocksResponse;
+ }
 
 function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
   const source = asRecord(payload);
@@ -1260,24 +1331,25 @@ export const vitrineApiService = {
     * Busca os blocos dinâmicos da Home orientados pelo Motor de Campanhas.
     * Em caso de falha, retorna um conjunto padrão (fallback resiliente).
     */
-   async getHomeBlocks(): Promise<HomeBlock[]> {
-     try {
-       const response = await fetchCachedJson<HomeBlocksResponse>(
-         "/home/blocks",
-         undefined,
-         CACHE_TTL.homeBlocks
-       );
-       
-       if (!response || !Array.isArray(response.data)) {
-         throw createInvalidPayloadError("getHomeBlocks");
-       }
- 
-       return response.data.sort((a, b) => a.prioridade - b.prioridade);
-     } catch (error) {
-       logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
-       return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
-     }
-    },
+    async getHomeBlocks(): Promise<HomeBlock[]> {
+      try {
+        const response = await fetchCachedJson<HomeBlocksResponse>(
+          "/home/blocks",
+          undefined,
+          CACHE_TTL.homeBlocks,
+          validateHomeBlocksResponse
+        );
+        
+        if (!response || !Array.isArray(response.data)) {
+          throw createInvalidPayloadError("getHomeBlocks");
+        }
+  
+        return response.data.sort((a, b) => a.prioridade - b.prioridade);
+      } catch (error) {
+        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
+        return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
+      }
+     },
  
   async getConfig(): Promise<VitrineConfig> {
     try {
