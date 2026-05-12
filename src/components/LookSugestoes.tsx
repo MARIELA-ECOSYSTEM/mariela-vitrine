@@ -27,11 +27,12 @@ export const LookSugestoes = ({ onSelectLook }: LookSugestoesProps) => {
         const manuais = blockML?.config.looks_manuais || [];
         
         if (isDev && isDebug) {
-          console.group("[MonteSeuLook] Sugestões Recebidas");
-          console.info("Bloco ML:", blockML);
-          console.info("Sugestões:", looks);
-          console.info("Looks Manuais:", manuais);
-          console.groupEnd();
+          vitrineApiService.getDiagnosticLooks().then(diagnosis => {
+            console.group("[MonteSeuLook] Diagnóstico Editorial");
+            console.info("Payload:", blockML);
+            console.table(diagnosis);
+            console.groupEnd();
+          });
         }
 
         setSugestoes(looks.slice(0, 3));
