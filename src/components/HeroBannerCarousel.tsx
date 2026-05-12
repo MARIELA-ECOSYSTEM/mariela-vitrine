@@ -14,7 +14,9 @@ export const HeroBannerCarousel = () => {
   const [colecoes, setColecoes] = useState<ColecaoDestaque[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [failed, setFailed] = useState(false);
-  const [mediaErrors, setMediaErrors] = useState<Record<string, boolean>>({});
+  const [mediaErrors, setMediaErrors] = useState<Record<string, { error: boolean; reason?: string }>>({});
+  const [loadTimes, setLoadTimes] = useState<Record<string, number>>({});
+  const loadStartTimes = useRef<Record<string, number>>({});
   const isDebug = new URLSearchParams(search).get("debugColecoes") === "1";
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -43,22 +45,35 @@ export const HeroBannerCarousel = () => {
 
   const currentColecao = colecoes?.[currentIndex];
   
-  // Fallback priority: home_destaque_url > banner_url > imagem_capa_url
+  /**
+   * Resolve a melhor mídia disponível seguindo a prioridade do contrato:
+   * 1. home_destaque_url
+   * 2. banner_url
+   * 3. imagem_capa_url
+   */
   const getBestMedia = (col: ColecaoDestaque) => {
-    if (col.home_destaque_url && !mediaErrors[col.id]) {
-      return { url: col.home_destaque_url, type: col.home_destaque_tipo || "image" };
+    if (col.home_destaque_url && !mediaErrors[col.id]?.error) {
+      return { url: col.home_destaque_url, type: col.home_destaque_tipo || "image", origin: "home_destaque" as const };
     }
-    if (col.banner_url && !mediaErrors[`${col.id}-banner`]) {
-      return { url: col.banner_url, type: "image" as const };
+    if (col.banner_url && !mediaErrors[`${col.id}-banner`]?.error) {
+      return { url: col.banner_url, type: "image" as const, origin: "banner" as const, fallbackReason: col.home_destaque_url ? "Falha na mídia da home" : "Mídia da home não cadastrada" };
     }
-    if (col.imagem_capa_url && !mediaErrors[`${col.id}-capa`]) {
-      return { url: col.imagem_capa_url, type: "image" as const };
+    if (col.imagem_capa_url && !mediaErrors[`${col.id}-capa`]?.error) {
+      return { url: col.imagem_capa_url, type: "image" as const, origin: "capa" as const, fallbackReason: col.banner_url ? "Falha no banner" : "Banner não cadastrado" };
     }
     return null;
   };
 
   const currentMedia = currentColecao ? getBestMedia(currentColecao) : null;
+  // Banner de fundo do header: nunca usa vídeo.
   const bannerImage = currentMedia?.type !== "video" ? currentMedia?.url : (currentColecao?.banner_url || currentColecao?.imagem_capa_url);
+
+  const handleMediaLoad = (id: string) => {
+    if (loadStartTimes.current[id]) {
+      const duration = performance.now() - loadStartTimes.current[id];
+      setLoadTimes(prev => ({ ...prev, [id]: duration }));
+    }
+  };
 
   useEffect(() => {
     setBannerImage(bannerImage || null);
@@ -142,7 +157,9 @@ export const HeroBannerCarousel = () => {
                 playsInline
                 preload="metadata"
                 className="w-full h-full object-cover"
-                onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: true }))}
+                onLoadStart={() => { loadStartTimes.current[colecao.id] = performance.now(); }}
+                onLoadedData={() => handleMediaLoad(colecao.id)}
+                onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: { error: true, reason: "Erro de decodificação ou rede" } }))}
                 ref={(el) => {
                   if (!el) return;
                   if (isActive && isVisible) {
@@ -160,10 +177,20 @@ export const HeroBannerCarousel = () => {
                 src={media.url}
                 alt={colecao.nome}
                 className="w-full h-full object-cover"
+                onLoadStart={() => { 
+                  const key = media.url === colecao.home_destaque_url ? colecao.id : 
+                             media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
+                  loadStartTimes.current[key] = performance.now(); 
+                }}
+                onLoad={() => {
+                  const key = media.url === colecao.home_destaque_url ? colecao.id : 
+                             media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
+                  handleMediaLoad(key);
+                }}
                 onError={() => {
                   const key = media.url === colecao.home_destaque_url ? colecao.id : 
                              media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
-                  setMediaErrors(prev => ({ ...prev, [key]: true }));
+                  setMediaErrors(prev => ({ ...prev, [key]: { error: true, reason: "Falha ao carregar arquivo" } }));
                 }}
               />
             ) : (
@@ -172,13 +199,18 @@ export const HeroBannerCarousel = () => {
               </div>
             )}
             
-            {isDebug && (
-              <div className="absolute top-4 left-4 z-50 bg-black/80 text-white p-2 text-[10px] rounded font-mono">
-                <p>Tipo: {media?.type || "N/A"}</p>
-                <p>URL: {media?.url?.split('/').pop() || "N/A"}</p>
-                <p>Origem: {media?.url === colecao.home_destaque_url ? "home_destaque" : 
-                           media?.url === colecao.banner_url ? "banner" : 
-                           media?.url === colecao.imagem_capa_url ? "capa" : "fallback"}</p>
+            {isDebug && import.meta.env.DEV && (
+              <div className="absolute top-4 left-4 z-50 bg-black/85 text-white p-2.5 text-[10px] rounded-md font-mono shadow-xl border border-white/10 backdrop-blur-sm">
+                <p className="font-bold border-b border-white/20 pb-1 mb-1 text-primary">DEBUG MÍDIA</p>
+                <p>Tipo: <span className="text-primary">{media?.type || "N/A"}</span></p>
+                <p>Origem: <span className="text-green-400">{media?.origin || "fallback"}</span></p>
+                {media?.fallbackReason && <p className="text-yellow-400">Motivo: {media.fallbackReason}</p>}
+                <p>URL: ...{media?.url?.slice(-20) || "N/A"}</p>
+                {loadTimes[media?.url === colecao.home_destaque_url ? colecao.id : 
+                           media?.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`] && (
+                  <p>Carga: <span className="text-blue-400">{loadTimes[media?.url === colecao.home_destaque_url ? colecao.id : 
+                             media?.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`].toFixed(0)}ms</span></p>
+                )}
               </div>
             )}
 
