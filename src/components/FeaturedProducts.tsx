@@ -37,12 +37,16 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
     if (products) return products;
 
     switch (filter) {
-      case "novidades":
-        return produtos.filter(isProductNovidade);
-      case "promocoes":
-        return produtos.filter(p => p.emPromocao);
+      case "novidades": {
+        const filtered = produtos.filter(isProductNovidade);
+        return filtered.length > 0 ? filtered : [];
+      }
+      case "promocoes": {
+        const filtered = produtos.filter(p => p.emPromocao);
+        return filtered.length > 0 ? filtered : [];
+      }
       case "destaque":
-        return produtos.slice(0, limit);
+        return produtos.length > 0 ? produtos.slice(0, limit) : [];
       case "em_alta":
       case "mais_procurado":
       case "queridinho_loja":
@@ -51,8 +55,12 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
        case "novo":
        case "mais_vendido":
        case "estoque_baixo":
-       case "alta_conversao":
-        return produtos.filter((p) => getBadgeValue(p) === filter);
+      case "alta_conversao": {
+        const filtered = produtos.filter((p) => getBadgeValue(p) === filter);
+        return filtered.length > 0 ? filtered : [];
+      }
+      default:
+        return [];
     }
   }, [produtos, filter, limit, products]);
 
@@ -83,7 +91,11 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
      }
    };
  
-   if (!isLoading && displayed.length < minItems) {
+  if (!isLoading && displayed.length === 0) {
+    return null;
+  }
+
+  if (!isLoading && displayed.length < minItems) {
      if (import.meta.env.DEV && products && products.length > 0) {
        // Só avisa em DEV se houver produtos mas o filtro removeu quase tudo, 
        // o que ajuda a entender por que um bloco manual sumiu.
