@@ -378,9 +378,7 @@
                 </div>
 
                 {loading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <ProductSkeleton count={6} />
-                  </div>
+                  <ProductsLoadingSkeleton count={6} />
                 ) : produtosFiltrados.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-12">
                     {produtosFiltrados.map((produto) => (
