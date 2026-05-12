@@ -28,11 +28,12 @@ serve(async (req) => {
       }
 
       // 2. Mapeamento Inteligente Real (Home Blocks)
-      if (path === '/home/blocks') {
-        const [configResp, colecoesResp, destaquesResp] = await Promise.all([
+      if (path === '/home/blocks' || path === '/blocks') {
+        const [configResp, colecoesResp, destaquesResp, promocoesResp] = await Promise.all([
           fetch(`${PRODUCTION_API_URL}/config`),
           fetch(`${PRODUCTION_API_URL}/colecoes`),
-          fetch(`${PRODUCTION_API_URL}/destaques`)
+          fetch(`${PRODUCTION_API_URL}/destaques`),
+          fetch(`${PRODUCTION_API_URL}/produtos?limit=1&em_promocao=true`)
         ]);
 
         const blocks = [];
@@ -52,7 +53,22 @@ serve(async (req) => {
           }
         }
 
-        blocks.push({ id: "latest-products", tipo: "produtos", titulo: "Novidades", prioridade: 10, config: { filter: "novidades", limit: 8, estilo: "grade" } });
+        
+        if (promocoesResp.ok) {
+          const promocoesData = await promocoesResp.json();
+          const items = promocoesData.data || promocoesData.items || [];
+          if (items.length > 0) {
+            blocks.push({ 
+              id: "featured-promotions", 
+              tipo: "produtos", 
+              titulo: "Promoções Imperdíveis", 
+              prioridade: 5, 
+              config: { filter: "promocoes", limit: 4, estilo: "grade", linkLabel: "Ver todas as ofertas", linkTo: "/products?filter=promocoes" } 
+            });
+          }
+        }
+
+        blocks.push({ id: "latest-products", tipo: "produtos", titulo: "Novidades", prioridade: 10, config: { filter: "novidades", limit: 8, estilo: "grade", linkLabel: "Ver tudo", linkTo: "/products?filter=novidades" } });
 
         return new Response(JSON.stringify({ data: blocks }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -85,8 +101,27 @@ serve(async (req) => {
         });
       }
 
-      const data = await response.json();
-      return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error(`[vitrine-api] Invalid JSON from production on ${path}:`, jsonError.message);
+        
+        if (path.includes('produtos')) {
+          return new Response(JSON.stringify({ items: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        throw new Error("Resposta inválida do servidor de produção");
+      }
+
+      return new Response(JSON.stringify(data), { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        } 
+      });
 
   } catch (error) {
     console.error(`[vitrine-api] Critical Error:`, error);
