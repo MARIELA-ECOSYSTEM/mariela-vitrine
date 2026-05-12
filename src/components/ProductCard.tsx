@@ -7,8 +7,9 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
-import { getProductImageByColor } from "@/lib/productImage";
+import { getProductImageByColor, getProductVideoByColor } from "@/lib/productImage";
 import { ProductImageSkeleton, preloadAdjacentImage, preloadImagesPrioritized, type PreloadPriority } from "./ProductImageSkeleton";
+import { ProductMedia } from "./ProductMedia";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
 import { formatBRL, getDisplayPrice, getPromoInfo } from "@/lib/formatters";
@@ -172,7 +173,19 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   const [corSelecionadaId, setCorSelecionadaId] = useState(primeiraCorIdDisponivel);
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+
+  // Mídia Híbrida: resolve vídeo se disponível (card/vitrine)
+  const videoAtual = useMemo(
+    () => getProductVideoByColor(produto, corSelecionada),
+    [produto, corSelecionada],
+  );
+
+  const isDebug = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const search = window.location.search;
+    return search.includes("debugProducts=1");
+  }, []);
   const { addToCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
