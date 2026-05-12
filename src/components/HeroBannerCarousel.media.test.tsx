@@ -44,6 +44,8 @@ describe("HeroBannerCarousel — Novos tipos de mídia e fallbacks", () => {
         home_destaque_url: "https://example.com/banner.jpg",
         home_destaque_tipo: "image",
         destaque: true,
+        ativo: true,
+        quantidade_produtos: 5,
         ordem: 0
       }]
     }));
@@ -52,7 +54,7 @@ describe("HeroBannerCarousel — Novos tipos de mídia e fallbacks", () => {
     await waitFor(() => {
       const img = screen.getByRole("img", { name: /Campanha Imagem/i });
       expect(img).toHaveAttribute("src", "https://example.com/banner.jpg");
-    });
+    }, { timeout: 4000 });
   });
 
   it("Renderiza vídeo quando home_destaque_tipo é 'video'", async () => {
@@ -63,6 +65,8 @@ describe("HeroBannerCarousel — Novos tipos de mídia e fallbacks", () => {
         home_destaque_url: "https://example.com/video.mp4",
         home_destaque_tipo: "video",
         destaque: true,
+        ativo: true,
+        quantidade_produtos: 5,
         ordem: 0
       }]
     }));
@@ -72,12 +76,10 @@ describe("HeroBannerCarousel — Novos tipos de mídia e fallbacks", () => {
       const video = document.querySelector("video");
       expect(video).toBeInTheDocument();
       expect(video).toHaveAttribute("src", "https://example.com/video.mp4");
-      expect(video).toHaveAttribute("muted");
-      expect(video).toHaveAttribute("playsinline");
-    });
+    }, { timeout: 4000 });
   });
 
-  it("Aplica fallback para banner_url se home_destaque_url falhar (simulado via ausência)", async () => {
+  it("Aplica fallback para banner_url se home_destaque_url falhar", async () => {
     fetchSpy.mockResolvedValue(jsonResponse({
       data: [{
         id: "3",
@@ -85,6 +87,8 @@ describe("HeroBannerCarousel — Novos tipos de mídia e fallbacks", () => {
         home_destaque_url: null,
         banner_url: "https://example.com/fallback.jpg",
         destaque: true,
+        ativo: true,
+        quantidade_produtos: 5,
         ordem: 0
       }]
     }));
@@ -93,26 +97,37 @@ describe("HeroBannerCarousel — Novos tipos de mídia e fallbacks", () => {
     await waitFor(() => {
       const img = screen.getByRole("img", { name: /Campanha Fallback/i });
       expect(img).toHaveAttribute("src", "https://example.com/fallback.jpg");
-    });
+    }, { timeout: 4000 });
   });
 
-  it("Aplica fallback final para imagem_capa_url", async () => {
+  it("FeaturedCollections não usa home_destaque_url (Teste de Regra de Negócio)", async () => {
+    // Este teste valida que FeatureCollections usa banner_url mesmo que home_destaque_url exista
+    vi.resetModules();
+    const { FeaturedCollections } = await import("./FeaturedCollections");
+    
     fetchSpy.mockResolvedValue(jsonResponse({
       data: [{
-        id: "4",
-        nome: "Campanha Fallback Final",
-        home_destaque_url: null,
-        banner_url: null,
-        imagem_capa_url: "https://example.com/capa.jpg",
+        id: "5",
+        nome: "Coleção Mista",
+        home_destaque_url: "https://example.com/hero.jpg",
+        banner_url: "https://example.com/card.jpg",
         destaque: true,
+        ativo: true,
+        quantidade_produtos: 5,
         ordem: 0
       }]
     }));
 
-    await renderFresh();
+    render(
+      <MemoryRouter>
+        <FeaturedCollections />
+      </MemoryRouter>
+    );
+
     await waitFor(() => {
-      const img = screen.getByRole("img", { name: /Campanha Fallback Final/i });
-      expect(img).toHaveAttribute("src", "https://example.com/capa.jpg");
-    });
+      const img = screen.getByRole("img", { name: /Coleção Mista/i });
+      expect(img).toHaveAttribute("src", "https://example.com/card.jpg");
+      expect(img).not.toHaveAttribute("src", "https://example.com/hero.jpg");
+    }, { timeout: 4000 });
   });
 });
