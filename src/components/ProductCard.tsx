@@ -360,11 +360,10 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   //   - Prioridade 2: imagem do índice atual do carrossel (`produto.imagens`).
   //   - Sem fallback proativo local. Se a API entregar string vazia, o
   //     `<img onError>` aciona `PRODUCT_IMAGE_PLACEHOLDER` como último recurso.
-  const imagemAtual = useMemo(() => {
-    const fromApi = getProductImageByColor(produto, corSelecionada).src;
-    if (fromApi) return fromApi;
-    return imagensValidas[currentImageIndex] || imagensValidas[0] || "";
-  }, [imagensValidas, currentImageIndex, produto, corSelecionada]);
+  const imagemAtual = useMemo(
+    () => getProductImageByColor(produto, corSelecionada).src,
+    [produto, corSelecionada],
+  );
 
   // Alt dinâmico via utilitário central — garante padronização entre
   // ProductCard, ProductDetail e Monte seu Look.
