@@ -771,6 +771,7 @@ interface CategorySectionProps {
   onSizeChange: (size: string) => void;
   getImageForColor: (produto: Produto | null, cor: string) => string;
   getImageForLook?: (produto: Produto | null, cor: string) => string;
+  getImageForLook?: (produto: Produto | null, cor: string) => string;
 }
 
 const CategorySection = ({
