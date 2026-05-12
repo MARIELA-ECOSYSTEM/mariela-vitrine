@@ -81,6 +81,59 @@ const categoryConfig: Array<{
 
 export const MobileLookBuilder = () => {
   const { produtos, loading } = useProducts();
+
+  // Handle external product selection (from suggestions)
+  useEffect(() => {
+    const handleSelectProducts = (e: any) => {
+      const productIds = e.detail.products as string[];
+      if (!productIds || productIds.length === 0) return;
+
+      const newItems = { ...selectedItems };
+      const newColors = { ...selectedColors };
+      const newSizes = { ...selectedSizes };
+
+      productIds.forEach((pid) => {
+        const product = produtos.find(p => p.produtoId === pid || String(p.id) === pid);
+        if (!product) return;
+
+        // Map category
+        let cat: CategoryKey | null = null;
+        if (product.categoria === "vestidos") cat = "vestido";
+        else if (product.categoria === "conjuntos") cat = "conjunto";
+        else if (product.categoria === "blusas") cat = "blusa";
+        else if (["shorts", "calças", "saias", "short-saias"].includes(product.categoria)) cat = "bottom";
+        else if (["bolsas", "acessorios"].includes(product.categoria)) cat = "bolsa";
+
+        if (cat) {
+          newItems[cat] = product.id;
+          newColors[cat] = ""; // Reset color/size for new selection
+          newSizes[cat] = "";
+          
+          // Handle clearOnSelect logic
+          const config = categoryConfig.find(c => c.key === cat);
+          if (config?.clearOnSelect) {
+            config.clearOnSelect.forEach(c => {
+              newItems[c] = null;
+              newColors[c] = "";
+              newSizes[c] = "";
+            });
+          }
+        }
+      });
+
+      setSelectedItems(newItems);
+      setSelectedColors(newColors);
+      setSelectedSizes(newSizes);
+      
+      toast({
+        title: "✨ Look selecionado!",
+        description: "Os produtos da sugestão foram adicionados ao seu construtor.",
+      });
+    };
+
+    window.addEventListener("monte-seu-look:select-products", handleSelectProducts);
+    return () => window.removeEventListener("monte-seu-look:select-products", handleSelectProducts);
+  }, [produtos]);
   const isLoading = loading && produtos.length === 0;
   const [expandedCategory, setExpandedCategory] = useState<CategoryKey | null>(null);
 
@@ -449,7 +502,7 @@ export const MobileLookBuilder = () => {
   }
 
   return (
-    <div className="relative pb-28 lg:pb-0">
+    <div id="look-builder-root" className="relative pb-28 lg:pb-0 scroll-mt-24">
       {/* Desktop Layout */}
       <div className="hidden lg:grid lg:grid-cols-2 gap-8">
         {/* Preview Side */}
