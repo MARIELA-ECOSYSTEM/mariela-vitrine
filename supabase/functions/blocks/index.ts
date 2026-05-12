@@ -21,41 +21,32 @@ serve(async (req) => {
 
   console.log(`[blocks] Request: ${req.method} ${path}`);
 
-  /**
-   * Encaminha requisições do alias 'blocks' para a lógica do vitrine-api,
-   * resolvendo a inconsistência de nomes.
+  /** 
+   * Função 'blocks' (alias/legada).
+   * Retorna os blocos da Home independente do path para máxima resiliência,
+   * resolvendo erros 404 em ambientes de preview/Lovable.
    */
-  const targetPath = path === '/' ? '/home/blocks' : path;
-  
-  // Mock simplificado do comportamento do vitrine-api para o alias blocks
-  if (targetPath === '/home/blocks') {
-    return new Response(
-      JSON.stringify({
-        data: [
-          {
-            id: "novidades",
-            tipo: "produtos",
-            titulo: "Novidades",
-            subtitulo: "Recém-chegadas à coleção",
-            prioridade: 10,
-            config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
-          },
-          {
-            id: "em_alta",
-            tipo: "produtos",
-            titulo: "Em alta",
-            subtitulo: "Peças em destaque na vitrine",
-            prioridade: 20,
-            config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
-          }
-        ]
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
   return new Response(
-    JSON.stringify({ error: "Rota não encontrada no alias blocks" }),
-    { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    JSON.stringify({
+      data: [
+        {
+          id: "novidades",
+          tipo: "produtos",
+          titulo: "Novidades",
+          subtitulo: "Recém-chegadas à coleção",
+          prioridade: 10,
+          config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+        },
+        {
+          id: "em_alta",
+          tipo: "produtos",
+          titulo: "Em alta",
+          subtitulo: "Peças em destaque na vitrine",
+          prioridade: 20,
+          config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
+        }
+      ]
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 });
