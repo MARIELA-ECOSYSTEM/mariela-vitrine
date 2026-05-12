@@ -1,4 +1,4 @@
-import type { Produto, ProdutoCor, ProdutoCorImagem, VarianteProduto } from "@/data/products";
+import type { Produto, ProdutoCor, ProdutoCorImagem, ProdutoMidia, VarianteProduto } from "@/data/products";
 import { isPublicProductBadgeType } from "@/services/productInsightsService";
  import { isValidSize, normalizeSizeLabel } from "@/lib/sizeUtils";
  import { isColecaoElegivelParaHome, type ColecaoElegibilidadeRaw, ColecaoExclusionReason } from "@/lib/colecaoEligibility";
