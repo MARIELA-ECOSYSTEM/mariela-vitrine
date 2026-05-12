@@ -44,7 +44,6 @@ serve(async (req) => {
           }
         }
 
-        // Se houver coleções, adicionamos o bloco
         if (colecoesResp.ok) {
           const colecoesData = await colecoesResp.json();
           const items = colecoesData.data || colecoesData.items || [];
@@ -53,7 +52,6 @@ serve(async (req) => {
           }
         }
 
-        // Adicionamos sempre um bloco de produtos (mesmo que venha a falhar o fetch real, o frontend gerencia)
         blocks.push({ id: "latest-products", tipo: "produtos", titulo: "Novidades", prioridade: 10, config: { filter: "novidades", limit: 8, estilo: "grade" } });
 
         return new Response(JSON.stringify({ data: blocks }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -75,8 +73,8 @@ serve(async (req) => {
         const errorText = await response.text();
         console.error(`[vitrine-api] Production Error on ${path}: ${response.status}`, errorText);
         
-        // Proteção para o catálogo: se der 500 (bug conhecido do motor), retornamos vazio em vez de erro fatal
-        if (path.includes('produtos')) {
+        // Proteção para o catálogo: se der erro (PDV indisponível ou bug interno), retornamos estrutura vazia em vez de 500
+        if (path.includes('produtos') || path.includes('destaques')) {
           return new Response(JSON.stringify({ items: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
             status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
@@ -92,6 +90,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[vitrine-api] Critical Error:`, error);
+    
+    // Fallback resiliente em caso de falha catastrófica
+    if (path.includes('produtos')) {
+        return new Response(JSON.stringify({ items: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+
     return new Response(JSON.stringify({ error: "Erro interno na Vitrine", details: error.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
