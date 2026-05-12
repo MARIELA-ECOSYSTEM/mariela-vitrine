@@ -174,7 +174,11 @@ interface CardProps {
   );
 };
 
-export const FeaturedCollections = () => {
+interface FeaturedCollectionsProps {
+  debug?: boolean;
+}
+
+export const FeaturedCollections = ({ debug }: FeaturedCollectionsProps) => {
   const [colecoes, setColecoes] = useState<CollectionLike[] | null>(null);
   const [failed, setFailed] = useState(false);
   const { search } = useLocation();
@@ -210,7 +214,18 @@ export const FeaturedCollections = () => {
     );
   }
 
-  if (failed || !colecoes || colecoes.length === 0) return null;
+  if (failed || !colecoes || colecoes.length === 0) {
+    if (debug) return (
+      <div className="p-4 border-2 border-dashed border-yellow-400 bg-yellow-50 text-yellow-700 text-xs font-mono rounded-lg my-4">
+        <div className="flex items-center gap-2 mb-1">
+          <AlertCircle className="w-4 h-4" />
+          <strong>Bloco Omitido (FeaturedCollections)</strong>
+        </div>
+        <div>Motivo: {failed ? "Falha na requisição da API" : "Nenhuma coleção elegível encontrada"}</div>
+      </div>
+    );
+    return null;
+  }
 
   return (
     <section
