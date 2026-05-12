@@ -17,7 +17,7 @@ export const HeroBannerCarousel = () => {
   const [mediaErrors, setMediaErrors] = useState<Record<string, { error: boolean; reason?: string }>>({});
   const [loadTimes, setLoadTimes] = useState<Record<string, number>>({});
   const loadStartTimes = useRef<Record<string, number>>({});
-  const isDebug = new URLSearchParams(search).get("debugColecoes") === "1";
+  const isDebug = import.meta.env.DEV && new URLSearchParams(search).get("debugColecoes") === "1";
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -163,11 +163,14 @@ export const HeroBannerCarousel = () => {
                 ref={(el) => {
                   if (!el) return;
                   if (isActive && isVisible) {
-                    const playPromise = el.play();
-                    if (playPromise !== undefined) {
-                      playPromise.catch(() => {});
+                    // Evita múltiplos play() e trata bloqueio de autoplay silenciosamente
+                    if (el.paused) {
+                      el.play().catch(() => {
+                        // Falha silenciosa em produção; opcionalmente log em DEV via isDebug
+                        if (isDebug) console.warn("[HeroBannerCarousel] Autoplay bloqueado pelo navegador");
+                      });
                     }
-                  } else {
+                  } else if (!el.paused) {
                     el.pause();
                   }
                 }}
