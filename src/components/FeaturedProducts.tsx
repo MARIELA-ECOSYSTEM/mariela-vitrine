@@ -17,8 +17,9 @@ interface FeaturedProductsProps {
   forceLoading?: boolean;
   linkTo: string;
   linkLabel: string;
-  products?: Produto[];
-}
+   products?: Produto[];
+   layoutMode?: "grade" | "lista" | "carrossel";
+ }
 
 function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: string | null; destaque_publico?: string | null; recomendacao_publica?: string | null }) {
   return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
