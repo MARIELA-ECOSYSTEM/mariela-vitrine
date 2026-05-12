@@ -225,7 +225,7 @@ const DEFAULT_CONFIG: VitrineConfig = {
       titulo: "Coleções em Destaque",
       subtitulo: "Confira nossas últimas campanhas",
       prioridade: 5,
-      config: { style: "grid" }
+      config: { estilo: "grade" }
     },
     {
       id: "novidades",
