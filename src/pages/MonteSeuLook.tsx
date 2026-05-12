@@ -5,6 +5,7 @@ import { PageContainer } from "@/components/PageContainer";
 import { MobileLookBuilder } from "@/components/MobileLookBuilder";
 import { useMonteSeuLookData } from "@/hooks/useMonteSeuLookData";
 import { LookSuggestionsSection } from "@/components/LookSuggestionsSection";
+import { ManualLooksSection } from "@/components/ManualLooksSection";
 
 const MonteSeuLook = () => {
   const { data, loading } = useMonteSeuLookData();
@@ -40,6 +41,10 @@ const MonteSeuLook = () => {
             )}
 
             <MobileLookBuilder />
+
+            {data.looks_manuais.length > 0 && (
+              <ManualLooksSection looks={data.looks_manuais} />
+            )}
           </div>
         </PageContainer>
       </main>
