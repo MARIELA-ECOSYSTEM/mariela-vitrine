@@ -26,7 +26,6 @@ import {
   getProductImageByColor,
   handleProductImageError,
   PRODUCT_IMAGE_PLACEHOLDER,
-  getProductImageByColor,
 } from "@/lib/productImage";
 import { vitrineApiService, LookSugestao, LookManual } from "@/services/vitrineApiService";
 
