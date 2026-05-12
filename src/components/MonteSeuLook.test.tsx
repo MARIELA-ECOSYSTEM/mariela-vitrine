@@ -59,6 +59,22 @@ describe("Monte Seu Look - Editorial", () => {
     });
   });
 
+  it("deve destacar produtos vinculados em looks manuais", async () => {
+    render(
+      <MemoryRouter>
+        <MonteSeuLook />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      // Verifica se o card do look "Look Noite" contém o link para o produto P1
+      const lookCard = screen.getByText("Look Noite").closest(".group");
+      expect(lookCard).toBeInTheDocument();
+      // No mock de produtos P1 tem nome "Blusa"
+      expect(screen.getByTitle("Blusa")).toBeInTheDocument();
+    });
+  });
+
   it("deve renderizar a seção de sugestões de looks", async () => {
     render(
       <MemoryRouter>

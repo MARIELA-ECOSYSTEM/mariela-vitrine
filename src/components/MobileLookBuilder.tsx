@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   ShoppingBag, 
@@ -22,6 +23,7 @@ import { CategorySkeleton, ColorSizeSkeleton } from "./CategorySkeleton";
 import { toast } from "@/hooks/use-toast";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
+import { getProductPath } from "@/lib/productLinks";
 import {
   getProductImageByColor,
   handleProductImageError,
@@ -1032,18 +1034,25 @@ const PreviewPanel = ({
             {isFullOutfit ? (
               /* Full Outfit - Larger display */
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
-                <img
-                  key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
-                  src={getImageForColor(
-                    selectedProducts.vestido || selectedProducts.conjunto,
-                    selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
-                  )}
-                  alt={getProductImageByColor(
-                    selectedProducts.vestido || selectedProducts.conjunto,
-                    selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto,
-                  ).alt}
-                  className="w-[85%] h-[85%] object-contain drop-shadow-2xl"
-                />
+                {(() => {
+                  const p = selectedProducts.vestido || selectedProducts.conjunto;
+                  if (!p) return null;
+                  const color = selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto;
+                  return (
+                    <Link 
+                      to={getProductPath(p)}
+                      className="w-[85%] h-[85%] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 group"
+                    >
+                      <img
+                        key={`outfit-${p.id}-${color || "default"}`}
+                        src={getImageForColor(p, color)}
+                        alt={getProductImageByColor(p, color).alt}
+                        className="w-full h-full object-contain drop-shadow-2xl group-hover:drop-shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                        onError={handleProductImageError}
+                      />
+                    </Link>
+                  );
+                })()}
               </div>
             ) : (
               /* Layered Outfit - Tighter spacing, larger images */
@@ -1051,12 +1060,18 @@ const PreviewPanel = ({
                 {/* Top - More overlap */}
                 <div className="flex-1 flex items-end justify-center w-full pb-0 z-10">
                   {selectedProducts.blusa ? (
-                    <img
-                      key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
-                      src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
-                      alt={getProductImageByColor(selectedProducts.blusa, selectedColors.blusa).alt}
-                      className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
-                    />
+                    <Link 
+                      to={getProductPath(selectedProducts.blusa)}
+                      className="w-[75%] h-auto max-h-[55%] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 group animate-pop-in"
+                    >
+                      <img
+                        key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
+                        src={getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
+                        alt={getProductImageByColor(selectedProducts.blusa, selectedColors.blusa).alt}
+                        className="w-full h-full object-contain drop-shadow-xl group-hover:drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+                        onError={handleProductImageError}
+                      />
+                    </Link>
                   ) : (
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-background/50">
                       <span className="text-3xl sm:text-4xl opacity-40">👚</span>
@@ -1067,12 +1082,18 @@ const PreviewPanel = ({
                 {/* Bottom - Overlapping with top */}
                 <div className="flex-1 flex items-start justify-center w-full pt-0 -mt-6 sm:-mt-8">
                   {selectedProducts.bottom ? (
-                    <img
-                      key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
-                      src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
-                      alt={getProductImageByColor(selectedProducts.bottom, selectedColors.bottom).alt}
-                      className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
-                    />
+                    <Link 
+                      to={getProductPath(selectedProducts.bottom)}
+                      className="w-[70%] h-auto max-h-[55%] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 group animate-pop-in"
+                    >
+                      <img
+                        key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
+                        src={getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
+                        alt={getProductImageByColor(selectedProducts.bottom, selectedColors.bottom).alt}
+                        className="w-full h-full object-contain drop-shadow-xl group-hover:drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+                        onError={handleProductImageError}
+                      />
+                    </Link>
                   ) : (
                     <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-primary/30 flex items-center justify-center bg-background/50">
                       <span className="text-2xl sm:text-3xl opacity-40">👖</span>
@@ -1084,15 +1105,18 @@ const PreviewPanel = ({
             
             {/* Bolsa Floating - Better positioned */}
             {selectedProducts.bolsa && (
-              <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in">
+              <Link 
+                to={getProductPath(selectedProducts.bolsa)}
+                className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 transition-transform hover:scale-110 active:scale-90 group animate-pop-in"
+              >
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
                   src={getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={getProductImageByColor(selectedProducts.bolsa, selectedColors.bolsa).alt}
                   onError={handleProductImageError}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain transition-all group-hover:brightness-110"
                 />
-              </div>
+              </Link>
             )}
           </div>
         ) : (
