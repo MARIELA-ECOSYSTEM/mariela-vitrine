@@ -1036,7 +1036,10 @@ const PreviewPanel = ({
               <div className="relative w-full h-full flex items-center justify-center animate-pop-in">
                 <img
                   key={`outfit-${(selectedProducts.vestido || selectedProducts.conjunto)?.id}-${selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto || "default"}`}
-                  src={getImageForLook(
+                  src={getImageForLook ? getImageForLook(
+                    selectedProducts.vestido || selectedProducts.conjunto,
+                    selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
+                  ) : getImageForColor(
                     selectedProducts.vestido || selectedProducts.conjunto,
                     selectedProducts.vestido ? selectedColors.vestido : selectedColors.conjunto
                   )}
@@ -1055,7 +1058,7 @@ const PreviewPanel = ({
                   {selectedProducts.blusa ? (
                     <img
                       key={`blusa-${selectedProducts.blusa.id}-${selectedColors.blusa || "default"}`}
-                      src={getImageForLook(selectedProducts.blusa, selectedColors.blusa)}
+                      src={getImageForLook ? getImageForLook(selectedProducts.blusa, selectedColors.blusa) : getImageForColor(selectedProducts.blusa, selectedColors.blusa)}
                       alt={getProductImageByColor(selectedProducts.blusa, selectedColors.blusa).alt}
                       className="w-[75%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
@@ -1071,7 +1074,7 @@ const PreviewPanel = ({
                   {selectedProducts.bottom ? (
                     <img
                       key={`bottom-${selectedProducts.bottom.id}-${selectedColors.bottom || "default"}`}
-                      src={getImageForLook(selectedProducts.bottom, selectedColors.bottom)}
+                      src={getImageForLook ? getImageForLook(selectedProducts.bottom, selectedColors.bottom) : getImageForColor(selectedProducts.bottom, selectedColors.bottom)}
                       alt={getProductImageByColor(selectedProducts.bottom, selectedColors.bottom).alt}
                       className="w-[70%] h-auto max-h-[55%] object-contain drop-shadow-xl animate-pop-in"
                     />
@@ -1089,7 +1092,7 @@ const PreviewPanel = ({
               <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-14 h-14 sm:w-18 sm:h-18 bg-background/95 backdrop-blur-sm rounded-xl p-1.5 shadow-xl border-2 border-primary/30 animate-pop-in">
                 <img
                   key={`bolsa-${selectedProducts.bolsa.id}-${selectedColors.bolsa || "default"}`}
-                  src={getImageForLook(selectedProducts.bolsa, selectedColors.bolsa)}
+                  src={getImageForLook ? getImageForLook(selectedProducts.bolsa, selectedColors.bolsa) : getImageForColor(selectedProducts.bolsa, selectedColors.bolsa)}
                   alt={getProductImageByColor(selectedProducts.bolsa, selectedColors.bolsa).alt}
                   className="w-full h-full object-contain"
                 />
@@ -1154,7 +1157,7 @@ const PreviewPanel = ({
                   <div className="flex items-center gap-2 min-w-0">
                     <img
                       key={`${product.id}-${color || "default"}`}
-                      src={getImageForLook(product, color)}
+                      src={getImageForLook ? getImageForLook(product, color) : getImageForColor(product, color)}
                       alt={getProductImageByColor(product, color).alt}
                       className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded"
                     />
