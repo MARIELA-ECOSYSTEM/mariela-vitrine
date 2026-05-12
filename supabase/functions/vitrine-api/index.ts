@@ -14,9 +14,14 @@ serve(async (req) => {
   const url = new URL(req.url);
   // In Supabase, the path might or might not include the function name depending on how it's called.
   // We normalize it to always start from the actual resource path.
-  const path = url.pathname
+  // Normalizamos o path para garantir que a comparação de rotas funcione
+  // independente de como a Edge Function é invocada.
+  let path = url.pathname
     .replace(/^\/functions\/v1\/vitrine-api/, '')
-    .replace(/^\/vitrine-api/, '') || '/';
+    .replace(/^\/vitrine-api/, '');
+  
+  // Removemos query strings codificadas que podem vir no pathname em alguns ambientes
+  path = path.split('?')[0].split('%3F')[0] || '/';
 
   console.log(`[vitrine-api] Request: ${req.method} ${path}`);
 
