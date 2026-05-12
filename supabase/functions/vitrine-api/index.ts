@@ -27,15 +27,32 @@ serve(async (req) => {
     console.log(`[vitrine-api] Forwarding to production: ${req.method} ${path}`, queryParams);
 
     try {
+      const PRODUCTION_API_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
+
       // Rota de Healthcheck
       if (path === '/health' || path === '/') {
+        const healthData = {
+          status: "ok",
+          mode: "proxy",
+          timestamp: new Date().toISOString(),
+          target: PRODUCTION_API_URL,
+          endpoints: [
+            "/produtos",
+            "/blocks",
+            "/colecoes",
+            "/promocoes",
+            "/campanhas",
+            "/categorias",
+            "/monte-seu-look"
+          ]
+        };
+        
         return new Response(
-          JSON.stringify({ status: "ok", mode: "proxy", timestamp: new Date().toISOString() }),
+          JSON.stringify(healthData),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const PRODUCTION_API_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
       const targetUrl = new URL(`${PRODUCTION_API_URL}${path}${url.search}`);
       
       console.log(`[vitrine-api] Proxying to: ${targetUrl.toString()}`);
