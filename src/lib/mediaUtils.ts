@@ -73,13 +73,23 @@
      mediaRegistry.set(url, { 
        type: as,
        priority: priority,
-       isAboveFold: current?.isAboveFold || true, // Se precarregou, assumimos que é importante
+       isAboveFold: current?.isAboveFold || true,
        preloaded: true 
      });
    }
  
-   const selector = `link[data-media-preload="${CSS.escape(url)}"]`;
-   if (document.head.querySelector(selector)) return;
+   // Fallback para CSS.escape se não estiver disponível (ex: JSDOM antigo ou SSR)
+   const safeUrl = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(url) : url.replace(/[!"#$%&'()*+,.\/:;<=>?@\[\\\]^`{|}~]/g, "\\$&");
+   const selector = `link[data-media-preload="${safeUrl}"]`;
+   
+   try {
+     if (document.head.querySelector(selector)) return;
+   } catch {
+     // Fallback se o seletor complexo falhar
+     const existing = Array.from(document.head.querySelectorAll('link[data-media-preload]'))
+       .find(l => l.getAttribute('data-media-preload') === url);
+     if (existing) return;
+   }
  
    const link = document.createElement("link");
    link.rel = "preload";
