@@ -3,7 +3,7 @@
  import { Link } from "react-router-dom";
  import { cn } from "@/lib/utils";
  import { Instagram, ArrowRight } from "lucide-react";
- import { applyMediaProps } from "@/lib/mediaUtils";
+ import { applyMediaProps, injectMediaPreload } from "@/lib/mediaUtils";
  
  interface BannerBlockProps {
    titulo: string | null;
