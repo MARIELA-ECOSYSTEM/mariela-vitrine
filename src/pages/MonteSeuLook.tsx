@@ -3,8 +3,21 @@ import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { PageContainer } from "@/components/PageContainer";
 import { MobileLookBuilder } from "@/components/MobileLookBuilder";
+import { LookSugestoes } from "@/components/LookSugestoes";
+import { useState, useCallback } from "react";
 
 const MonteSeuLook = () => {
+  const [preSelectedIds, setPreSelectedIds] = useState<string[]>([]);
+
+  const handleSelectLook = useCallback((produtoIds: string[]) => {
+    setPreSelectedIds(produtoIds);
+    // Rola suavemente até o builder se necessário
+    const builder = document.getElementById('look-builder-section');
+    if (builder) {
+      builder.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/10 to-background pt-[60px] sm:pt-[68px]">
       <Header />
@@ -22,8 +35,12 @@ const MonteSeuLook = () => {
             </p>
           </div>
           
-          <div className="max-w-6xl mx-auto">
-            <MobileLookBuilder />
+          <div className="max-w-6xl mx-auto space-y-12">
+            <LookSugestoes onSelectLook={handleSelectLook} />
+            
+            <div id="look-builder-section">
+              <MobileLookBuilder preSelectedIds={preSelectedIds} />
+            </div>
           </div>
         </PageContainer>
       </main>
