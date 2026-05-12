@@ -19,6 +19,14 @@
    }),
  }));
  
+ vi.mock("@/contexts/CartContext", () => ({
+   useCart: () => ({ addToCart: vi.fn() }),
+ }));
+ 
+ vi.mock("@/hooks/use-toast", () => ({
+   useToast: () => ({ toast: vi.fn() }),
+ }));
+ 
  // Mock vitrineApiService
  vi.mock("@/services/vitrineApiService", async () => {
    const actual = await vi.importActual("@/services/vitrineApiService");
