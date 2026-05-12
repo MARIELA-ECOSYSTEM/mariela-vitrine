@@ -7,7 +7,7 @@ import { isPublicProductBadgeType } from "@/services/productInsightsService";
  const VITRINE_API_PRODUCTION_URL = "https://pyqjzdtaljckwjscmdwp.supabase.co/functions/v1/vitrine-api";
  // Usamos o VITE_SUPABASE_URL do ambiente atual para recursos em desenvolvimento (editorial).
  // Em produção, ambos serão o mesmo projeto. Em preview, isso permite testar novos contratos.
- const VITRINE_API_LOCAL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vitrine-api`;
+ const VITRINE_API_LOCAL_URL = `${import.meta.env.VITE_SUPABASE_URL || 'https://zbmdrncgsuvjexpiezbr.supabase.co'}/functions/v1/vitrine-api`;
  
  const EDITORIAL_PATHS = ['/home/blocks', '/monte-seu-look', '/config'];
 const API_TIMEOUT = 15000;
