@@ -143,6 +143,9 @@
      });
    }, [blocks, manualProducts]);
  
+   const mediaReport = useMemo(() => debug ? getMediaPerformanceReport() : null, [debug, blocks, manualProducts]);
+   const headIssues = useMemo(() => debug ? validateHeadPreloads() : [], [debug, blocks]);
+ 
    if (loading) {
      return (
        <div className="space-y-6 sm:space-y-10">
@@ -163,9 +166,6 @@
    if (blocks.length === 0) {
      return null;
    }
- 
-    const mediaReport = useMemo(() => debug ? getMediaPerformanceReport() : null, [debug, blocks, manualProducts]);
-    const headIssues = useMemo(() => debug ? validateHeadPreloads() : [], [debug, blocks]);
  
     return (
       <div className="space-y-6 sm:space-y-10">
