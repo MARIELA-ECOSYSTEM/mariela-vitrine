@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
- import { ArrowRight, ImageOff, Sparkles } from "lucide-react";
+  import { ArrowRight, ImageOff, Sparkles, AlertCircle } from "lucide-react";
  import {
    vitrineApiService,
    type ColecaoDestaque,
