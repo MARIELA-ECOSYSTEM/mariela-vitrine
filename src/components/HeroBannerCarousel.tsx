@@ -4,7 +4,8 @@ import logoSimple from "@/assets/logo-simple.png";
 import { useHeaderOverlay } from "@/contexts/HeaderOverlayContext";
 import { vitrineApiService, type ColecaoDestaque } from "@/services/vitrineApiService";
 import { cn } from "@/lib/utils";
-import { ImageOff, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+ import { ImageOff, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+ import { applyMediaProps } from "@/lib/mediaUtils";
 import { Button } from "@/components/ui/button";
 
 export const HeroBannerCarousel = () => {
@@ -149,53 +150,54 @@ export const HeroBannerCarousel = () => {
             )}
           >
             {media?.type === "video" && (isActive || Math.abs(idx - currentIndex) <= 1 || (currentIndex === colecoes.length - 1 && idx === 0) || (currentIndex === 0 && idx === colecoes.length - 1)) ? (
-              <video
-                src={media.url}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
-                onLoadStart={() => { loadStartTimes.current[colecao.id] = performance.now(); }}
-                onLoadedData={() => handleMediaLoad(colecao.id)}
-                onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: { error: true, reason: "Erro de decodificação ou rede" } }))}
-                ref={(el) => {
-                  if (!el) return;
-                  if (isActive && isVisible) {
-                    // Evita múltiplos play() e trata bloqueio de autoplay silenciosamente
-                    if (el.paused) {
-                      el.play().catch(() => {
-                        // Falha silenciosa em produção; opcionalmente log em DEV via isDebug
-                        if (isDebug) console.warn("[HeroBannerCarousel] Autoplay bloqueado pelo navegador");
-                      });
-                    }
-                  } else if (!el.paused) {
-                    el.pause();
-                  }
-                }}
-              />
+               <video
+                 src={media.url}
+                 muted
+                 loop
+                 playsInline
+                 {...applyMediaProps(isActive, "high")}
+                 preload={isActive ? "auto" : "metadata"}
+                 className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
+                 onLoadStart={() => { loadStartTimes.current[colecao.id] = performance.now(); }}
+                 onLoadedData={() => handleMediaLoad(colecao.id)}
+                 onError={() => setMediaErrors(prev => ({ ...prev, [colecao.id]: { error: true, reason: "Erro de decodificação ou rede" } }))}
+                 ref={(el) => {
+                   if (!el) return;
+                   if (isActive && isVisible) {
+                     // Evita múltiplos play() e trata bloqueio de autoplay silenciosamente
+                     if (el.paused) {
+                       el.play().catch(() => {
+                         // Falha silenciosa em produção; opcionalmente log em DEV via isDebug
+                         if (isDebug) console.warn("[HeroBannerCarousel] Autoplay bloqueado pelo navegador");
+                       });
+                     }
+                   } else if (!el.paused) {
+                     el.pause();
+                   }
+                 }}
+               />
             ) : media?.url ? (
-              <img
-                src={media.url}
-                alt={colecao.nome}
-                className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
-                onLoadStart={() => { 
-                  const key = media.url === colecao.home_destaque_url ? colecao.id : 
-                             media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
-                  loadStartTimes.current[key] = performance.now(); 
-                }}
-                onLoad={() => {
-                  const key = media.url === colecao.home_destaque_url ? colecao.id : 
-                             media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
-                  handleMediaLoad(key);
-                }}
-                onError={() => {
-                  const key = media.url === colecao.home_destaque_url ? colecao.id : 
-                             media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
-                  setMediaErrors(prev => ({ ...prev, [key]: { error: true, reason: "Falha ao carregar arquivo" } }));
-                }}
-              />
+               <img
+                 src={media.url}
+                 alt={colecao.nome}
+                 {...applyMediaProps(isActive, isActive ? "high" : "low")}
+                 className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
+                 onLoadStart={() => { 
+                   const key = media.url === colecao.home_destaque_url ? colecao.id : 
+                              media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
+                   loadStartTimes.current[key] = performance.now(); 
+                 }}
+                 onLoad={() => {
+                   const key = media.url === colecao.home_destaque_url ? colecao.id : 
+                              media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
+                   handleMediaLoad(key);
+                 }}
+                 onError={() => {
+                   const key = media.url === colecao.home_destaque_url ? colecao.id : 
+                              media.url === colecao.banner_url ? `${colecao.id}-banner` : `${colecao.id}-capa`;
+                   setMediaErrors(prev => ({ ...prev, [key]: { error: true, reason: "Falha ao carregar arquivo" } }));
+                 }}
+               />
             ) : (
               <div className="w-full h-full bg-muted flex items-center justify-center">
                 <ImageOff className="w-12 h-12 text-muted-foreground/30" />

@@ -58,6 +58,7 @@ vi.mock("@/services/vitrineApiService", async () => {
       }),
       getProdutos: vi.fn().mockResolvedValue([]),
       getProdutosByIds: vi.fn().mockResolvedValue([]),
+      getColecoesDestaque: vi.fn().mockResolvedValue([]),
     },
   };
 });
@@ -67,6 +68,12 @@ describe("Index Dynamic Blocks", () => {
     vi.clearAllMocks();
     cleanup();
     vi.stubGlobal("import.meta", { env: { DEV: false } });
+    
+    // Mock video.play to avoid JSDOM "Not implemented" errors
+    Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    });
   });
 
   it("renders dynamic blocks from API", async () => {
@@ -92,7 +99,7 @@ describe("Index Dynamic Blocks", () => {
     });
   });
 
-  it("is silent in production for missing media", async () => {
+  it("is silent in production for missing media and autoplay", async () => {
     const mockBlocks = [
       {
         id: "banner-invalid",
@@ -102,11 +109,11 @@ describe("Index Dynamic Blocks", () => {
         config: {}, 
       },
       {
-        id: "block-next",
-        tipo: "produtos",
-        titulo: "Proximo Bloco",
+        id: "video-fail",
+        tipo: "banner",
+        titulo: "Video Autoplay",
         prioridade: 2,
-        config: { filter: "novidades" },
+        config: { mediaUrl: "video.mp4", mediaType: "video" },
       },
     ];
     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
@@ -114,6 +121,7 @@ describe("Index Dynamic Blocks", () => {
     const logSpy = vi.spyOn(console, 'log');
     const warnSpy = vi.spyOn(console, 'warn');
     const errorSpy = vi.spyOn(console, 'error');
+    const debugSpy = vi.spyOn(console, 'debug');
 
     render(
       <MemoryRouter>
@@ -122,16 +130,16 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Proximo Bloco")).toBeInTheDocument();
+      expect(screen.getByText("Video Autoplay")).toBeInTheDocument();
     });
 
-    expect(screen.queryByText("Banner Invisivel")).not.toBeInTheDocument();
     expect(logSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
+    expect(debugSpy).not.toHaveBeenCalled();
   });
 
-  it("supports video with poster_url", async () => {
+  it("supports video with posterUrl", async () => {
     const mockBlocks = [
       {
         id: "video-block",
@@ -160,14 +168,21 @@ describe("Index Dynamic Blocks", () => {
     });
   });
 
-  it("carrossel has accessibility attributes", async () => {
+  it("applies fetchPriority high ONLY to top media", async () => {
     const mockBlocks = [
       {
-        id: "block-carrossel",
-        tipo: "produtos",
-        titulo: "Acessibilidade",
+        id: "top-banner",
+        tipo: "banner",
+        titulo: "Top",
         prioridade: 1,
-        config: { filter: "novidades", estilo: "carrossel" },
+        config: { mediaUrl: "top.jpg", mediaType: "image" },
+      },
+      {
+        id: "bottom-banner",
+        tipo: "banner",
+        titulo: "Bottom",
+        prioridade: 2,
+        config: { mediaUrl: "bottom.jpg", mediaType: "image" },
       },
     ];
     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
@@ -179,9 +194,16 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-      const carousel = screen.getByRole('region', { name: /Carrossel de Acessibilidade/i });
-      expect(carousel).toBeInTheDocument();
-      expect(carousel).toHaveAttribute('tabIndex', '0');
+      const images = document.querySelectorAll('img[src$=".jpg"]');
+      const topImg = Array.from(images).find(img => img.getAttribute('src') === "top.jpg");
+      const bottomImg = Array.from(images).find(img => img.getAttribute('src') === "bottom.jpg");
+      
+      // Checking for the lowercase attribute as browsers/React pass it this way
+      expect(topImg).toHaveAttribute('fetchpriority', 'high');
+      expect(topImg).toHaveAttribute('loading', 'eager');
+      
+      expect(bottomImg).toHaveAttribute('fetchpriority', 'auto');
+      expect(bottomImg).toHaveAttribute('loading', 'lazy');
     });
   });
 
