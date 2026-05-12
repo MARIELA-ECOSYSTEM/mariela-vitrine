@@ -1348,9 +1348,7 @@ export const vitrineApiService = {
        }
  
         const sorted = response.data.sort((a, b) => a.prioridade - b.prioridade);
-        if (import.meta.env.DEV) {
-          console.info("[vitrine-api] Home Blocks carregados:", sorted.map(b => `${b.id} (${b.prioridade})`).join(", "));
-        }
+        console.info("[vitrine-api] Home Blocks carregados:", sorted.map(b => `${b.id} (${b.prioridade})`).join(", "));
         return sorted;
      } catch (error) {
        logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);

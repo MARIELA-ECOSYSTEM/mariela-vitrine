@@ -10,7 +10,8 @@
    debug?: boolean;
  }
  
- export const DynamicHomeRenderer = memo(({ blocks, loading, debug }: DynamicHomeRendererProps) => {
+  export const DynamicHomeRenderer = memo(({ blocks, loading, debug }: DynamicHomeRendererProps) => {
+    console.log("[DynamicHomeRenderer] Rendering blocks:", blocks.map(b => b.id));
    if (loading) {
      return (
        <>
