@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, ImageOff, Sparkles } from "lucide-react";
+ import { ArrowRight, ImageOff, Sparkles } from "lucide-react";
+ import { applyMediaProps } from "@/lib/mediaUtils";
 import {
   vitrineApiService,
   type ColecaoDestaque,
@@ -91,14 +92,13 @@ const CollectionCard = ({ colecao, href, variant }: CardProps) => {
           <ImageOff className="w-8 h-8 text-muted-foreground/50" aria-hidden />
         </div>
       ) : (
-        <img
-          src={displayImageUrl ?? undefined}
-          alt={colecao.nome}
-          loading="lazy"
-          decoding="async"
-          onError={() => setImgFailed(true)}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+         <img
+           src={displayImageUrl ?? undefined}
+           alt={colecao.nome}
+           {...applyMediaProps(variant === "hero")}
+           onError={() => setImgFailed(true)}
+           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+         />
       )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
