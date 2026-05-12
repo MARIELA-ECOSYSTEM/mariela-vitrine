@@ -1646,37 +1646,64 @@ export const vitrineApiService = {
    isValidBrandingUrl: isValidUrl,
  
     _setupDiagnostic(): void {
-      if (import.meta.env.DEV && typeof window !== "undefined") {
-        (window as any).diagnosticoVitrine = () => {
-          console.group("🔍 [vitrine-api] Diagnóstico Completo");
+      if (typeof window === "undefined") return;
+      
+      const isDebugRequested = new URLSearchParams(window.location.search).get("debugVitrine") === "1";
+      const isDev = import.meta.env.DEV;
+
+      if (isDev || isDebugRequested) {
+        (window as any).diagnosticoVitrine = async () => {
+          console.group("🔍 [vitrine-api] Diagnóstico Estrutural Completo");
           
-          console.group("📦 Cache & Sessão");
-          console.info("Versão do Cache:", LOCAL_STORAGE_CACHE_KEY);
-          console.info("Memory Cache Keys:", Array.from(memoryCache.keys()));
+          console.group("📦 Cache, Sessão & Performance");
+          console.info("Versão do Contrato (Cache):", LOCAL_STORAGE_CACHE_KEY);
+          console.info("Memory Cache Items:", memoryCache.size);
+          console.info("Inflight Requests:", inflightRequests.size);
           console.groupEnd();
 
-          console.group("📂 Home Blocks");
-          this.getHomeBlocks().then(blocks => {
-            console.table(blocks.map(b => ({
-              id: b.id,
-              tipo: b.tipo,
-              titulo: b.titulo,
-              prioridade: b.prioridade,
-              tem_config: !!b.config
-            })));
-          });
+          console.group("📂 Home Blocks (Configuração)");
+          const blocks = await this.getHomeBlocks();
+          console.info(`Total de blocos: ${blocks.length}`);
+          console.table(blocks.map(b => ({
+            id: b.id,
+            tipo: b.tipo,
+            titulo: b.titulo || "Sem título",
+            prioridade: b.prioridade,
+            has_config: !!b.config,
+            validade: b.validade ? `${b.validade.inicio || '...'} ate ${b.validade.fim || '...'}` : 'Sempre'
+          })));
           console.groupEnd();
 
-          console.group("🏷️ Coleções Destaque");
-          this.getDiagnosticColecoesDestaque().then(d => console.log(d));
+          console.group("🏷️ Coleções & Campanhas Destaque");
+          const colecoesDiagnosis = await this.getDiagnosticColecoesDestaque();
+          console.log(colecoesDiagnosis);
+          console.groupEnd();
+
+          console.group("🛍️ Produtos & Elegibilidade");
+          try {
+            const prodPage = await this.getProdutosPage({ limit: 1 });
+            console.info("Status Catálogo:", {
+              total: prodPage.total,
+              recebidos_amostra: prodPage.items.length,
+              hasMore: prodPage.hasMore
+            });
+          } catch (e) {
+            console.error("Erro ao sondar catálogo:", e);
+          }
           console.groupEnd();
 
           console.group("✨ Monte Seu Look");
-          this.getDiagnosticLooks().then(d => console.log(d));
+          const looksDiag = await this.getDiagnosticLooks();
+          console.log(looksDiag);
           console.groupEnd();
 
           console.groupEnd();
+          return "Diagnóstico concluído. Verifique os logs acima.";
         };
+
+        if (isDebugRequested) {
+          console.info("🛠️ [debugVitrine] Modo diagnóstico ATIVO. Use 'await diagnosticoVitrine()' no console para detalhes.");
+        }
       }
     },
    /**
