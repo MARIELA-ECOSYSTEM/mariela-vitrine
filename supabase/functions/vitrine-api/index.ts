@@ -23,9 +23,41 @@ serve(async (req) => {
   // Removemos query strings codificadas que podem vir no pathname em alguns ambientes
   path = path.split('?')[0].split('%3F')[0] || '/';
 
-  console.log(`[vitrine-api] Request: ${req.method} ${path}`);
+   const queryParams = Object.fromEntries(url.searchParams.entries());
+   console.log(`[vitrine-api] Request: ${req.method} ${path}`, queryParams);
 
    try {
+      // Rota de Produtos (Mock para Preview)
+      if (path === '/produtos' || path === '/produtos/') {
+        // Mock básico para evitar 500/404 no catálogo durante o desenvolvimento
+        return new Response(
+          JSON.stringify({
+            items: [],
+            limit: 12,
+            offset: 0,
+            total: 0,
+            hasMore: false
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Rota de Coleções (Mock para Preview)
+      if (path === '/colecoes' || path === '/colecoes/') {
+        return new Response(
+          JSON.stringify({ data: [] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Rota de Categorias (Mock para Preview)
+      if (path === '/categorias' || path === '/categorias/') {
+        return new Response(
+          JSON.stringify({ data: ["Vestidos", "Blusas", "Calças", "Saias"] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
      // Rota de Configurações
      if (path === '/config' || path === '/config/') {
        return new Response(
