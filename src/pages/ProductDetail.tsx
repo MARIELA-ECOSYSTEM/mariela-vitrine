@@ -857,7 +857,9 @@ const ProductDetail = () => {
                 images={imagensParaMostrar}
                 media={midiaParaMostrar}
                 imageColors={galeriaUnificada.map((g) => g.cor)}
-                colorSwatchMap={COLOR_MAP}
+                 colorSwatchMap={COLOR_MAP}
+                 isNovidade={produto.isNovidade}
+                 emPromocao={produto.emPromocao}
                 productName={
                   corSelecionada
                     ? `${produto.nome} — cor ${corSelecionada}`
