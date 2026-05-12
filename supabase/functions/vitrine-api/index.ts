@@ -85,8 +85,27 @@ serve(async (req) => {
         });
       }
 
-      const data = await response.json();
-      return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error(`[vitrine-api] Invalid JSON from production on ${path}:`, jsonError.message);
+        
+        if (path.includes('produtos')) {
+          return new Response(JSON.stringify({ items: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        throw new Error("Resposta inválida do servidor de produção");
+      }
+
+      return new Response(JSON.stringify(data), { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        } 
+      });
 
   } catch (error) {
     console.error(`[vitrine-api] Critical Error:`, error);
