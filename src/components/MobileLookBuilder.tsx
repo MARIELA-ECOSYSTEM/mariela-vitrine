@@ -24,6 +24,9 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { useSizeSelectionGuide } from "@/hooks/useSizeSelectionGuide";
 import {
   getProductImageByColor,
+  getProductCardImage,
+  getProductLookImage,
+  debugProductImage,
   handleProductImageError,
   PRODUCT_IMAGE_PLACEHOLDER,
 } from "@/lib/productImage";
@@ -406,23 +409,16 @@ export const MobileLookBuilder = ({ preSelectedIds = [] }: { preSelectedIds?: st
   // Implementa a regra de fallback da Vitrine: 
   // 1. imagem_look_url -> 2. imagem_card_url -> 3. imagem principal (da cor ou produto)
   const getImageForLook = (produto: Produto | null, cor: string) => {
-    if (!produto) return PRODUCT_IMAGE_PLACEHOLDER;
-    
-    // 1. Tenta imagem editorial específica para Look
-    if (produto.imagem_look_url) return produto.imagem_look_url;
-    
-    // 2. Tenta imagem de card (fallback editorial intermediário)
-    if (produto.imagem_card_url) return produto.imagem_card_url;
-    
-    // 3. Fallback para imagem principal da cor ou produto
-    return getProductImageByColor(produto, cor).src;
+    const res = getProductLookImage(produto, cor);
+    debugProductImage("Looks", res);
+    return res.src || PRODUCT_IMAGE_PLACEHOLDER;
   };
 
   // Wrapper para cards e listagens (Vitrine comum)
   const getImageForCard = (produto: Produto | null, cor: string) => {
-    if (!produto) return PRODUCT_IMAGE_PLACEHOLDER;
-    if (produto.imagem_card_url) return produto.imagem_card_url;
-    return getProductImageByColor(produto, cor).src;
+    const res = getProductCardImage(produto, cor);
+    debugProductImage("Products", res);
+    return res.src || PRODUCT_IMAGE_PLACEHOLDER;
   };
 
   // Mantém compatibilidade com a assinatura antiga usada nos componentes internos
@@ -957,7 +953,7 @@ const CategorySection = ({
                     )}
                   >
                     <img
-                      src={produto.imagens[0] || PRODUCT_IMAGE_PLACEHOLDER}
+                      src={getProductCardImage(produto, null).src || PRODUCT_IMAGE_PLACEHOLDER}
                       alt={getProductImageByColor(produto, null).alt}
                       className="w-full h-full object-cover transition-transform duration-300"
                       onError={handleProductImageError}
