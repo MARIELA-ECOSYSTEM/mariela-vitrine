@@ -12,7 +12,11 @@ serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const path = url.pathname.replace(/\/functions\/v1\/vitrine-api/, '');
+  // In Supabase, the path might or might not include the function name depending on how it's called.
+  // We normalize it to always start from the actual resource path.
+  const path = url.pathname
+    .replace(/^\/functions\/v1\/vitrine-api/, '')
+    .replace(/^\/vitrine-api/, '') || '/';
 
   console.log(`[vitrine-api] Request: ${req.method} ${path}`);
 

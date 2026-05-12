@@ -15,7 +15,9 @@ serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const path = url.pathname.replace(/\/functions\/v1\/blocks/, '');
+  const path = url.pathname
+    .replace(/^\/functions\/v1\/blocks/, '')
+    .replace(/^\/blocks/, '') || '/';
 
   console.log(`[blocks] Request: ${req.method} ${path}`);
 
