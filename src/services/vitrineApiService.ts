@@ -34,7 +34,8 @@ const CACHE_TTL = {
   categorias: 5 * 60 * 1000,
   produtos: 60 * 1000,
   produto: 2 * 60 * 1000,
-  destaques: 5 * 60 * 1000,
+   destaques: 5 * 60 * 1000,
+   homeBlocks: 5 * 60 * 1000,
 } as const;
 
  const FALLBACK_STALE_WINDOW = 5 * 60 * 1000;
@@ -95,6 +96,31 @@ export interface ColecaoResponse {
   data: unknown[];
 }
 
+ export interface HomeBlock {
+   id: string;
+   tipo: "produtos" | "colecoes" | "banner" | "instagram";
+   titulo: string | null;
+   subtitulo: string | null;
+   prioridade: number;
+   config: {
+     filter?: string;
+     limit?: number;
+     colecoes?: string[]; // IDs de coleções se tipo for "colecoes"
+     produtos?: string[]; // IDs de produtos se tipo for "produtos" (manual)
+     linkLabel?: string;
+     linkTo?: string;
+     estilo?: "grade" | "carrossel" | "lista";
+   };
+   validade?: {
+     inicio: string | null;
+     fim: string | null;
+   };
+ }
+ 
+ export interface HomeBlocksResponse {
+   data: HomeBlock[];
+ }
+ 
 /**
  * Coleção em destaque consumida da rota
  * `/colecoes?detalhes=1&destaque=1`. A Vitrine usa APENAS estes campos do
@@ -186,6 +212,33 @@ const DEFAULT_CONFIG: VitrineConfig = {
   instagram: null,
 };
 
+ const DEFAULT_HOME_BLOCKS: HomeBlock[] = [
+   {
+     id: "novidades",
+     tipo: "produtos",
+     titulo: "Novidades",
+     subtitulo: "Recém-chegadas à coleção",
+     prioridade: 10,
+     config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+   },
+   {
+     id: "em_alta",
+     tipo: "produtos",
+     titulo: "Em alta",
+     subtitulo: "Peças em destaque na vitrine",
+     prioridade: 20,
+     config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
+   },
+   {
+     id: "promocoes",
+     tipo: "produtos",
+     titulo: "Promoções",
+     subtitulo: "Descontos em peças selecionadas",
+     prioridade: 100,
+     config: { filter: "promocoes", limit: 4, linkLabel: "Ver todas as promoções", linkTo: "/products?filter=promocoes" }
+   }
+ ];
+ 
 const memoryCache = new Map<string, CacheEntry<unknown>>();
 const inFlightDestaques = new Map<string, Promise<ProdutoDestaquePublico[]>>();
 
@@ -1191,6 +1244,29 @@ function mapConfig(response: unknown): VitrineConfig {
 }
 
 export const vitrineApiService = {
+   /**
+    * Busca os blocos dinâmicos da Home orientados pelo Motor de Campanhas.
+    * Em caso de falha, retorna um conjunto padrão (fallback resiliente).
+    */
+   async getHomeBlocks(): Promise<HomeBlock[]> {
+     try {
+       const response = await fetchCachedJson<HomeBlocksResponse>(
+         "/home/blocks",
+         undefined,
+         CACHE_TTL.homeBlocks
+       );
+       
+       if (!response || !Array.isArray(response.data)) {
+         throw createInvalidPayloadError("getHomeBlocks");
+       }
+ 
+       return response.data.sort((a, b) => a.prioridade - b.prioridade);
+     } catch (error) {
+       logVitrineWarning("Falha ao carregar blocos dinâmicos da Home, usando fallback.", error);
+       return DEFAULT_HOME_BLOCKS.sort((a, b) => a.prioridade - b.prioridade);
+     }
+    },
+ 
   async getConfig(): Promise<VitrineConfig> {
     try {
       return mapConfig(await fetchCachedJson<ConfigResponse>("/config", undefined, CACHE_TTL.config, validateConfigResponse));

@@ -1,6 +1,15 @@
 import type { Produto } from "@/data/products";
 
-export type PublicProductBadgeType = "queridinho_loja" | "em_alta" | "mais_procurado" | "destaque_colecao";
+ export type PublicProductBadgeType = 
+   | "queridinho_loja" 
+   | "em_alta" 
+   | "mais_procurado" 
+   | "destaque_colecao"
+   | "tendencia"
+   | "novo"
+   | "mais_vendido"
+   | "estoque_baixo"
+   | "alta_conversao";
 
 export interface PublicProductBadge {
   type: PublicProductBadgeType;
@@ -34,10 +43,40 @@ export const PUBLIC_BADGES: Record<PublicProductBadgeType, PublicProductBadge> =
     description: "Peça selecionada para a vitrine",
     priority: 1,
   },
+  tendencia: {
+    type: "tendencia",
+    label: "Tendência",
+    description: "Peça que está na moda",
+    priority: 5,
+  },
+  novo: {
+    type: "novo",
+    label: "Novo",
+    description: "Recém-chegado à coleção",
+    priority: 6,
+  },
+  mais_vendido: {
+    type: "mais_vendido",
+    label: "Mais vendido",
+    description: "Sucesso de vendas",
+    priority: 7,
+  },
+  estoque_baixo: {
+    type: "estoque_baixo",
+    label: "Estoque baixo",
+    description: "Últimas unidades",
+    priority: 8,
+  },
+  alta_conversao: {
+    type: "alta_conversao",
+    label: "Alta conversão",
+    description: "Destaque de vendas",
+    priority: 9,
+  },
 };
 
 export function isPublicProductBadgeType(value: string): value is PublicProductBadgeType {
-  return value === "queridinho_loja" || value === "em_alta" || value === "mais_procurado" || value === "destaque_colecao";
+   return value in PUBLIC_BADGES;
 }
 
 function readExplicitBadge(produto: Produto): PublicProductBadge | null {

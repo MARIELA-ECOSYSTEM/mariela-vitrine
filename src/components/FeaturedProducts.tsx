@@ -11,7 +11,7 @@ import { isProductNovidade } from "@/lib/novidades";
 interface FeaturedProductsProps {
   title: string;
   subtitle?: string;
-  filter: "novidades" | "promocoes" | "destaque" | "em_alta" | "mais_procurado" | "queridinho_loja" | "destaque_colecao";
+   filter: "novidades" | "promocoes" | "destaque" | "em_alta" | "mais_procurado" | "queridinho_loja" | "destaque_colecao" | "tendencia" | "novo" | "mais_vendido" | "estoque_baixo" | "alta_conversao";
   limit?: number;
   minItems?: number;
   forceLoading?: boolean;
@@ -40,7 +40,12 @@ export const FeaturedProducts = ({ title, subtitle, filter, limit = 8, minItems 
       case "em_alta":
       case "mais_procurado":
       case "queridinho_loja":
-      case "destaque_colecao":
+       case "destaque_colecao":
+       case "tendencia":
+       case "novo":
+       case "mais_vendido":
+       case "estoque_baixo":
+       case "alta_conversao":
         return produtos.filter((p) => getBadgeValue(p) === filter);
     }
   }, [produtos, filter, limit, products]);
