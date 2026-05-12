@@ -11,13 +11,13 @@
    }
  
    const url = new URL(req.url);
-   const path = url.pathname.replace("/vitrine-api", "");
+   const pathname = url.pathname;
  
-   console.log(`[vitrine-api] Request: ${req.method} ${path}`);
+   console.log(`[vitrine-api] Request: ${req.method} ${pathname}`);
  
    try {
      // Rota: /home/blocks
-     if (path === "/home/blocks" || path === "/home/blocks/") {
+     if (pathname.endsWith("/home/blocks") || pathname.endsWith("/home/blocks/")) {
        const blocks = [
          {
            id: "banner-principal",
@@ -55,7 +55,7 @@
      }
  
      // Rota: /config
-     if (path === "/config" || path === "/config/") {
+     if (pathname.endsWith("/config") || pathname.endsWith("/config/")) {
        return new Response(JSON.stringify({
          data: {
            nome_loja: "Mariela Moda Feminina",
@@ -72,35 +72,35 @@
      }
  
      // Rota: /destaques
-     if (path === "/destaques" || path === "/destaques/") {
+     if (pathname.endsWith("/destaques") || pathname.endsWith("/destaques/")) {
        return new Response(JSON.stringify({ items: [] }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
      }
  
      // Rota: /colecoes
-     if (path === "/colecoes" || path === "/colecoes/") {
+     if (pathname.endsWith("/colecoes") || pathname.endsWith("/colecoes/")) {
        return new Response(JSON.stringify({ data: [] }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
      }
  
      // Rota: /categorias
-     if (path === "/categorias" || path === "/categorias/") {
+     if (pathname.endsWith("/categorias") || pathname.endsWith("/categorias/")) {
        return new Response(JSON.stringify({ data: ["Blusas", "Vestidos", "Calças", "Acessórios"] }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
      }
  
      // Rota: /produtos
-     if (path === "/produtos" || path === "/produtos/") {
+     if (pathname.endsWith("/produtos") || pathname.endsWith("/produtos/")) {
        return new Response(JSON.stringify({ data: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
          headers: { ...corsHeaders, "Content-Type": "application/json" },
        });
      }
  
      // Fallback para rotas não encontradas
-     return new Response(JSON.stringify({ error: "Rota não encontrada", path }), {
+     return new Response(JSON.stringify({ error: "Rota não encontrada", path: pathname }), {
        status: 404,
        headers: { ...corsHeaders, "Content-Type": "application/json" },
      });
