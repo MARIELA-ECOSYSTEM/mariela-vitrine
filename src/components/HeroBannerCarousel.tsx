@@ -125,6 +125,9 @@ export const HeroBannerCarousel = () => {
         return (
           <div
             key={colecao.id}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`Slide ${idx + 1} de ${colecoes.length}: ${colecao.nome}`}
             className={cn(
               "absolute inset-0 transition-opacity duration-1000",
               isActive ? "opacity-100 z-10" : "opacity-0 z-0"
