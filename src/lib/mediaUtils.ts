@@ -1,6 +1,9 @@
  /**
   * Utilitário para padronizar propriedades de performance de mídia (img, video).
   * Centraliza o suporte a fetchPriority, loading e decoding.
+  * Nota sobre o React 18: fetchPriority deve ser passado como camelCase 
+  * nos tipos, mas o React 18 ainda pode emitir avisos no console pedindo 
+  * lowercase fetchpriority se não for reconhecido como prop nativa.
   */
  
  export type MediaPriority = "high" | "low" | "auto";
