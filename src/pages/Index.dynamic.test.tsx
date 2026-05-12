@@ -210,28 +210,37 @@ describe("Index Dynamic Blocks", () => {
     });
   });
 
-  it("handles products with estilo 'lista'", async () => {
-    const mockBlocks = [
-      {
-        id: "block-lista",
-        tipo: "produtos",
-        titulo: "Lista de Produtos",
-        prioridade: 1,
-        config: { filter: "novidades", estilo: "lista" },
-      },
-    ];
-    (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
-
-    render(
-      <MemoryRouter>
-        <Index />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText("Lista de Produtos")).toBeInTheDocument();
-    });
-  });
+   it("handles products with estilo 'lista'", async () => {
+     const mockBlocks = [
+       {
+         id: "block-lista",
+         tipo: "produtos",
+         titulo: "Lista de Produtos",
+         prioridade: 1,
+         config: { filter: "novidades", estilo: "lista" },
+       },
+     ];
+     (vitrineApiService.getHomeBlocks as any).mockResolvedValue(mockBlocks);
+     
+     // Garante que o useProducts retorne produtos para que o FeaturedProducts não omita o bloco
+     const { useProducts } = await import("@/hooks/useProducts");
+     (useProducts as any).mockReturnValue({ 
+       loading: false, 
+       produtos: [
+         { id: 10, nome: "Prod Lista", variants: [{ disponibilidade: 1, tamanho: "P", cor: "Preto" }], imagens: ["img.jpg"], precoVenda: 100, emPromocao: false, isNovidade: true }
+       ] 
+     });
+ 
+     render(
+       <MemoryRouter>
+         <Index />
+       </MemoryRouter>
+     );
+ 
+     await waitFor(() => {
+       expect(screen.getByText("Lista de Produtos")).toBeInTheDocument();
+     });
+   });
 
   it("shows debug info when ?debugHome=1 is present (DEV only)", async () => {
     const mockBlocks = [
