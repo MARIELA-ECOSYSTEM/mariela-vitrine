@@ -392,26 +392,26 @@
               <aside className="hidden lg:block w-64 space-y-8 shrink-0">
                 <div className="sticky top-24">
                   <h3 className="font-serif text-xl mb-6 border-b pb-2">Filtros</h3>
-                  <ProductFilters 
-                    categoriaSelecionada={categoriaSelecionada}
-                    setCategoriaSelecionada={setCategoriaSelecionada}
-                    coresSelecionadas={coresSelecionadas}
-                    setCoresSelecionadas={setCoresSelecionadas}
-                    tamanhosSelecionados={tamanhosSelecionados}
-                    setTamanhosSelecionados={setTamanhosSelecionados}
-                    faixaPreco={faixaPreco}
-                    setFaixaPreco={setFaixaPreco}
-                    setPrecoAlterado={setPrecoAlterado}
-                    precoAlterado={precoAlterado}
-                    coresDisponiveis={coresDisponiveis}
-                    tamanhosDisponiveis={tamanhosDisponiveis}
-                    precoMin={precoMinMax.min}
-                    precoMax={precoMinMax.max}
-                    onLimparFiltros={handleLimparFiltros}
-                    setPaginaAtual={setPaginaAtual}
-                    activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
-                    produtosFiltradosParcial={produtos}
-                  />
+                    <ProductFilters 
+                      categoriaSelecionada={categoriaSelecionada}
+                      setCategoriaSelecionada={setCategoriaSelecionada}
+                      coresSelecionadas={coresSelecionadas}
+                      setCoresSelecionadas={setCoresSelecionadas}
+                      tamanhosSelecionados={tamanhosSelecionados}
+                      setTamanhosSelecionados={setTamanhosSelecionados}
+                      faixaPreco={faixaPreco}
+                      setFaixaPreco={setFaixaPreco}
+                      setPrecoAlterado={setPrecoAlterado}
+                      precoAlterado={precoAlterado}
+                      coresDisponiveis={coresDisponiveis}
+                      tamanhosDisponiveis={tamanhosDisponiveis}
+                      precoMin={precoMinMax.min}
+                      precoMax={precoMinMax.max}
+                      onLimparFiltros={handleLimparFiltros}
+                      setPaginaAtual={setPaginaAtual}
+                      activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
+                      produtosFiltradosParcial={produtos}
+                    />
                 </div>
               </aside>
 
@@ -425,24 +425,33 @@
                     {/* Mobile Filter Trigger */}
                     <div className="lg:hidden">
                       <ProductFilters 
-                        categoriaSelecionada={categoriaSelecionada}
-                        setCategoriaSelecionada={setCategoriaSelecionada}
-                        coresSelecionadas={coresSelecionadas}
-                        setCoresSelecionadas={setCoresSelecionadas}
-                        tamanhosSelecionados={tamanhosSelecionados}
-                        setTamanhosSelecionados={setTamanhosSelecionados}
-                        faixaPreco={faixaPreco}
-                        setFaixaPreco={setFaixaPreco}
-                        setPrecoAlterado={setPrecoAlterado}
-                        precoAlterado={precoAlterado}
+                        categoriaSelecionada={draftFilters.categoria ?? categoriaSelecionada}
+                        setCategoriaSelecionada={(val) => setDraftFilters(prev => ({ ...prev, categoria: val }))}
+                        coresSelecionadas={draftFilters.cores ?? coresSelecionadas}
+                        setCoresSelecionadas={(val) => setDraftFilters(prev => ({ ...prev, cores: val }))}
+                        tamanhosSelecionados={draftFilters.tamanhos ?? tamanhosSelecionados}
+                        setTamanhosSelecionados={(val) => setDraftFilters(prev => ({ ...prev, tamanhos: val }))}
+                        faixaPreco={draftFilters.preco ?? faixaPreco}
+                        setFaixaPreco={(val) => setDraftFilters(prev => ({ ...prev, preco: val }))}
+                        setPrecoAlterado={(val) => setDraftFilters(prev => ({ ...prev, precoAlterado: val }))}
+                        precoAlterado={draftFilters.precoAlterado ?? precoAlterado}
                         coresDisponiveis={coresDisponiveis}
                         tamanhosDisponiveis={tamanhosDisponiveis}
                         precoMin={precoMinMax.min}
                         precoMax={precoMinMax.max}
-                        onLimparFiltros={handleLimparFiltros}
+                        onLimparFiltros={() => {
+                          setDraftFilters({
+                            categoria: "todas",
+                            cores: [],
+                            tamanhos: [],
+                            preco: [precoMinMax.min, precoMinMax.max],
+                            precoAlterado: false
+                          });
+                        }}
                         setPaginaAtual={setPaginaAtual}
                         activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
                         produtosFiltradosParcial={produtos}
+                        onApplyFilters={applyMobileFilters}
                       />
                     </div>
                   </div>
@@ -464,11 +473,33 @@
                 {loading ? (
                   <ProductsLoadingSkeleton count={6} />
                 ) : produtosFiltrados.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-12">
-                    {produtosFiltrados.map((produto) => (
-                      <ProductCard key={produto.id} produto={produto} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-12">
+                      {produtosFiltrados.map((produto) => (
+                        <ProductCard key={produto.id} produto={produto} />
+                      ))}
+                    </div>
+                    
+                    {hasMore && (
+                      <div className="mt-16 text-center">
+                        <Button 
+                          variant="outline" 
+                          size="lg" 
+                          onClick={carregarMais}
+                          disabled={loadingMore}
+                          className="min-w-[200px] uppercase tracking-widest text-xs border-primary/20 hover:bg-primary/5"
+                        >
+                          {loadingMore ? (
+                            <span className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
+                            </span>
+                          ) : "Carregar Mais Peças"}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="py-24 text-center">
                     <p className="text-muted-foreground font-light italic text-lg">
