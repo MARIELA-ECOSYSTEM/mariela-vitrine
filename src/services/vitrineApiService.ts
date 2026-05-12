@@ -14,7 +14,9 @@ const API_TIMEOUT = 15000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 800;
 const MAX_CACHE_ITEMS = 40;
-const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v10";
+const LOCAL_STORAGE_CACHE_KEY = "mariela_vitrine_api_cache_v11";
+
+const isDebugIntegracao = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugIntegracao") === "1";
 
 const CACHE_TTL = {
   config: 5 * 60 * 1000,
@@ -357,13 +359,22 @@ function createInvalidPayloadError(context: string): VitrineApiError {
   return new VitrineApiError(`Resposta inválida da vitrine em ${context}.`);
 }
 
-function logVitrineWarning(message: string, details?: unknown): void {
-  if (import.meta.env.DEV) {
-    console.warn(`[vitrine-api] ${message}`, details ?? "");
+function logVitrineWarning(message: string, details?: unknown, level: 'warn' | 'info' | 'error' = 'warn'): void {
+  if (import.meta.env.DEV || isDebugIntegracao) {
+    const label = `[vitrine-api]${isDebugIntegracao ? ' [DEBUG]' : ''}`;
+    if (level === 'error') console.error(`${label} ${message}`, details ?? "");
+    else if (level === 'info') console.info(`${label} ${message}`, details ?? "");
+    else console.warn(`${label} ${message}`, details ?? "");
     return;
   }
-  // Produção: silêncio total. Falhas técnicas não devem poluir o
-  // console do usuário final — a UI já trata via fallback silencioso.
+}
+
+export function clearVitrineCache(): void {
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(LOCAL_STORAGE_CACHE_KEY);
+    memoryCache.clear();
+    logVitrineWarning("Cache da vitrine limpo com sucesso.", null, 'info');
+  }
 }
 
 export function getVitrineApiErrorMessage(error: unknown): string {
