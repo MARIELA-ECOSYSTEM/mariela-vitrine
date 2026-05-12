@@ -14,9 +14,10 @@ import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import MonteSeuLook from "./pages/MonteSeuLook";
-import Cart from "./pages/Cart";
-import Instalar from "./pages/Instalar";
-import NotFound from "./pages/NotFound";
+ import CollectionDetail from "./pages/CollectionDetail";
+ import Cart from "./pages/Cart";
+ import Instalar from "./pages/Instalar";
+ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -53,7 +54,9 @@ const AppContent = () => {
           <Route path="/produtos/:slug" element={<Navigate to={`/products/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
           <Route path="/produto/:slug" element={<Navigate to={`/products/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
           <Route path="/monte-seu-look" element={<MonteSeuLook />} />
-          <Route path="/cart" element={<Cart />} />
+           <Route path="/collections/:id" element={<CollectionDetail />} />
+           <Route path="/colecoes/:id" element={<Navigate to={`/collections/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
+           <Route path="/cart" element={<Cart />} />
           <Route path="/instalar" element={<Instalar />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

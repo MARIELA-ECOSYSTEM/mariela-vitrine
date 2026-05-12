@@ -49,12 +49,14 @@ function buildCollectionHref(search: string, colecao: { id: string; nome: string
   } catch {
     /* ignore — montamos sem UTMs */
   }
-  if (colecao.id) {
-    params.set("colecaoId", colecao.id);
-  } else {
-    params.set("colecao", colecao.nome);
-  }
-  return `/products?${params.toString()}`;
+   const baseUrl = colecao.id ? `/collections/${colecao.id}` : `/products`;
+   
+   if (!colecao.id) {
+     params.set("colecao", colecao.nome);
+   }
+   
+   const queryString = params.toString();
+   return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
 
 /** Estilo inline do acento (cor_destaque). Apenas se HEX válido vier do PDV. */
