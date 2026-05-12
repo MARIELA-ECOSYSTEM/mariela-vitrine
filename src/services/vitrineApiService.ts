@@ -935,7 +935,10 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       imagem_card_url: readString(corRec, ["imagem_card_url", "imagemCardUrl", "card_url", "midia_card"]),
       imagem_look_url: readString(corRec, ["imagem_look_url", "imagemLookUrl", "look_url", "midia_look"]),
       tamanhos,
+      video_card_url: readString(corRec, ["video_card_url", "videoCardUrl", "video_url", "midia_video"]),
+      poster_url: readString(corRec, ["poster_url", "posterUrl", "poster"]),
       imagens: extractCorImagens(corRec),
+      galeria_midia: extractCorImagens(corRec),
     });
   });
 
@@ -1318,6 +1321,8 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
     publicBadge: readOptionalString(product, ["publicBadge", "public_badge"]),
     destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),
     recomendacao_publica: readOptionalString(product, ["recomendacao_publica", "recomendacaoPublica"]),
+    video_card_url: readString(product, ["video_card_url", "videoCardUrl", "video_url", "midia_video"]),
+    poster_url: readString(product, ["poster_url", "posterUrl", "poster"]),
     createdAt,
   };
 }
