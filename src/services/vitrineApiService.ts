@@ -181,11 +181,11 @@ export interface ColecaoResponse {
       produtos: z.array(z.string()).optional(),
       linkLabel: z.string().optional(),
       linkTo: z.string().optional(),
-      estilo: z.enum(["grade", "carrossel", "lista"]).optional(),
+       estilo: z.string().optional(),
       limit: z.number().optional(),
       max_items: z.number().optional(),
       mediaUrl: z.string().optional(),
-      mediaType: z.enum(["image", "video", "gif"]).optional(),
+       mediaType: z.string().optional(),
       posterUrl: z.string().optional(),
       ctaLabel: z.string().optional(),
       ctaUrl: z.string().optional(),
@@ -201,7 +201,7 @@ export interface ColecaoResponse {
         titulo: z.string(),
         subtitulo: z.string().optional(),
         mediaUrl: z.string(),
-        mediaType: z.enum(["image", "video", "gif"]),
+         mediaType: z.string().optional().default("image"),
         posterUrl: z.string().optional(),
         produtos: z.array(z.string()),
         ctaLabel: z.string().optional(),
@@ -210,7 +210,7 @@ export interface ColecaoResponse {
         id: z.string(),
         nome: z.string(),
         mediaUrl: z.string().optional(),
-        mediaType: z.enum(["image", "video", "gif"]).optional(),
+         mediaType: z.string().optional(),
         posterUrl: z.string().optional(),
         produtos: z.array(z.string()),
       })).optional(),
@@ -231,7 +231,7 @@ export interface ColecaoResponse {
     descricao: z.string().nullable(),
     categoria: z.string().nullable(),
     colecao: z.string().nullable(),
-    preco_venda: z.number(),
+     preco_venda: z.number().optional().default(0),
     imagem_thumb: z.string().nullable(),
     imagem_principal: z.string().nullable(),
     imagem_card_url: z.string().nullable().optional(),
@@ -252,7 +252,7 @@ export interface ColecaoResponse {
     descricao: z.string().nullable(),
     categoria: z.string().nullable(),
     colecao: z.string().nullable(),
-    preco_venda: z.number(),
+     preco_venda: z.number().optional().default(0),
     imagem_thumb: z.string().nullable(),
     imagem_principal: z.string().nullable(),
     imagem_card_url: z.string().nullable().optional(),
@@ -1126,10 +1126,10 @@ function unwrapList(response: unknown): unknown[] {
   function validateHomeBlocksResponse(payload: unknown): HomeBlocksResponse {
     const isDebug = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debugHome") === "1";
     return applyValidation(payload, HomeBlocksResponseSchema, "HomeBlocks", () => {
-      const data = asArray(asRecord(payload).data ?? payload).filter(item => {
-        const rec = asRecord(item);
-        return rec.id && rec.tipo; 
-      });
+       const data = unwrapList(payload).filter(item => {
+         const rec = asRecord(item);
+         return rec.id && rec.tipo;
+       });
       return { data: data as HomeBlock[] };
     }, isDebug) as HomeBlocksResponse;
   }
@@ -1137,7 +1137,11 @@ function unwrapList(response: unknown): unknown[] {
  function validatePaginationResponse(payload: unknown): PaginationResponse<ProdutoListItem> {
    return applyValidation(payload, PaginationResponseSchema, "pagination", () => {
      const source = asRecord(payload);
-     const items = unwrapList(payload).filter((item) => readString(asRecord(item), ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]));
+       const items = unwrapList(payload).filter((item) => {
+         const rec = asRecord(item);
+         return readString(rec, ["id", "produto_id", "produtoId", "_id", "codigoProduto", "codigo", "sku"]) || 
+                readString(rec, ["slug", "url"]); // Fallbacks de identificação
+       });
      return {
        items: items as ProdutoListItem[],
        limit: readNumber(source, ["limit"], items.length),
@@ -1506,9 +1510,9 @@ export const vitrineApiService = {
         fetchCachedJson<PaginationResponse<ProdutoListItem>>("/produtos", normalizeProdutosParams(params), CACHE_TTL.produtos, validatePaginationResponse),
         this.getDestaques(),
       ]);
-      const items = unwrapList(response)
-        .map(mapProduto)
-        .filter((produto): produto is Produto => Boolean(produto));
+       const items = unwrapList(response)
+         .map((p) => mapProduto(p, "getProdutosPage"))
+         .filter((produto): produto is Produto => Boolean(produto));
 
       return {
         items: applyDestaquesToProdutos(items, destaques),
@@ -1524,7 +1528,10 @@ export const vitrineApiService = {
   },
 
   async getProdutoById(id: string | number): Promise<Produto | null> {
-    const produto = mapProduto(await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse));
+     const produto = mapProduto(
+       await fetchCachedJson<ProdutoDetailResponse>(`/produto/${encodeURIComponent(String(id))}`, undefined, CACHE_TTL.produto, validateProdutoDetailResponse),
+       "getProdutoById"
+     );
     if (!produto) return null;
     return (await this.attachDestaquesToProdutos([produto]))[0] ?? produto;
   },
@@ -1565,9 +1572,9 @@ export const vitrineApiService = {
           CACHE_TTL.produtos,
           validatePaginationResponse
         );
-        const items = unwrapList(response)
-          .map(mapProduto)
-          .filter((produto): produto is Produto => Boolean(produto));
+         const items = unwrapList(response)
+           .map((p) => mapProduto(p, "getProdutosByIds"))
+           .filter((produto): produto is Produto => Boolean(produto));
         return await this.attachDestaquesToProdutos(items);
       } catch (error) {
         logVitrineWarning(`Falha ao buscar produtos por IDs: ${ids.join(",")}`, error);
