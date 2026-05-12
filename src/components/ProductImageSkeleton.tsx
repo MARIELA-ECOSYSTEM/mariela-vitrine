@@ -478,7 +478,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
           src={layerA}
            alt={activeLayer === "A" ? alt : ""}
            aria-hidden={activeLayer !== "A" || undefined}
-           {...applyMediaProps(priority)}
+           {...applyMediaProps(layerA, priority)}
            draggable={false}
            className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
@@ -494,7 +494,7 @@ const ImageTrack = ({ images, currentIndex, alt, className, priority }: ImageTra
           src={layerB}
            alt={activeLayer === "B" ? alt : ""}
            aria-hidden={activeLayer !== "B" || undefined}
-           {...applyMediaProps(true)}
+           {...applyMediaProps(layerB, true)}
            draggable={false}
            className={cn(
             "absolute inset-0 h-full w-full object-cover object-center transform-gpu select-none",
@@ -717,7 +717,7 @@ const LegacyImageDisplay = ({
           <img
              src={displaySrc}
              alt={alt}
-             {...applyMediaProps(priority)}
+             {...applyMediaProps(displaySrc, priority)}
              className={cn(
               "relative w-full h-full object-cover",
               // Carga inicial: fade lento + zoom sutil (mantém UX original).
