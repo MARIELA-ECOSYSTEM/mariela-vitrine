@@ -122,9 +122,17 @@ serve(async (req) => {
       
       console.log(`[vitrine-api] Proxying to: ${targetUrl.toString()}`);
 
+      // Forwarding essential headers if present (like apikey or authorization)
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      const incomingApikey = req.headers.get('apikey');
+      const incomingAuth = req.headers.get('authorization');
+      
+      if (incomingApikey) headers['apikey'] = incomingApikey;
+      if (incomingAuth) headers['authorization'] = incomingAuth;
+
       const response = await fetch(targetUrl.toString(), {
         method: req.method,
-        headers: { 'Accept': 'application/json' },
+        headers: headers,
       });
 
       if (!response.ok) {
