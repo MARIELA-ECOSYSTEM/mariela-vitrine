@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
  import { ArrowRight, ImageOff, Sparkles } from "lucide-react";
- import { applyMediaProps } from "@/lib/mediaUtils";
-import {
-  vitrineApiService,
-  type ColecaoDestaque,
-} from "@/services/vitrineApiService";
-import { cn } from "@/lib/utils";
+ import {
+   vitrineApiService,
+   type ColecaoDestaque,
+ } from "@/services/vitrineApiService";
+ import { cn } from "@/lib/utils";
+ import { applyMediaProps, injectMediaPreload } from "@/lib/mediaUtils";
 
 /**
  * Banners dinâmicos de coleções em destaque na Home.
@@ -70,7 +70,15 @@ interface CardProps {
   variant: "hero" | "grid";
 }
 
-const CollectionCard = ({ colecao, href, variant }: CardProps) => {
+ const CollectionCard = ({ colecao, href, variant }: CardProps) => {
+   const isHero = variant === "hero";
+   
+   useEffect(() => {
+     if (isHero) {
+       const url = colecao.banner_url || colecao.imagem_capa_url;
+       if (url) injectMediaPreload(url, "image", "high");
+     }
+   }, [isHero, colecao.banner_url, colecao.imagem_capa_url]);
   const [imgFailed, setImgFailed] = useState(false);
   // Nunca usar home_destaque_url aqui. Prioridade: banner_url > imagem_capa_url
   const displayImageUrl = (colecao.banner_url && !imgFailed) ? colecao.banner_url : colecao.imagem_capa_url;
@@ -95,7 +103,7 @@ const CollectionCard = ({ colecao, href, variant }: CardProps) => {
          <img
            src={displayImageUrl ?? undefined}
            alt={colecao.nome}
-           {...applyMediaProps(variant === "hero")}
+           {...applyMediaProps(displayImageUrl ?? undefined, isHero)}
            onError={() => setImgFailed(true)}
            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
          />

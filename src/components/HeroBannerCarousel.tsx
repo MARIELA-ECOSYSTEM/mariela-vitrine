@@ -155,7 +155,7 @@ export const HeroBannerCarousel = () => {
                  muted
                  loop
                  playsInline
-                 {...applyMediaProps(isActive, "high")}
+                 {...applyMediaProps(media.url, isActive, "high")}
                  preload={isActive ? "auto" : "metadata"}
                  className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
                  onLoadStart={() => { loadStartTimes.current[colecao.id] = performance.now(); }}
@@ -180,7 +180,7 @@ export const HeroBannerCarousel = () => {
                <img
                  src={media.url}
                  alt={colecao.nome}
-                 {...applyMediaProps(isActive, isActive ? "high" : "low")}
+                 {...applyMediaProps(media.url, isActive, isActive ? "high" : "low")}
                  className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
                  onLoadStart={() => { 
                    const key = media.url === colecao.home_destaque_url ? colecao.id : 
