@@ -21,8 +21,14 @@ serve(async (req) => {
 
   console.log(`[blocks] Request: ${req.method} ${path}`);
 
-  // Simula o mesmo comportamento do vitrine-api para manter consistência
-  if (path === '/home/blocks' || path === '/home/blocks/' || path === '/') {
+  /**
+   * Encaminha requisições do alias 'blocks' para a lógica do vitrine-api,
+   * resolvendo a inconsistência de nomes.
+   */
+  const targetPath = path === '/' ? '/home/blocks' : path;
+  
+  // Mock simplificado do comportamento do vitrine-api para o alias blocks
+  if (targetPath === '/home/blocks') {
     return new Response(
       JSON.stringify({
         data: [
@@ -33,6 +39,14 @@ serve(async (req) => {
             subtitulo: "Recém-chegadas à coleção",
             prioridade: 10,
             config: { filter: "novidades", limit: 6, linkLabel: "Ver todas as novidades", linkTo: "/products?filter=novidades" }
+          },
+          {
+            id: "em_alta",
+            tipo: "produtos",
+            titulo: "Em alta",
+            subtitulo: "Peças em destaque na vitrine",
+            prioridade: 20,
+            config: { filter: "em_alta", limit: 4, linkLabel: "Ver produtos", linkTo: "/products?filter=em_alta" }
           }
         ]
       }),
