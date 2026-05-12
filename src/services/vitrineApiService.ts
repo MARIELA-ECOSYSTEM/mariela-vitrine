@@ -901,6 +901,8 @@ function extractCores(product: ApiRecord): ProdutoCor[] | undefined {
       cor: nome,
       imagem_thumb: readCorImagem(corRec, "thumb") || null,
       imagem_full: readCorImagem(corRec, "full") || null,
+      imagem_card_url: readString(corRec, ["imagem_card_url", "imagemCardUrl", "card_url", "midia_card"]),
+      imagem_look_url: readString(corRec, ["imagem_look_url", "imagemLookUrl", "look_url", "midia_look"]),
       tamanhos,
       imagens: extractCorImagens(corRec),
     });
@@ -1221,6 +1223,8 @@ function applyDestaquesToProdutos(produtos: Produto[], destaques: ProdutoDestaqu
     economiaValor: economiaValor > 0 ? economiaValor : undefined,
     economiaPercentual: economiaPercentual > 0 ? economiaPercentual : undefined,
     isNovidade,
+    imagem_card_url: readString(product, ["imagem_card_url", "imagemCardUrl", "card_url", "midia_card"]),
+    imagem_look_url: readString(product, ["imagem_look_url", "imagemLookUrl", "look_url", "midia_look"]),
     badgePublico: readOptionalString(product, ["badgePublico", "badge_publico", "publicBadge", "public_badge"]),
     publicBadge: readOptionalString(product, ["publicBadge", "public_badge"]),
     destaque_publico: readOptionalString(product, ["destaque_publico", "destaquePublico"]),

@@ -49,8 +49,19 @@ export interface Produto {
   colecao?: string | null;
   imagens: string[];
   variants: VarianteProduto[];
-  /** Novo contrato: cores do produto com tamanhos e imagens próprias. */
-  cores?: ProdutoCor[];
+  /**
+   * Novo contrato: cores do produto com tamanhos e imagens próprias.
+   * imagem_card_url: Mídia específica para cards/vitrines (prioritária).
+   * imagem_look_url: Mídia específica para o Monte Seu Look (editorial).
+   */
+  cores?: (ProdutoCor & {
+    imagem_card_url?: string | null;
+    imagem_look_url?: string | null;
+  })[];
+  /** URL da mídia específica para o card (nível produto). */
+  imagem_card_url?: string | null;
+  /** URL da mídia específica para o Monte Seu Look (editorial, nível produto). */
+  imagem_look_url?: string | null;
   precoCusto: number;
   precoVenda: number;
   precoPromocional?: number;
