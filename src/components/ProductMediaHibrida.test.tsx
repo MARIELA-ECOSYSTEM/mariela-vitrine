@@ -59,16 +59,15 @@ describe("Mídia Híbrida (Hybrid Media)", () => {
     expect(poster.getAttribute("src")).toBe("poster.jpg");
   });
 
-  it("não deve ter vídeo no Monte Seu Look mesmo se disponível", () => {
-    // Simula contexto de Monte Seu Look via pathname (mock de window.location)
-    const originalLocation = window.location;
-    delete (window as any).location;
-    window.location = { ...originalLocation, pathname: "/monte-seu-look" };
-
-    // getProductVideoByColor não depende de location, mas a Vitrine (via lib) 
-    // deve ignorar vídeo em Monte Seu Look.
-    // Aqui apenas testamos se a lógica de renderização se mantém segura.
-    
-    window.location = originalLocation;
+  it("não deve quebrar ao renderizar vídeo sem poster", () => {
+    render(
+      <ProductMedia 
+        type="video" 
+        url="video.mp4" 
+        alt="Teste" 
+      />
+    );
+    const video = screen.getByLabelText("Teste");
+    expect(video).toBeDefined();
   });
 });
