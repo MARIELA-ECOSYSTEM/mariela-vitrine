@@ -77,6 +77,9 @@
      }
    };
  
+   const content = renderContent();
+   if (!content) return null;
+ 
    return (
      <div className="relative group/block">
        {debug && (
@@ -84,7 +87,7 @@
            [DEBUG] ID: {block.id} | Tipo: {block.tipo} | Ordem: {block.prioridade} | Estilo: {block.config?.estilo || 'default'}
          </div>
        )}
-       {renderContent()}
+       {content}
      </div>
    );
  });
