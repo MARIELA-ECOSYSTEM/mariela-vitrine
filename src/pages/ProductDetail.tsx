@@ -858,15 +858,13 @@ const ProductDetail = () => {
                 media={midiaParaMostrar}
                 imageColors={galeriaUnificada.map((g) => g.cor)}
                  colorSwatchMap={COLOR_MAP}
-                 isNovidade={produto.isNovidade}
+                 productName={
+                   corSelecionada
+                     ? `${produto.nome} — cor ${corSelecionada}`
+                     : produto.nome
+                 }
                  emPromocao={produto.emPromocao}
-                productName={
-                  corSelecionada
-                    ? `${produto.nome} — cor ${corSelecionada}`
-                    : produto.nome
-                }
-                emPromocao={produto.emPromocao}
-                isNovidade={produto.isNovidade}
+                 isNovidade={produto.isNovidade}
                   publicBadge={publicBadge}
                 selectedIndex={imagemSelecionadaIndex}
                 onImageSelect={handleImageSelect}
