@@ -9,11 +9,13 @@
    subtitulo: string | null;
    mediaUrl?: string;
    mediaType?: "image" | "video" | "gif";
+   posterUrl?: string;
    ctaLabel?: string;
    ctaUrl?: string;
+   priority?: boolean;
  }
  
- export const BannerBlock = memo(({ titulo, subtitulo, mediaUrl, mediaType, ctaLabel, ctaUrl }: BannerBlockProps) => {
+ export const BannerBlock = memo(({ titulo, subtitulo, mediaUrl, mediaType, posterUrl, ctaLabel, ctaUrl, priority = false }: BannerBlockProps) => {
    const videoRef = useRef<HTMLVideoElement>(null);
  
    useEffect(() => {
@@ -40,13 +42,16 @@
            muted
            loop
            playsInline
-           preload="metadata"
+           preload={priority ? "auto" : "metadata"}
+           poster={posterUrl}
            className="absolute inset-0 w-full h-full object-cover"
          />
        ) : (
          <img
            src={mediaUrl}
            alt={titulo || "Banner"}
+           loading={priority ? "eager" : "lazy"}
+           {...({ fetchPriority: priority ? "high" : "auto" } as any)}
            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
          />
        )}

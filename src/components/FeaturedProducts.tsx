@@ -83,7 +83,14 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
      }
    };
  
-  if (!isLoading && displayed.length < minItems) return null;
+   if (!isLoading && displayed.length < minItems) {
+     if (import.meta.env.DEV && products && products.length > 0) {
+       // Só avisa em DEV se houver produtos mas o filtro removeu quase tudo, 
+       // o que ajuda a entender por que um bloco manual sumiu.
+       console.debug(`[FeaturedProducts] Bloco "${title}" omitido: itens insuficientes (${displayed.length}/${minItems})`);
+     }
+     return null;
+   }
 
   return (
     <section className="py-6 sm:py-10 bg-background">
@@ -135,11 +142,14 @@ function getBadgeValue(produto: { badgePublico?: string | null; publicBadge?: st
             if (layoutMode === "carrossel") {
               return (
                 <div className="relative group/carousel -mx-4 px-4 sm:mx-0 sm:px-0">
-                  <div 
-                    ref={scrollContainerRef}
-                    onScroll={checkScroll}
-                    className="flex gap-3 sm:gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-                  >
+                 <div
+                   ref={scrollContainerRef}
+                   onScroll={checkScroll}
+                   tabIndex={0}
+                   role="region"
+                   aria-label={`Carrossel de ${title}`}
+                   className="flex gap-3 sm:gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-lg transition-shadow"
+                 >
                     {isLoading
                       ? Array.from({ length: skeletonCount }).map((_, i) => (
                           <div key={`skeleton-${i}`} className="min-w-[240px] sm:min-w-[280px] md:min-w-[320px] snap-start">
