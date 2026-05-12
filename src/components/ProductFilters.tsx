@@ -46,7 +46,7 @@ import { CATEGORIAS_DB } from "@/data/categories";
 
 const categorias = CATEGORIAS_DB;
 
-const FiltersContent = ({ 
+export const FiltersContent = ({ 
   categoriaSelecionada,
   setCategoriaSelecionada,
   colecaoSelecionada = "todas",
@@ -458,9 +458,12 @@ const FiltersContent = ({
   );
 };
 
-export const ProductFilters = (props: ProductFiltersProps) => {
+export const ProductFilters = ({ onApplyFilters, ...props }: ProductFiltersProps & { onApplyFilters?: () => void }) => {
   return (
-    <Sheet>
+    <Sheet onOpenChange={(open) => {
+      // Se fechou sem aplicar, poderíamos resetar, mas o comportamento padrão
+      // de mobile é aplicar ao clicar no botão.
+    }}>
       <SheetTrigger asChild>
         <Button variant="outline" size="lg" className="gap-2">
           <Filter className="h-5 w-5" />
@@ -479,9 +482,20 @@ export const ProductFilters = (props: ProductFiltersProps) => {
             Filtros
           </SheetTitle>
         </SheetHeader>
-        <div className="mt-6">
-          <FiltersContent {...props} />
+        <div className="mt-6 pb-20">
+          <FiltersContent {...props} onLimparFiltros={() => {
+            props.onLimparFiltros();
+            if (!onApplyFilters) return; // Se não for mobile/delayed, limpa na hora
+          }} />
         </div>
+        
+        {onApplyFilters && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+            <Button className="w-full uppercase tracking-widest" onClick={onApplyFilters}>
+              Aplicar Filtros
+            </Button>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
