@@ -7,7 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { Produto } from "@/data/products";
 import { Link, useNavigate } from "react-router-dom";
-import { getProductImageByColor } from "@/lib/productImage";
+import { getProductImageByColor, getProductCardImage, debugProductImage } from "@/lib/productImage";
 import { ProductImageSkeleton, preloadAdjacentImage, preloadImagesPrioritized, type PreloadPriority } from "./ProductImageSkeleton";
 import { cn } from "@/lib/utils";
 import { getProductPathWithSearch, getProductShareMessage, getTrackedProductUrl } from "@/lib/productLinks";
@@ -354,17 +354,25 @@ const ProductCardComponent = ({ produto: produtoProp, layoutMode = "grade" }: Pr
   // Garante limpeza ao desmontar o card (ex.: filtro reordenando lista).
   useEffect(() => () => { lastPreloadHandleRef.current?.cancel(); }, []);
 
-  // Imagem atual: a Vitrine consome ESTRITAMENTE o que a API entregou.
-  //   - Prioridade 1: `cores[].imagem_thumb`/`imagem_full` da cor selecionada
-  //     (resolvido por `getProductImageByColor`, fonte central).
-  //   - Prioridade 2: imagem do índice atual do carrossel (`produto.imagens`).
-  //   - Sem fallback proativo local. Se a API entregar string vazia, o
-  //     `<img onError>` aciona `PRODUCT_IMAGE_PLACEHOLDER` como último recurso.
-  const imagemAtual = useMemo(() => {
-    const fromApi = getProductImageByColor(produto, corSelecionada).src;
-    if (fromApi) return fromApi;
-    return imagensValidas[currentImageIndex] || imagensValidas[0] || "";
+  // Imagem atual: segue a regra de prioridade para Card da Vitrine.
+  // 1. imagem_card_url -> 2. imagem da cor -> 3. imagem principal
+  const imagemRes = useMemo(() => {
+    const res = getProductCardImage(produto, corSelecionada);
+    
+    // Se o usuário interagiu com o carrossel (índice > 0), respeitamos a navegação manual
+    if (currentImageIndex > 0 && imagensValidas[currentImageIndex]) {
+      return { src: imagensValidas[currentImageIndex], alt: res.alt, origin: "principal" as const };
+    }
+    
+    return res;
   }, [imagensValidas, currentImageIndex, produto, corSelecionada]);
+
+  const imagemAtual = imagemRes.src;
+
+  // Diagnóstico em DEV
+  useEffect(() => {
+    debugProductImage("Products", imagemRes);
+  }, [imagemRes]);
 
   // Alt dinâmico via utilitário central — garante padronização entre
   // ProductCard, ProductDetail e Monte seu Look.
