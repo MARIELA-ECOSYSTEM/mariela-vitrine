@@ -14,9 +14,15 @@ import { absoluteUrl, updateSeo } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { PackageOpen, RefreshCw } from "lucide-react";
 
-function isAvailable(produto: Produto) {
-  return produto.variants.some((variant) => variant.disponibilidade > 0);
-}
+ function isAvailable(produto: Produto) {
+   // Um produto é considerado disponível se:
+   // 1. Tem variantes com estoque (modelo detalhado)
+   // 2. OU tem preço de venda válido (modelo de listagem simplificada)
+   const hasStock = produto.variants && produto.variants.length > 0 && produto.variants.some((variant) => variant.disponibilidade > 0);
+   const hasPrice = (produto.precoVenda ?? produto.preco_venda ?? 0) > 0;
+   
+   return hasStock || hasPrice;
+ }
 
  const Index = () => {
    const { loading: loadingProducts, produtos } = useProducts();
