@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import Index from "./Index";
 import { vitrineApiService } from "@/services/vitrineApiService";
 
@@ -52,6 +52,7 @@ vi.mock("@/services/vitrineApiService", async () => {
 describe("Index Dynamic Blocks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    cleanup();
   });
 
   it("renders dynamic blocks from API", async () => {
@@ -276,7 +277,7 @@ describe("Index Dynamic Blocks", () => {
       {
         id: "debug-block",
         tipo: "banner",
-        titulo: "Banner Debug",
+        titulo: "Banner Debug Info",
         prioridade: 1,
         config: { mediaUrl: "b.jpg" },
       },
@@ -285,7 +286,7 @@ describe("Index Dynamic Blocks", () => {
 
     vi.stubGlobal("import.meta", { env: { DEV: true } });
 
-    const { rerender } = render(
+    render(
       <MemoryRouter initialEntries={["/?debugHome=1"]}>
         <Index />
       </MemoryRouter>
@@ -295,9 +296,8 @@ describe("Index Dynamic Blocks", () => {
       expect(screen.getByText(/\[DEBUG\] ID: debug-block/)).toBeInTheDocument();
     });
 
-    // To test removal, we need a fresh render or a way to trigger location change that Index responds to.
-    // In this component, it uses useLocation().search in a useMemo.
-    
+    cleanup();
+
     render(
       <MemoryRouter initialEntries={["/"]}>
         <Index />
@@ -305,8 +305,7 @@ describe("Index Dynamic Blocks", () => {
     );
 
     await waitFor(() => {
-       // Should find the banner but NOT the debug info
-       expect(screen.getByText("Banner Debug")).toBeInTheDocument();
+       expect(screen.getByText("Banner Debug Info")).toBeInTheDocument();
        expect(screen.queryByText(/\[DEBUG\] ID: debug-block/)).not.toBeInTheDocument();
     });
   });
