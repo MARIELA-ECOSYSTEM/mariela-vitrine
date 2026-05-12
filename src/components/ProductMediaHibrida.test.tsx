@@ -1,8 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ProductMedia } from "./ProductMedia";
 import { getProductVideoByColor } from "@/lib/productImage";
 import type { Produto } from "@/data/products";
+
+beforeAll(() => {
+  global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  }));
+});
 
 describe("Mídia Híbrida (Hybrid Media)", () => {
   const mockProduto: Produto = {
