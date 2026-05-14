@@ -7,13 +7,15 @@
  import { ProductCard } from "@/components/ProductCard";
   import { ProductsLoadingSkeleton, ProductSkeleton } from "@/components/ProductSkeleton";
   import { ProductFilters, FiltersContent } from "@/components/ProductFilters";
- import { 
-   vitrineApiService, 
-    type ColecaoDestaque,
-    type FilterOption
- } from "@/services/vitrineApiService";
- import type { Produto } from "@/data/products";
- import { updateSeo } from "@/lib/seo";
+  import { 
+    vitrineApiService, 
+     type ColecaoDestaque,
+     type FilterOption,
+     type VitrineConfig
+  } from "@/services/vitrineApiService";
+  import type { Produto } from "@/data/products";
+  import { absoluteUrl } from "@/lib/seo";
+  import { SEOMeta } from "@/components/seo/SEOMeta";
   import { ArrowLeft, Sparkles, ImageOff, Filter, Grid3x3, List, ShoppingBag } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { Button } from "@/components/ui/button";
@@ -222,24 +224,39 @@
       // For now, we just update the actual states.
     }, [draftFilters]);
 
-    // SEO Dinâmico
-    useEffect(() => {
-      if (colecao) {
-        updateSeo({
-          title: `${colecao.nome} | Boutique Premium Mariela`,
-          description: colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea.`,
-          image: colecao.banner_url || colecao.imagem_capa_url || undefined,
-          url: window.location.href,
-          jsonLd: {
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            "name": colecao.nome,
-            "description": colecao.descricao,
-            "image": colecao.banner_url || colecao.imagem_capa_url
-          }
-        });
-      }
-    }, [colecao]);
+     const [config, setConfig] = useState<VitrineConfig | null>(null);
+     useEffect(() => {
+       vitrineApiService.getConfig().then(setConfig);
+     }, []);
+ 
+     const seoData = useMemo(() => {
+       if (!colecao || !config) return null;
+       return {
+         title: `${colecao.nome} | ${config.nomeLoja}`,
+         description: colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea na ${config.nomeLoja}.`,
+         image: colecao.banner_url || colecao.imagem_capa_url || undefined,
+         url: window.location.href,
+         jsonLd: [
+           {
+             "@type": "CollectionPage",
+             "name": colecao.nome,
+             "description": colecao.descricao,
+             "image": colecao.banner_url || colecao.imagem_capa_url
+           },
+           {
+             "@type": "ItemList",
+             "name": `Produtos da Coleção ${colecao.nome}`,
+             "itemListElement": produtosFiltrados.slice(0, 12).map((p, i) => ({
+               "@type": "ListItem",
+               "position": i + 1,
+               "url": `${window.location.origin}/product/${p.produtoId || p.id}`,
+               "name": p.nome,
+               "image": absoluteUrl(p.imagens[0])
+             }))
+           }
+         ]
+       };
+     }, [colecao, config, produtosFiltrados]);
 
     // Dados para os filtros
     const coresDisponiveis = useMemo(() => {
@@ -292,9 +309,18 @@
       );
     }
 
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
+     return (
+       <div className="min-h-screen flex flex-col bg-background">
+         {seoData && (
+           <SEOMeta 
+             title={seoData.title}
+             description={seoData.description}
+             image={seoData.image}
+             url={seoData.url}
+             jsonLd={seoData.jsonLd}
+           />
+         )}
+         <Header />
         
         <main className="flex-grow">
           {/* Hero Section Premium */}

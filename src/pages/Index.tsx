@@ -51,9 +51,9 @@ function isAvailable(produto: Produto) {
      return () => { cancelled = true; };
    }, []);
 
-   return (
-     <div className="min-h-screen bg-background">
-       <SEOMeta 
+    return (
+      <div className="min-h-screen bg-background">
+        <SEOMeta 
          title="Mariela | Moda Feminina em Campina Grande"
          description="Descubra a melhor curadoria de moda feminina em Campina Grande. Vestidos, conjuntos e blusas com elegância e sofisticação."
          image={produtos[0]?.imagens[0]}
@@ -70,9 +70,10 @@ function isAvailable(produto: Produto) {
            }
          }}
        />
-       {(loadingProducts || loadingBlocks) && <LoadingOverlay />}
-       <WelcomeDialog />
-       <Header />
+        <h1 className="sr-only">Mariela Moda Feminina | Loja de Roupas Femininas em Campina Grande - PB</h1>
+        {(loadingProducts || loadingBlocks) && <LoadingOverlay />}
+        <WelcomeDialog />
+        <Header />
        <HeroBannerCarousel />
  
         <div id="home-content" className="relative">

@@ -19,8 +19,9 @@ import {
   RefreshCw,
   Zap,
   ShieldCheck,
-  QrCode
-} from "lucide-react";
+   QrCode
+ } from "lucide-react";
+ import { SEOMeta } from "@/components/seo/SEOMeta";
 import {
   Dialog,
   DialogContent,
@@ -168,9 +169,10 @@ export default function Instalar() {
     { icon: Zap, title: "Super Rápido", description: "Carregamento instantâneo", gradient: "from-accent/15 to-accent/5" },
   ];
 
-  return (
-    <div className="min-h-screen flex flex-col bg-background pt-[60px] sm:pt-[68px]">
-      <Header />
+   return (
+     <div className="min-h-screen flex flex-col bg-background pt-[60px] sm:pt-[68px]">
+       <SEOMeta title="Instalar App Mariela | Moda Feminina" description="Instale o aplicativo da Mariela no seu celular para uma experiência de compra mais rápida e offline." />
+       <Header />
       
       {/* Custom float keyframe */}
       <style>{`
