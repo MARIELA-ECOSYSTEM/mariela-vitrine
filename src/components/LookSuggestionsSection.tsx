@@ -123,7 +123,7 @@ const SuggestionCard = ({ sugestao, muted, onToggleMute }: SuggestionCardProps) 
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 {sugestao.poster_url ? (
-                  <img src={sugestao.poster_url} className="w-full h-full object-cover" alt="" />
+                  <img src={sugestao.poster_url} className="w-full h-full object-cover" alt={`Sugestão de look ${sugestao.nome || index + 1}`} />
                 ) : (
                   <Play className="h-10 w-10 text-primary opacity-20" />
                 )}

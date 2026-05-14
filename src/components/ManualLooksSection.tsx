@@ -136,7 +136,7 @@ const ManualLookCard = ({ look, allProducts, muted, onToggleMute }: ManualLookCa
           ) : (
             <img
               src={look.midia_editorial_url!}
-              alt={look.nome}
+              alt={`Look Editorial: ${look.nome}`}
               loading="lazy"
               onError={() => setMediaError(true)}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
