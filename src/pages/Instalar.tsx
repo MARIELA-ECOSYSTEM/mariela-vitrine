@@ -171,7 +171,17 @@ export default function Instalar() {
 
    return (
      <div className="min-h-screen flex flex-col bg-background pt-[60px] sm:pt-[68px]">
-       <SEOMeta title="Instalar App Mariela | Moda Feminina" description="Instale o aplicativo da Mariela no seu celular para uma experiência de compra mais rápida e offline." />
+       <SEOMeta 
+         title="Instalar App Mariela | Moda Feminina" 
+         description="Instale o aplicativo da Mariela no seu celular para uma experiência de compra mais rápida e offline." 
+         jsonLd={{
+           "@type": "BreadcrumbList",
+           "itemListElement": [
+             { "@type": "ListItem", "position": 1, "name": "Início", "item": window.location.origin },
+             { "@type": "ListItem", "position": 2, "name": "Instalar", "item": window.location.href }
+           ]
+         }}
+       />
        <Header />
       
       {/* Custom float keyframe */}
