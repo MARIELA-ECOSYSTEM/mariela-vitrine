@@ -6,9 +6,10 @@ export const SEOMeta = ({
   description,
   image,
   imageWidth = 1200,
-  imageHeight = 1200,
+  imageHeight = 630,
   url,
   type = "website",
+  noIndex = false,
   jsonLd,
 }: SeoOptions) => {
   const safeTitle = title ? `${title} | Mariela` : DEFAULT_TITLE;
@@ -23,6 +24,8 @@ export const SEOMeta = ({
       <title>{safeTitle}</title>
       <meta name="description" content={safeDescription} />
       <link rel="canonical" href={safeUrl} />
+      <meta name="theme-color" content="#ffffff" />
+      {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />

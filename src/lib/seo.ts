@@ -10,6 +10,7 @@ export type SeoOptions = {
   imageHeight?: number;
   url?: string;
   type?: "website" | "product";
+  noIndex?: boolean;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[] | null;
 };
 

@@ -56,6 +56,7 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
+      <SEOMeta title="Meu Carrinho | Mariela Moda Feminina" description="Confira suas peças selecionadas no carrinho da Mariela e finalize seu pedido com facilidade pelo WhatsApp." />
       <Header />
       <main className="flex-1">
         <PageContainer padX="px-4 md:px-6">
