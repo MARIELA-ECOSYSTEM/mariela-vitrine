@@ -6,6 +6,7 @@ import { MobileLookBuilder } from "@/components/MobileLookBuilder";
 import { useMonteSeuLookData } from "@/hooks/useMonteSeuLookData";
 import { LookSuggestionsSection } from "@/components/LookSuggestionsSection";
 import { ManualLooksSection } from "@/components/ManualLooksSection";
+import { SEOMeta } from "@/components/seo/SEOMeta";
 
 const MonteSeuLook = () => {
   const { data, loading } = useMonteSeuLookData();
@@ -23,6 +24,11 @@ const MonteSeuLook = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-secondary/10 to-background pt-[60px] sm:pt-[68px]">
+      <SEOMeta 
+        title="Monte Seu Look | Mariela Moda Feminina" 
+        description="Combine peças, crie looks exclusivos e visualize sua composição perfeita com nosso provador virtual interativo."
+        url={typeof window !== "undefined" ? window.location.href : ""}
+      />
       <Header />
       <main className="flex-1">
         <PageContainer>

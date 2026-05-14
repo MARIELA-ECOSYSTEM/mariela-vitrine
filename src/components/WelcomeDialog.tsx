@@ -62,7 +62,7 @@ export const WelcomeDialog = () => {
           <div className="flex justify-center animate-fade-in">
             <img 
               src={logoFull} 
-              alt="Site Mariela" 
+              alt="Logo Mariela Moda Feminina" 
               className="h-20 sm:h-32"
             />
           </div>

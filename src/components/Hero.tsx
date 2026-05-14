@@ -111,7 +111,7 @@ export const Hero = () => {
             >
               <img 
                 src={storeInterior} 
-                alt="Interior da Loja Mariela" 
+                alt="Interior da Loja Mariela - Curadoria de Moda Feminina" 
                 className="w-full h-[280px] sm:h-[350px] md:h-[400px] lg:h-[450px] object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />

@@ -293,7 +293,7 @@ export const HeroBannerCarousel = () => {
       {/* Logo watermark */}
       <img
         src={logoSimple}
-        alt=""
+        alt="Logo Mariela"
         className="absolute top-4 right-4 h-10 sm:h-14 md:h-16 opacity-40 pointer-events-none z-20"
       />
     </section>
