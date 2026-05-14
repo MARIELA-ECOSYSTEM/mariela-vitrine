@@ -183,6 +183,8 @@ export const HeroBannerCarousel = () => {
               <img
                 src={media.url}
                 alt={colecao.nome}
+                loading={idx === 0 ? "eager" : "lazy"}
+                {...({ fetchpriority: idx === 0 ? "high" : "auto" } as React.ImgHTMLAttributes<HTMLImageElement>)}
                 className="w-full h-full object-cover aspect-[16/7] sm:aspect-[21/9]"
                 onLoadStart={() => { 
                   const key = media.url === colecao.home_destaque_url ? colecao.id : 

@@ -28,6 +28,22 @@ const MonteSeuLook = () => {
         title="Monte Seu Look | Mariela Moda Feminina" 
         description="Combine peças, crie looks exclusivos e visualize sua composição perfeita com nosso provador virtual interativo."
         url={typeof window !== "undefined" ? window.location.href : ""}
+        jsonLd={[
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "Início", "item": window.location.origin },
+              { "@type": "ListItem", "position": 2, "name": "Monte Seu Look", "item": window.location.href }
+            ]
+          },
+          {
+            "@type": "WebApplication",
+            "name": "Monte Seu Look - Mariela",
+            "description": "Ferramenta interativa para combinar peças de roupa e visualizar looks exclusivos Mariela.",
+            "applicationCategory": "Shopping",
+            "operatingSystem": "Web"
+          }
+        ]}
       />
       <Header />
       <main className="flex-1">

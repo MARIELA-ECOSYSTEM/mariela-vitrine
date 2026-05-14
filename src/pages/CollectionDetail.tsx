@@ -236,25 +236,33 @@
          description: colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea na ${config.nomeLoja}.`,
          image: colecao.banner_url || colecao.imagem_capa_url || undefined,
          url: window.location.href,
-         jsonLd: [
-           {
-             "@type": "CollectionPage",
-             "name": colecao.nome,
-             "description": colecao.descricao,
-             "image": colecao.banner_url || colecao.imagem_capa_url
-           },
-           {
-             "@type": "ItemList",
-             "name": `Produtos da Coleção ${colecao.nome}`,
-             "itemListElement": produtosFiltrados.slice(0, 12).map((p, i) => ({
-               "@type": "ListItem",
-               "position": i + 1,
-               "url": `${window.location.origin}/product/${p.produtoId || p.id}`,
-               "name": p.nome,
-               "image": absoluteUrl(p.imagens[0])
-             }))
-           }
-         ]
+          jsonLd: [
+            {
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Início", "item": window.location.origin },
+                { "@type": "ListItem", "position": 2, "name": "Coleções", "item": `${window.location.origin}/products` },
+                { "@type": "ListItem", "position": 3, "name": colecao.nome, "item": window.location.href }
+              ]
+            },
+            {
+              "@type": "CollectionPage",
+              "name": colecao.nome,
+              "description": colecao.descricao,
+              "image": colecao.banner_url || colecao.imagem_capa_url
+            },
+            {
+              "@type": "ItemList",
+              "name": `Produtos da Coleção ${colecao.nome}`,
+              "itemListElement": produtosFiltrados.slice(0, 12).map((p, i) => ({
+                "@type": "ListItem",
+                "position": i + 1,
+                "url": `${window.location.origin}/product/${p.produtoId || p.id}`,
+                "name": p.nome,
+                "image": absoluteUrl(p.imagens[0])
+              }))
+            }
+          ]
        };
      }, [colecao, config, produtosFiltrados]);
 

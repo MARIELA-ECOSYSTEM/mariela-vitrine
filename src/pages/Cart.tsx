@@ -30,7 +30,17 @@ const Cart = () => {
   if (items.length === 0) {
    return (
      <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
-       <SEOMeta title="Meu Carrinho | Mariela Moda Feminina" description="Finalize suas compras na Mariela. Confira suas peças selecionadas e finalize seu pedido pelo WhatsApp." />
+      <SEOMeta 
+        title="Meu Carrinho | Mariela Moda Feminina" 
+        description="Finalize suas compras na Mariela. Confira suas peças selecionadas e finalize seu pedido pelo WhatsApp." 
+        jsonLd={{
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Início", "item": window.location.origin },
+            { "@type": "ListItem", "position": 2, "name": "Carrinho", "item": window.location.href }
+          ]
+        }}
+      />
        <Header />
         <main className="flex-1">
           <PageContainer padX="px-4 md:px-6">
