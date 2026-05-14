@@ -13,7 +13,8 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
  import { MessageCircle, ShoppingCart, ArrowLeft, Sparkles } from "lucide-react";
-import { absoluteUrl, updateSeo } from "@/lib/seo";
+ import { absoluteUrl } from "@/lib/seo";
+ import { SEOMeta } from "@/components/seo/SEOMeta";
 import { vitrineApiService } from "@/services/vitrineApiService";
 import { getProductPath, matchesProductSlug, getTrackedProductUrl, getProductShareMessage } from "@/lib/productLinks";
 import { getProductImageByColor, PRODUCT_IMAGE_PLACEHOLDER, handleProductImageError } from "@/lib/productImage";
@@ -585,115 +586,87 @@ const ProductDetail = () => {
     );
   }, [produto, imagensParaMostrar, corSelecionadaObj]);
 
-  useEffect(() => {
-    if (!produto) return;
-    let cancelled = false;
-    vitrineApiService.getConfig().then((config) => {
-      if (cancelled) return;
-      const preco = getDisplayPrice(produto);
-      const precoFormatadoSeo = formatBRL(preco);
-      const promoSeo = getPromoInfo(produto);
-      const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
-      const imagemPrincipal = seoImagemPrincipal || produto.imagens[0];
-
-      // Title dinâmico: inclui preço quando em promoção (maior CTR em SERPs).
-      const seoTitle = promoSeo.isPromo
-        ? `${produto.nome} por ${precoFormatadoSeo} | ${config.nomeLoja}`
-        : `${produto.nome} | ${config.nomeLoja}`;
-
-      // Description dinâmica orientada a CTR. Só inclui cores quando reais.
-      const coresReais = (produto.cores || [])
-        .map((c) => c.cor)
-        .filter((c): c is string => !!c && c.toLowerCase() !== "única" && c.toLowerCase() !== "unica");
-      const coresTexto = coresReais.length > 0
-        ? ` Disponível nas cores ${coresReais.slice(0, 4).join(", ")}${coresReais.length > 4 ? "…" : ""}.`
-        : "";
-
-      const seoDescription = promoSeo.isPromo
-        ? `🔥 ${produto.nome} em promoção por ${precoFormatadoSeo}${
-            promoSeo.precoVenda > 0 ? ` (antes ${formatBRL(promoSeo.precoVenda)})` : ""
-          }. Aproveite na ${config.nomeLoja}.`
-        : `Confira ${produto.nome}${colecaoTexto} na ${config.nomeLoja} por ${precoFormatadoSeo}.${coresTexto}`;
-
-      updateSeo({
-        title: seoTitle,
-        description: seoDescription,
-        image: imagemPrincipal,
-        imageWidth: 1200,
-        imageHeight: 1200,
-        url: `${window.location.origin}${getProductPath(produto)}`,
-        type: "product",
-        jsonLd: [
-          {
-            "@type": "BreadcrumbList",
-            itemListElement: [
-              {
-                "@type": "ListItem",
-                position: 1,
-                name: "Início",
-                item: window.location.origin,
-              },
-              {
-                "@type": "ListItem",
-                position: 2,
-                name: "Produtos",
-                item: `${window.location.origin}/products`,
-              },
-              {
-                "@type": "ListItem",
-                position: 3,
-                name: produto.nome,
-                item: `${window.location.origin}${getProductPath(produto)}`,
-              },
-            ],
-          },
-          {
-            "@type": "Product",
-            name: produto.nome,
-            image: absoluteUrl(imagemPrincipal),
-            description: produto.descricao || seoDescription,
-            brand: {
-              "@type": "Brand",
-              name: config.nomeLoja,
-            },
-            breadcrumb: {
-              "@type": "BreadcrumbList",
-              itemListElement: [
-                {
-                  "@type": "ListItem",
-                  position: 1,
-                  name: "Início",
-                  item: window.location.origin,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 2,
-                  name: "Produtos",
-                  item: `${window.location.origin}/products`,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 3,
-                  name: produto.nome,
-                  item: `${window.location.origin}${getProductPath(produto)}`,
-                },
-              ],
-            },
-            offers: {
-              "@type": "Offer",
-              price: preco.toFixed(2),
-              priceCurrency: "BRL",
-              availability: "https://schema.org/InStock",
-              url: `${window.location.origin}${getProductPath(produto)}`,
-            },
-          },
-        ],
-      });
-    });
-    return () => { cancelled = true; };
-    // Deps estáveis: re-roda apenas quando produto/cor/tamanho mudam de valor.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seoProdutoId, corSelecionada, tamanhoSelecionado, seoImagemPrincipal]);
+   const [config, setConfig] = useState<any>(null);
+   useEffect(() => {
+     vitrineApiService.getConfig().then(setConfig);
+   }, []);
+ 
+   const seoData = useMemo(() => {
+     if (!produto || !config) return null;
+     const preco = getDisplayPrice(produto);
+     const precoFormatadoSeo = formatBRL(preco);
+     const promoSeo = getPromoInfo(produto);
+     const colecaoTexto = produto.colecao ? ` da coleção ${produto.colecao}` : "";
+     const imagemPrincipal = seoImagemPrincipal || produto.imagens[0];
+ 
+     // Title dinâmico: inclui preço quando em promoção (maior CTR em SERPs).
+     const seoTitle = promoSeo.isPromo
+       ? `${produto.nome} por ${precoFormatadoSeo} | ${config.nomeLoja}`
+       : `${produto.nome} | ${config.nomeLoja}`;
+ 
+     // Description dinâmica orientada a CTR. Só inclui cores quando reais.
+     const coresReais = (produto.cores || [])
+       .map((c) => c.cor)
+       .filter((c): c is string => !!c && c.toLowerCase() !== "única" && c.toLowerCase() !== "unica");
+     const coresTexto = coresReais.length > 0
+       ? ` Disponível nas cores ${coresReais.slice(0, 4).join(", ")}${coresReais.length > 4 ? "…" : ""}.`
+       : "";
+ 
+     const seoDescription = promoSeo.isPromo
+       ? `🔥 ${produto.nome} em promoção por ${precoFormatadoSeo}${
+           promoSeo.precoVenda > 0 ? ` (antes ${formatBRL(promoSeo.precoVenda)})` : ""
+         }. Aproveite na ${config.nomeLoja}.`
+       : `Confira ${produto.nome}${colecaoTexto} na ${config.nomeLoja} por ${precoFormatadoSeo}.${coresTexto}`;
+ 
+     return {
+       title: seoTitle,
+       description: seoDescription,
+       image: imagemPrincipal,
+       url: `${window.location.origin}${getProductPath(produto)}`,
+       jsonLd: [
+         {
+           "@type": "BreadcrumbList",
+           itemListElement: [
+             {
+               "@type": "ListItem",
+               position: 1,
+               name: "Início",
+               item: window.location.origin,
+             },
+             {
+               "@type": "ListItem",
+               position: 2,
+               name: "Produtos",
+               item: `${window.location.origin}/products`,
+             },
+             {
+               "@type": "ListItem",
+               position: 3,
+               name: produto.nome,
+               item: `${window.location.origin}${getProductPath(produto)}`,
+             },
+           ],
+         },
+         {
+           "@type": "Product",
+           name: produto.nome,
+           image: absoluteUrl(imagemPrincipal),
+           description: produto.descricao || seoDescription,
+           brand: {
+             "@type": "Brand",
+             name: config.nomeLoja,
+           },
+           offers: {
+             "@type": "Offer",
+             price: preco.toFixed(2),
+             priceCurrency: "BRL",
+             availability: "https://schema.org/InStock",
+             url: `${window.location.origin}${getProductPath(produto)}`,
+           },
+         },
+       ]
+     };
+   }, [produto, config, seoImagemPrincipal]);
 
   // LoadingOverlay APENAS no carregamento inicial bruto — quando não há nenhum
   // dado em memória (nem da lista, nem do detalhe). Quando o detalhe está
@@ -826,9 +799,19 @@ const ProductDetail = () => {
     window.open(whatsappUrl, '_blank');
   };
 
-  return (
-    <div className="min-h-screen bg-background pt-[60px] sm:pt-[68px]">
-      <Header />
+   return (
+     <div className="min-h-screen bg-background pt-[60px] sm:pt-[68px]">
+       {seoData && (
+         <SEOMeta 
+           title={seoData.title}
+           description={seoData.description}
+           image={seoData.image}
+           url={seoData.url}
+           jsonLd={seoData.jsonLd}
+           type="product"
+         />
+       )}
+       <Header />
       <main className="pb-8 md:pb-16">
         <PageContainer padX="px-4 md:px-6" padY="pt-6 md:pt-8" className="animate-fade-in">
           {/* Breadcrumbs - Hidden on mobile for cleaner look */}
