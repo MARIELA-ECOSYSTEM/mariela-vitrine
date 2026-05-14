@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PRODUCT_IMAGE_PLACEHOLDER as produtoGenerico } from "@/lib/productImage";
-import { formatBRL, getDisplayPrice } from "@/lib/formatters";
+ import { formatBRL, getDisplayPrice } from "@/lib/formatters";
+ import { SEOMeta } from "@/components/seo/SEOMeta";
 
 const Cart = () => {
   const { items, removeFromCart, clearCart, getTotalValue } = useCart();
@@ -27,9 +28,10 @@ const Cart = () => {
   };
 
   if (items.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
-        <Header />
+   return (
+     <div className="min-h-screen flex flex-col pt-[60px] sm:pt-[68px]">
+       <SEOMeta title="Meu Carrinho | Mariela Moda Feminina" description="Finalize suas compras na Mariela. Confira suas peças selecionadas e finalize seu pedido pelo WhatsApp." />
+       <Header />
         <main className="flex-1">
           <PageContainer padX="px-4 md:px-6">
             <Breadcrumbs currentPage="Carrinho" />
