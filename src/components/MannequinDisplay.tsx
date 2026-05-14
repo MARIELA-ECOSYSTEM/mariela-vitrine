@@ -43,7 +43,7 @@ export const MannequinDisplay = ({
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
           <img
             src={mannequinBase}
-            alt="Manequim"
+            alt="Manequim Base Mariela"
             className="h-full w-auto object-contain"
           />
         </div>
