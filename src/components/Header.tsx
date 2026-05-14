@@ -271,7 +271,7 @@ export const Header = () => {
           </button>
 
           {/* Navegação desktop com marcador ativo */}
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8" aria-label="Navegação Principal">
             {navLinks.map((link) => (
               <Link
                 key={`${link.path}-${link.label}`}

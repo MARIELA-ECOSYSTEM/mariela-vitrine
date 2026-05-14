@@ -59,7 +59,7 @@ export const Footer = () => {
               <h4 className="font-semibold text-foreground mb-4 text-sm uppercase tracking-wide">
                 Navegação
               </h4>
-              <nav className="flex flex-col gap-2">
+              <nav className="flex flex-col gap-2" aria-label="Links Rápidos">
                 <Link to="/" className="text-muted-foreground hover:text-primary transition-colors text-sm">
                   Início
                 </Link>
