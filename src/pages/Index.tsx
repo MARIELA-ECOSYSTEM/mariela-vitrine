@@ -7,7 +7,8 @@ import { Footer } from "@/components/Footer";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useProducts } from "@/hooks/useProducts";
-import { absoluteUrl, updateSeo } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/seo";
+import { SEOMeta } from "@/components/seo/SEOMeta";
  import { vitrineApiService, HomeBlock } from "@/services/vitrineApiService";
  import { useEffect, useMemo, useState } from "react";
  import type { Produto } from "@/data/products";
@@ -50,40 +51,25 @@ function isAvailable(produto: Produto) {
      return () => { cancelled = true; };
    }, []);
 
-  useEffect(() => {
-    vitrineApiService.getConfig().then((config) => {
-      const instagramUrl = config.instagram
-        ? config.instagram.startsWith("http")
-          ? config.instagram
-          : `https://www.instagram.com/${config.instagram.replace(/^@/, "")}/`
-        : "https://www.instagram.com/marielaloja_/";
-
-      updateSeo({
-        title: `${config.nomeLoja} | Moda Feminina em Campina Grande`,
-        description: "Loja de roupas femininas em Campina Grande. Confira vestidos, conjuntos, blusas e novidades da coleção.",
-        image: config.logoUrl || produtos[0]?.imagens[0],
-        url: window.location.origin,
-        jsonLd: {
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: config.nomeLoja,
-          logo: absoluteUrl(config.logoUrl),
-          url: window.location.origin,
-          telephone: config.whatsapp || "5583986567915",
-          sameAs: [instagramUrl],
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: "Campina Grande",
-            addressRegion: "PB",
-            addressCountry: "BR",
-          },
-        },
-      });
-    });
-  }, [produtos]);
-
    return (
      <div className="min-h-screen bg-background">
+       <SEOMeta 
+         title="Mariela | Moda Feminina em Campina Grande"
+         description="Descubra a melhor curadoria de moda feminina em Campina Grande. Vestidos, conjuntos e blusas com elegância e sofisticação."
+         image={produtos[0]?.imagens[0]}
+         jsonLd={{
+           "@type": "Organization",
+           "name": "Mariela Moda Feminina",
+           "url": (typeof window !== "undefined" ? window.location.origin : ""),
+           "logo": absoluteUrl("/logo.png"),
+           "address": {
+             "@type": "PostalAddress",
+             "addressLocality": "Campina Grande",
+             "addressRegion": "PB",
+             "addressCountry": "BR"
+           }
+         }}
+       />
        {(loadingProducts || loadingBlocks) && <LoadingOverlay />}
        <WelcomeDialog />
        <Header />
