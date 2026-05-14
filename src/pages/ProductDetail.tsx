@@ -859,7 +859,8 @@ const ProductDetail = () => {
             {/* Product Info */}
             <div className="space-y-4 md:space-y-6">
               {/* Nome do Produto */}
-              <div>
+              <div className="flex flex-col gap-1">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-[0.2em]">{produto.categoria}</span>
                 <h1 className="font-serif text-2xl md:text-4xl font-bold text-foreground leading-tight">
                   {produto.nome}
                 </h1>

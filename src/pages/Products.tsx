@@ -616,9 +616,15 @@ const Products = () => {
             
             {/* Cabeçalho */}
             <div className="text-center mb-6 sm:mb-8 md:mb-12 animate-fade-in">
-              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 text-foreground">
-                Todos os Produtos
-              </h1>
+              {categoriaSelecionada === "todas" ? (
+                <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 text-foreground">
+                  Todos os Produtos
+                </h1>
+              ) : (
+                <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-4 text-foreground">
+                  {categoriasApi.find(c => c.value === categoriaSelecionada)?.label || "Produtos"}
+                </h1>
+              )}
               <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-xl mx-auto mb-4 sm:mb-6">
                 Confira nossa coleção completa
               </p>

@@ -80,7 +80,7 @@ function isAvailable(produto: Produto) {
             ]
           }}
        />
-        <h1 className="sr-only">Mariela Moda Feminina | Loja de Roupas Femininas em Campina Grande - PB</h1>
+        <h1 className="sr-only">Mariela Moda Feminina | Loja de Roupas Femininas em Campina Grande</h1>
         {(loadingProducts || loadingBlocks) && <LoadingOverlay />}
         <WelcomeDialog />
         <Header />
