@@ -16,7 +16,7 @@ import { Grid3x3, List, Tag, Sparkles, WifiOff, RefreshCw, ShoppingBag, Trending
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_DB } from "@/data/categories";
- import { vitrineApiService, type FilterOption, type ConfigLoja } from "@/services/vitrineApiService";
+ import { vitrineApiService, type FilterOption, type VitrineConfig } from "@/services/vitrineApiService";
 import type { Produto } from "@/data/products";
  import { absoluteUrl } from "@/lib/seo";
  import { SEOMeta } from "@/components/seo/SEOMeta";
@@ -236,69 +236,10 @@ const Products = () => {
 
   const produtosBase = produtosCatalogo.length > 0 || !catalogLoading ? produtosCatalogo : produtos;
 
-   const [config, setConfig] = useState<ConfigLoja | null>(null);
+   const [config, setConfig] = useState<VitrineConfig | null>(null);
    useEffect(() => {
      vitrineApiService.getConfig().then(setConfig);
    }, []);
- 
-   const seoData = useMemo(() => {
-     if (!config) return null;
-     
-     let title = `Catálogo de Moda Feminina | ${config.nomeLoja}`;
-     let description = `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`;
-     
-     if (categoriaSelecionada !== "todas") {
-       const catObj = categoriasApi.find(c => c.value === categoriaSelecionada);
-       if (catObj) {
-         title = `${catObj.label} | ${config.nomeLoja}`;
-         description = `Confira nossa coleção de ${catObj.label.toLowerCase()} na ${config.nomeLoja}. Peças selecionadas com elegância e estilo.`;
-       }
-     } else if (colecaoSelecionada !== "todas") {
-       title = `Coleção ${colecaoSelecionada} | ${config.nomeLoja}`;
-       description = `Descubra as novidades da coleção ${colecaoSelecionada} na ${config.nomeLoja}. Moda feminina com sofisticação.`;
-     } else if (mostrarPromocao) {
-       title = `Promoções de Moda Feminina | ${config.nomeLoja}`;
-       description = `Ofertas imperdíveis em vestidos, conjuntos e blusas na ${config.nomeLoja}. Garanta suas peças com descontos exclusivos.`;
-     }
- 
-     return {
-       title,
-       description,
-       image: config.logoUrl || produtosBase[0]?.imagens[0],
-       url: `${window.location.origin}/products`,
-       jsonLd: [
-         {
-           "@type": "BreadcrumbList",
-           itemListElement: [
-             {
-               "@type": "ListItem",
-               position: 1,
-               name: "Início",
-               item: window.location.origin,
-             },
-             {
-               "@type": "ListItem",
-               position: 2,
-               name: "Produtos",
-               item: `${window.location.origin}/products`,
-             },
-           ],
-         },
-         {
-           "@type": "ItemList",
-           "name": title,
-           "description": description,
-           "itemListElement": produtosOrdenados.slice(0, 12).map((p, i) => ({
-             "@type": "ListItem",
-             "position": i + 1,
-             "url": `${window.location.origin}/product/${p.slug || p.id}`,
-             "name": p.nome,
-             "image": absoluteUrl(p.imagens[0])
-           }))
-         }
-       ]
-     };
-   }, [config, categoriaSelecionada, colecaoSelecionada, mostrarPromocao, categoriasApi, produtosBase, produtosOrdenados]);
 
   // Calcular preço mínimo e máximo
   const { precoMin, precoMax } = useMemo(() => {
@@ -550,13 +491,74 @@ const Products = () => {
   }
 
   // Ordenar produtos
-  const produtosOrdenados = [...produtosFiltrados].sort((a, b) => {
-    const precoA = a.emPromocao && a.precoPromocional ? a.precoPromocional : a.precoVenda;
-    const precoB = b.emPromocao && b.precoPromocional ? b.precoPromocional : b.precoVenda;
-    if (ordenarPor === "preco-asc") return precoA - precoB;
-    if (ordenarPor === "preco-desc") return precoB - precoA;
-    return 0;
-  });
+   const produtosOrdenados = useMemo(() => {
+     return [...produtosFiltrados].sort((a, b) => {
+       const precoA = a.emPromocao && a.precoPromocional ? a.precoPromocional : a.precoVenda;
+       const precoB = b.emPromocao && b.precoPromocional ? b.precoPromocional : b.precoVenda;
+       if (ordenarPor === "preco-asc") return precoA - precoB;
+       if (ordenarPor === "preco-desc") return precoB - precoA;
+       return 0;
+     });
+   }, [produtosFiltrados, ordenarPor]);
+ 
+   const seoData = useMemo(() => {
+     if (!config) return null;
+     
+     let title = `Catálogo de Moda Feminina | ${config.nomeLoja}`;
+     let description = `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`;
+     
+     if (categoriaSelecionada !== "todas") {
+       const catObj = categoriasApi.find(c => c.value === categoriaSelecionada);
+       if (catObj) {
+         title = `${catObj.label} | ${config.nomeLoja}`;
+         description = `Confira nossa coleção de ${catObj.label.toLowerCase()} na ${config.nomeLoja}. Peças selecionadas com elegância e estilo.`;
+       }
+     } else if (colecaoSelecionada !== "todas") {
+       title = `Coleção ${colecaoSelecionada} | ${config.nomeLoja}`;
+       description = `Descubra as novidades da coleção ${colecaoSelecionada} na ${config.nomeLoja}. Moda feminina com sofisticação.`;
+     } else if (mostrarPromocao) {
+       title = `Promoções de Moda Feminina | ${config.nomeLoja}`;
+       description = `Ofertas imperdíveis em vestidos, conjuntos e blusas na ${config.nomeLoja}. Garanta suas peças com descontos exclusivos.`;
+     }
+ 
+     return {
+       title,
+       description,
+       image: config.logoUrl || produtosBase[0]?.imagens[0],
+       url: `${window.location.origin}/products`,
+       jsonLd: [
+         {
+           "@type": "BreadcrumbList",
+           itemListElement: [
+             {
+               "@type": "ListItem",
+               position: 1,
+               name: "Início",
+               item: window.location.origin,
+             },
+             {
+               "@type": "ListItem",
+               position: 2,
+               name: "Produtos",
+               item: `${window.location.origin}/products`,
+             },
+           ],
+         },
+         {
+           "@type": "ItemList",
+           "name": title,
+           "description": description,
+           "itemListElement": produtosOrdenados.slice(0, 12).map((p, i) => ({
+             "@type": "ListItem",
+             "position": i + 1,
+             "url": `${window.location.origin}/product/${p.produtoId || p.id}`,
+             "name": p.nome,
+             "image": absoluteUrl(p.imagens[0])
+           }))
+         }
+       ]
+     };
+   }, [config, categoriaSelecionada, colecaoSelecionada, mostrarPromocao, categoriasApi, produtosBase, produtosOrdenados]);
 
   const handleLimparFiltros = () => {
     setCategoriaSelecionada("todas");
