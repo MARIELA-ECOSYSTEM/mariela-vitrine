@@ -501,25 +501,28 @@ const Products = () => {
      });
    }, [produtosFiltrados, ordenarPor]);
  
-   const seoData = useMemo(() => {
-     if (!config) return null;
-     
-     let title = `Catálogo de Moda Feminina | ${config.nomeLoja}`;
-     let description = `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`;
-     
-     if (categoriaSelecionada !== "todas") {
-       const catObj = categoriasApi.find(c => c.value === categoriaSelecionada);
-       if (catObj) {
-         title = `${catObj.label} | ${config.nomeLoja}`;
-         description = `Confira nossa coleção de ${catObj.label.toLowerCase()} na ${config.nomeLoja}. Peças selecionadas com elegância e estilo.`;
-       }
-     } else if (colecaoSelecionada !== "todas") {
-       title = `Coleção ${colecaoSelecionada} | ${config.nomeLoja}`;
-       description = `Descubra as novidades da coleção ${colecaoSelecionada} na ${config.nomeLoja}. Moda feminina com sofisticação.`;
-     } else if (mostrarPromocao) {
-       title = `Promoções de Moda Feminina | ${config.nomeLoja}`;
-       description = `Ofertas imperdíveis em vestidos, conjuntos e blusas na ${config.nomeLoja}. Garanta suas peças com descontos exclusivos.`;
-     }
+    const seoData = useMemo(() => {
+      if (!config) return null;
+      
+      let title = `Catálogo de Moda Feminina | ${config.nomeLoja}`;
+      let description = `Explore o catálogo completo da ${config.nomeLoja} com peças exclusivas e novas coleções em Campina Grande - PB.`;
+      
+      if (categoriaSelecionada !== "todas") {
+        const catObj = categoriasApi.find(c => c.value === categoriaSelecionada);
+        if (catObj) {
+          title = `${catObj.label} em Campina Grande | ${config.nomeLoja}`;
+          description = `Confira nossa coleção de ${catObj.label.toLowerCase()} na ${config.nomeLoja}. Peças selecionadas com elegância, estilo e qualidade.`;
+        }
+      } else if (colecaoSelecionada !== "todas") {
+        title = `Coleção ${colecaoSelecionada} | ${config.nomeLoja}`;
+        description = `Descubra as novidades da coleção ${colecaoSelecionada} na ${config.nomeLoja}. Curadoria exclusiva de moda feminina com sofisticação.`;
+      } else if (mostrarPromocao) {
+        title = `Promoções de Moda Feminina | ${config.nomeLoja}`;
+        description = `Ofertas imperdíveis em vestidos, conjuntos e blusas na ${config.nomeLoja}. Garanta suas peças favoritas com descontos exclusivos.`;
+      } else if (mostrarNovidades) {
+        title = `Novidades em Moda Feminina | ${config.nomeLoja}`;
+        description = `Acompanhe os últimos lançamentos da ${config.nomeLoja}. As tendências mais recentes da moda feminina em Campina Grande.`;
+      }
  
      return {
        title,

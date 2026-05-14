@@ -681,11 +681,13 @@ const ProductDetail = () => {
     return <ProductDetailSkeleton />;
   }
 
-  if (!produto) {
+  if (!produto && !loading && !loadingDetalhe) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+        <SEOMeta title="Produto não encontrado" noIndex={true} />
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
+          <h1 className="font-serif text-3xl font-bold mb-4">Produto não encontrado</h1>
+          <p className="text-muted-foreground mb-8">O produto que você procura pode ter sido removido ou o link está incorreto.</p>
           <Link to="/products">
             <Button>Voltar para Produtos</Button>
           </Link>
