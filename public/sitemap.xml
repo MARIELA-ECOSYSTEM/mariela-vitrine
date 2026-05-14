@@ -1,22 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://marielamf.lovable.app/</loc>
+    <loc>https://mariela.app/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://marielamf.lovable.app/products</loc>
+    <loc>https://mariela.app/products</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://marielamf.lovable.app/monte-seu-look</loc>
+    <loc>https://mariela.app/monte-seu-look</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://marielamf.lovable.app/cart</loc>
+    <loc>https://mariela.app/instalar</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://mariela.app/cart</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
