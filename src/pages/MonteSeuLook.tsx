@@ -52,9 +52,12 @@ const MonteSeuLook = () => {
           
           {/* Hero header - Compact on mobile */}
           <div className="text-center mb-6 md:mb-10 animate-fade-in">
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-serif font-bold text-foreground mb-2 md:mb-4 tracking-tight">
-              Monte Seu Look
-            </h1>
+            <div className="flex flex-col gap-1 mb-2 md:mb-4">
+              <span className="text-primary font-medium text-xs uppercase tracking-widest mb-1">Personal Stylist</span>
+              <h1 className="text-2xl md:text-4xl lg:text-5xl font-serif font-bold text-foreground tracking-tight">
+                Monte Seu Look
+              </h1>
+            </div>
             <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
               Combine as peças e visualize seu look perfeito
             </p>
