@@ -39,14 +39,19 @@ export const Header = () => {
   const overlayTextLight = bannerTone === "light"; // banner escuro → texto branco
 
   useEffect(() => {
-    const FADE_DISTANCE = 160; // px ao longo dos quais a transição acontece
+    // Distância em px na qual o header transita de overlay → opaco.
+    // Maior = transição mais suave e perceptível entre topo e meio da página.
+    const FADE_DISTANCE = 320;
+    // Easing "smoothstep" para evitar mudança linear/abrupta de opacidade/blur.
+    const smoothstep = (t: number) => t * t * (3 - 2 * t);
     let frame = 0;
     const handleScroll = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         const y = window.scrollY;
-        const progress = Math.min(1, Math.max(0, y / FADE_DISTANCE));
+        const raw = Math.min(1, Math.max(0, y / FADE_DISTANCE));
+        const progress = smoothstep(raw);
         setScrollProgress(progress);
       });
     };
@@ -61,7 +66,8 @@ export const Header = () => {
   // Ao trocar de rota, reavalia o estado de rolagem e fecha menu mobile.
   useEffect(() => {
     const y = window.scrollY;
-    setScrollProgress(Math.min(1, Math.max(0, y / 160)));
+    const raw = Math.min(1, Math.max(0, y / 320));
+    setScrollProgress(raw * raw * (3 - 2 * raw));
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
