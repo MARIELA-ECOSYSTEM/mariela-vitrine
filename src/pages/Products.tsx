@@ -869,43 +869,36 @@ const Products = () => {
                 </div>
               ) : produtosOrdenados.length > 0 ? (
                 <>
-                  <div
-                    aria-busy={pageTransitioning}
-                    className={cn(
-                      "relative",
-                      visualizacao === "grade"
-                        ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
-                        : "space-y-3 sm:space-y-4",
-                      "transition-opacity duration-300",
-                      pageTransitioning && "opacity-0 pointer-events-none",
-                    )}
-                  >
-                    {produtosOrdenados.map((produto, index) => (
-                        <div 
-                          key={produto.id} 
-                          className="animate-fade-in"
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          <ProductCard 
-                            produto={produto}
-                            layoutMode={visualizacao}
-                          />
-                        </div>
-                      ))}
-                  </div>
-                  {pageTransitioning && (
+                  {pageTransitioning ? (
                     <div
-                      aria-hidden="true"
+                      aria-busy="true"
                       className={cn(
-                        "absolute inset-x-0 mt-[-1px]",
+                        visualizacao === "grade"
+                          ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                          : "space-y-3 sm:space-y-4",
+                        "animate-fade-in",
+                      )}
+                    >
+                      {Array.from({ length: Math.min(itensPorPagina, produtosOrdenados.length || itensPorPagina) }).map((_, i) => (
+                        <ProductSkeleton key={i} layoutMode={visualizacao} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
                         visualizacao === "grade"
                           ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
                           : "space-y-3 sm:space-y-4",
                       )}
-                      style={{ transform: "translateY(calc(-100% - 0px))" }}
                     >
-                      {Array.from({ length: Math.min(itensPorPagina, produtosOrdenados.length) }).map((_, i) => (
-                        <ProductSkeleton key={i} layoutMode={visualizacao} />
+                      {produtosOrdenados.map((produto, index) => (
+                        <div
+                          key={produto.id}
+                          className="animate-fade-in"
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <ProductCard produto={produto} layoutMode={visualizacao} />
+                        </div>
                       ))}
                     </div>
                   )}
