@@ -339,20 +339,58 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
     useEffect(() => {
       if (typeof window === "undefined") return;
       if (coresSelecionadas.length === 0) return;
+      // Limite controlado para não impactar a performance:
+      // top N produtos × dedupe por URL.
+      const PRELOAD_LIMIT = 12;
       const urls = new Set<string>();
-      produtosFiltradosFull.slice(0, 24).forEach((p) => {
-        coresSelecionadas.forEach((cor) => {
+      for (const p of produtosFiltradosFull.slice(0, PRELOAD_LIMIT)) {
+        for (const cor of coresSelecionadas) {
           const c = p.cores?.find((cc) => cc.cor === cor);
           const url = c?.imagem_card_url || c?.imagem_full || c?.imagem_thumb;
           if (url) urls.add(url);
+        }
+      }
+      // Roda em idle para não competir com o render dos cards.
+      const run = () => {
+        urls.forEach((u) => {
+          const img = new Image();
+          img.decoding = "async";
+          img.loading = "eager";
+          img.src = u;
         });
-      });
-      urls.forEach((u) => {
-        const img = new Image();
-        img.decoding = "async";
-        img.src = u;
-      });
+      };
+      const ric: ((cb: () => void) => number) | undefined =
+        (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+      const handle = ric ? ric(run) : window.setTimeout(run, 50);
+      return () => {
+        const cic: ((h: number) => void) | undefined =
+          (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
+        if (ric && cic) cic(handle);
+        else window.clearTimeout(handle);
+      };
     }, [coresSelecionadas, produtosFiltradosFull]);
+
+    // Quantidades por categoria (badges no Sheet) — calculada sobre o
+    // recorte de produtos respeitando os demais filtros ativos, como
+    // FiltersContent já faz para cores/tamanhos via produtosFiltradosParcial.
+    const categoriasCount = useMemo(() => {
+      const map: Record<string, number> = { todas: produtos.length };
+      produtos.forEach((p) => {
+        const cat = (p.categoria || "").toLowerCase();
+        map[cat] = (map[cat] ?? 0) + 1;
+      });
+      return map;
+    }, [produtos]);
+
+    // Skeleton elegante durante a troca de filtros — evita "piscadas" em
+    // conexões lentas mantendo a percepção de continuidade.
+    const [isFiltering, setIsFiltering] = useState(false);
+    useEffect(() => {
+      if (loading) return;
+      setIsFiltering(true);
+      const t = window.setTimeout(() => setIsFiltering(false), 220);
+      return () => window.clearTimeout(t);
+    }, [gridFadeKey, loading]);
 
     const totalCategoriasNaColecao = useMemo(() => {
       const s = new Set<string>();
@@ -563,14 +601,23 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
                         setPaginaAtual={setPaginaAtual}
                         activeFiltersCount={activeFiltersCount}
                         produtosFiltradosParcial={produtos}
+                        categoriasCount={categoriasCount}
                       />
                     </div>
                     <div className="absolute inset-x-0 bottom-0 p-4 bg-background border-t flex gap-2">
-                      <Button variant="outline" className="flex-1" onClick={handleLimparFiltros}>
-                        Limpar
+                      <Button
+                        variant="outline"
+                        className="flex-1 uppercase tracking-[0.15em] text-xs"
+                        onClick={handleLimparFiltros}
+                        disabled={activeFiltersCount === 0}
+                      >
+                        <X className="w-3.5 h-3.5 mr-1.5" /> Limpar
                       </Button>
-                      <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
-                        Ver {produtosFiltradosFull.length} peças
+                      <Button
+                        className="flex-1 uppercase tracking-[0.15em] text-xs"
+                        onClick={() => setFiltersOpen(false)}
+                      >
+                        Aplicar · {produtosFiltradosFull.length}
                       </Button>
                     </div>
                   </SheetContent>
@@ -595,7 +642,7 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
                   <SelectValue placeholder="ORDENAR" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="padrao">Lançamentos</SelectItem>
+                  <SelectItem value="padrao">Padrão</SelectItem>
                   <SelectItem value="preco-asc">Menor preço</SelectItem>
                   <SelectItem value="preco-desc">Maior preço</SelectItem>
                 </SelectContent>
@@ -646,22 +693,28 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
 
             {/* Grid editorial — destaque maior no primeiro card */}
             {loading ? (
-              <ProductsLoadingSkeleton count={8} />
+              <ProductsLoadingSkeleton count={10} />
+            ) : isFiltering ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
+                {Array.from({ length: Math.min(produtosFiltrados.length || 10, 10) }).map((_, i) => (
+                  <ProductSkeleton key={i} />
+                ))}
+              </div>
             ) : produtosFiltrados.length > 0 ? (
               <>
                 <div
                   key={gridFadeKey}
-                  className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-7 animate-in fade-in duration-500"
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 animate-in fade-in duration-500"
                 >
                   {produtosFiltrados.map((produto, idx) => {
-                    // Layout editorial: primeiro card ocupa 2x no desktop ("hero piece").
+                    // Destaque sutil no primeiro card — sem ocupar múltiplas
+                    // colunas para manter os cards num tamanho menor.
                     const isFeatured = idx === 0;
                     return (
                       <div
                         key={produto.id}
                         className={cn(
                           "group relative transition-all duration-500",
-                          isFeatured && "col-span-2 lg:row-span-2",
                         )}
                       >
                         {isFeatured && (
