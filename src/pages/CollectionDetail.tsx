@@ -7,7 +7,8 @@
  import { PageContainer } from "@/components/PageContainer";
  import { ProductCard } from "@/components/ProductCard";
   import { ProductsLoadingSkeleton, ProductSkeleton } from "@/components/ProductSkeleton";
-  import { ProductFilters, FiltersContent } from "@/components/ProductFilters";
+import { ProductFilters, FiltersContent } from "@/components/ProductFilters";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
   import { 
     vitrineApiService, 
      type ColecaoDestaque,
@@ -17,7 +18,7 @@
   import type { Produto } from "@/data/products";
   import { absoluteUrl } from "@/lib/seo";
   import { SEOMeta } from "@/components/seo/SEOMeta";
-  import { ArrowLeft, Sparkles, ImageOff, Filter, Grid3x3, List, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Sparkles, ImageOff, Filter, ShoppingBag, X, ArrowDown } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { Button } from "@/components/ui/button";
   import { CATEGORIAS_DB } from "@/data/categories";
