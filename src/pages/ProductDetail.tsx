@@ -108,7 +108,14 @@ const ProductDetail = () => {
           setDetalheNotFound(true);
         }
       })
-      .catch(() => { /* silencioso — fallback permanece o produto da lista */ })
+      .catch(() => {
+        if (cancelled) return;
+        // Em caso de falha de rede/erro inesperado, só consideramos
+        // "não encontrado" quando NÃO temos nenhum dado da lista para
+        // exibir. Assim evitamos uma tela em branco silenciosa: a UI
+        // mostra a mensagem elegante com botão Voltar.
+        if (!produtoFromList) setDetalheNotFound(true);
+      })
       .finally(() => {
         if (!cancelled) setLoadingDetalhe(false);
       });
