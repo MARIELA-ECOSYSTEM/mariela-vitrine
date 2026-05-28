@@ -42,8 +42,6 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
     "Mostarda": "#FFDB58", "Off White": "#F8F8F8", "Caramelo": "#C68642",
   };
 
-  const produtosPorPagina = 12;
- 
  const CollectionDetail = () => {
    const { id: slugOrId } = useParams<{ id: string }>();
     const [searchParams, setSearchParams] = useSearchParams();
