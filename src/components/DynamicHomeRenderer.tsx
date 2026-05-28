@@ -32,9 +32,17 @@
      return null;
    }
  
+   // Garante que as Coleções em Destaque apareçam no topo, acima de qualquer outro bloco
+   // (ex.: "Promoções Imperdíveis"), preservando a ordem relativa dos demais.
+   const orderedBlocks = [...blocks].sort((a, b) => {
+     const aColecao = a.tipo === "colecoes" ? 0 : 1;
+     const bColecao = b.tipo === "colecoes" ? 0 : 1;
+     return aColecao - bColecao;
+   });
+
    return (
      <div className="space-y-4">
-       {blocks.map((block) => {
+        {orderedBlocks.map((block) => {
          try {
            // Validade temporal controlada pelo PDV
            if (block.validade) {
