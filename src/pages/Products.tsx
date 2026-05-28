@@ -869,11 +869,16 @@ const Products = () => {
                 </div>
               ) : produtosOrdenados.length > 0 ? (
                 <>
-                  <div className={`${
-                    visualizacao === "grade"
-                      ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
-                      : "space-y-3 sm:space-y-4"
-                  }`}>
+                  <div
+                    aria-busy={pageTransitioning}
+                    className={cn(
+                      visualizacao === "grade"
+                        ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                        : "space-y-3 sm:space-y-4",
+                      "transition-opacity duration-300",
+                      pageTransitioning && "opacity-50 pointer-events-none animate-pulse",
+                    )}
+                  >
                     {produtosOrdenados.map((produto, index) => (
                         <div 
                           key={produto.id} 
