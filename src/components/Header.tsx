@@ -219,7 +219,17 @@ export const Header = () => {
           .getPropertyValue("--header-height")
           .trim();
         const headerOffset = parseInt(raw, 10) || 68;
-        const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+        // Considera também o `scroll-margin-top` definido no elemento (CSS),
+        // o que permite que cada seção ajuste seu próprio offset sem alterar
+        // a lógica aqui. Usa o maior valor entre os dois.
+        const styles = getComputedStyle(el);
+        const scrollMargin = parseInt(styles.scrollMarginTop, 10) || 0;
+        const offset = Math.max(headerOffset, scrollMargin);
+        const top = el.getBoundingClientRect().top + window.scrollY - offset;
+        // Lock visual do header durante a animação (≈700ms) — evita flicker
+        // de opacidade/blur enquanto o navegador interpola a posição.
+        programmaticScrollUntil.value = Date.now() + 700;
+        setScrollProgress(1);
         window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         return;
       }
