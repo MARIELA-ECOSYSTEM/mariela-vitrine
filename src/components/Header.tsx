@@ -301,9 +301,7 @@ export const Header = () => {
                 to={link.path}
                 onClick={() => {
                   if (link.scrollTo) {
-                    setTimeout(() => {
-                      document.getElementById(link.scrollTo!)?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
+                    scrollToAnchor(link.scrollTo);
                   }
                 }}
                 className={cn(
