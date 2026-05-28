@@ -59,7 +59,10 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
     const [paginaAtual, setPaginaAtual] = useState(() => {
       return Number(searchParams.get("page")) || 1;
     });
-    const [loadingMore, setLoadingMore] = useState(false);
+    const [itensPorPagina, setItensPorPagina] = useState<number>(() => {
+      const fromUrl = Number(searchParams.get("perPage"));
+      return fromUrl > 0 ? fromUrl : DEFAULT_PAGE_SIZE;
+    });
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Estado "rascunho" para filtros mobile
@@ -146,13 +149,14 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
       }
       if (ordenarPor !== "padrao") params.set("sort", ordenarPor);
       if (paginaAtual > 1) params.set("page", paginaAtual.toString());
+      if (itensPorPagina !== DEFAULT_PAGE_SIZE) params.set("perPage", String(itensPorPagina));
 
       const currentParams = searchParams.toString();
       const nextParams = params.toString();
       if (currentParams !== nextParams) {
         setSearchParams(params, { replace: true });
       }
-    }, [categoriaSelecionada, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado, ordenarPor, paginaAtual, setSearchParams]);
+    }, [categoriaSelecionada, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado, ordenarPor, paginaAtual, itensPorPagina, setSearchParams]);
 
     // Carregar filtros da URL no mount
     useEffect(() => {
@@ -210,21 +214,22 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
       return filtrados;
     }, [produtos, categoriaSelecionada, ordenarPor, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado]);
 
-    // Paginação
+    // Paginação por página (slice do conjunto filtrado completo)
     const produtosFiltrados = useMemo(() => {
-      return produtosFiltradosFull.slice(0, paginaAtual * produtosPorPagina);
-    }, [produtosFiltradosFull, paginaAtual]);
+      const start = (paginaAtual - 1) * itensPorPagina;
+      return produtosFiltradosFull.slice(start, start + itensPorPagina);
+    }, [produtosFiltradosFull, paginaAtual, itensPorPagina]);
 
-    const hasMore = produtosFiltrados.length < produtosFiltradosFull.length;
+    // Se a página atual ficar "vazia" após mudança de filtro/perPage, recolhe para a 1.
+    useEffect(() => {
+      const totalPaginas = Math.max(1, Math.ceil(produtosFiltradosFull.length / itensPorPagina));
+      if (paginaAtual > totalPaginas) setPaginaAtual(1);
+    }, [produtosFiltradosFull.length, itensPorPagina, paginaAtual]);
 
-    const carregarMais = useCallback(() => {
-      if (!hasMore || loadingMore) return;
-      setLoadingMore(true);
-      setTimeout(() => {
-        setPaginaAtual(prev => prev + 1);
-        setLoadingMore(false);
-      }, 600); // Shimmer feel
-    }, [hasMore, loadingMore]);
+    // Scroll suave ao topo da grid quando o usuário troca de página.
+    useEffect(() => {
+      if (paginaAtual > 1) scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [paginaAtual]);
 
     // Handler para aplicar filtros mobile (Delayed update)
     const applyMobileFilters = useCallback(() => {
