@@ -8,6 +8,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SEOMeta } from "@/components/seo/SEOMeta";
 import { Input } from "@/components/ui/input";
 import { vitrineApiService, type ColecaoDestaque } from "@/services/vitrineApiService";
+import { absoluteUrl } from "@/lib/seo";
 import { slugify } from "@/lib/slug";
 import { cn } from "@/lib/utils";
 
@@ -49,11 +50,39 @@ const Colecoes = () => {
 
   const [hero, ...rest] = filtered;
 
+  const seoJsonLd = useMemo(() => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const breadcrumb = {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Início", item: `${origin}/` },
+        { "@type": "ListItem", position: 2, name: "Coleções", item: `${origin}/colecoes` },
+      ],
+    };
+    const itemList = colecoes && colecoes.length > 0
+      ? {
+          "@type": "ItemList",
+          name: "Coleções Mariela Moda Feminina",
+          itemListElement: colecoes.slice(0, 20).map((c, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: c.nome,
+            url: `${origin}/collections/${slugify(c.nome) || c.id}`,
+            image: absoluteUrl(c.banner_url || c.imagem_capa_url || undefined),
+          })),
+        }
+      : null;
+    return itemList ? [breadcrumb, itemList] : [breadcrumb];
+  }, [colecoes]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <SEOMeta
-        title="Coleções | Mariela Moda Feminina"
-        description="Explore todas as coleções da Mariela Moda Feminina — curadoria sazonal de vestidos, conjuntos e blusas para a mulher contemporânea."
+        title="Coleções Mariela Moda Feminina | Curadoria Sazonal"
+        description="Explore todas as coleções da Mariela Moda Feminina — curadoria sazonal de vestidos, conjuntos e blusas para a mulher contemporânea em Campina Grande."
+        url="/colecoes"
+        image={hero?.banner_url || hero?.imagem_capa_url || undefined}
+        jsonLd={seoJsonLd}
       />
       <Header />
 

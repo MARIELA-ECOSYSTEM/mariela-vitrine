@@ -42,6 +42,17 @@
     "acessorios": "💍",
   };
 
+  // Espelha o mapa do ProductCard para que o filtro visual de cores na
+  // coleção use exatamente a mesma paleta dos swatches dos cards.
+  const COLOR_SWATCH: Record<string, string> = {
+    "Preto": "#000000", "Branco": "#FFFFFF", "Vermelho": "#DC2626",
+    "Azul": "#2563EB", "Verde": "#16A34A", "Amarelo": "#EAB308",
+    "Rosa": "#EC4899", "Roxo": "#9333EA", "Laranja": "#EA580C",
+    "Marrom": "#92400E", "Cinza": "#6B7280", "Bege": "#D4C5B9",
+    "Nude": "#E5D4C1", "Caqui": "#BDB76B", "Vinho": "#722F37",
+    "Mostarda": "#FFDB58", "Off White": "#F8F8F8", "Caramelo": "#C68642",
+  };
+
   const produtosPorPagina = 12;
  
  const CollectionDetail = () => {
@@ -250,24 +261,28 @@
  
      const seoData = useMemo(() => {
        if (!colecao || !config) return null;
+       const origin = typeof window !== "undefined" ? window.location.origin : "";
+       const slug = slugify(colecao.nome) || colecao.id;
+       const canonical = `${origin}/collections/${slug}`;
        return {
-         title: `${colecao.nome} | ${config.nomeLoja}`,
-         description: colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea na ${config.nomeLoja}.`,
+          title: `Coleção ${colecao.nome} | ${config.nomeLoja}`,
+          description: (colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea na ${config.nomeLoja}.`).slice(0, 160),
          image: colecao.banner_url || colecao.imagem_capa_url || undefined,
-         url: window.location.href,
+          url: canonical,
           jsonLd: [
             {
               "@type": "BreadcrumbList",
               "itemListElement": [
-                { "@type": "ListItem", "position": 1, "name": "Início", "item": window.location.origin },
-                { "@type": "ListItem", "position": 2, "name": "Coleções", "item": `${window.location.origin}/products` },
-                { "@type": "ListItem", "position": 3, "name": colecao.nome, "item": window.location.href }
+                 { "@type": "ListItem", "position": 1, "name": "Início", "item": `${origin}/` },
+                 { "@type": "ListItem", "position": 2, "name": "Coleções", "item": `${origin}/colecoes` },
+                 { "@type": "ListItem", "position": 3, "name": colecao.nome, "item": canonical }
               ]
             },
             {
               "@type": "CollectionPage",
               "name": colecao.nome,
               "description": colecao.descricao,
+               "url": canonical,
               "image": colecao.banner_url || colecao.imagem_capa_url
             },
             {
@@ -400,7 +415,10 @@
           </section>
 
           <PageContainer className="py-8 sm:py-12">
-            <Breadcrumbs currentPage={colecao?.nome || "Coleção"} />
+            <Breadcrumbs
+              items={[{ label: "Coleções", path: "/colecoes" }]}
+              currentPage={colecao?.nome || "Coleção"}
+            />
 
             {/* Category Icons Navigation */}
             <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scrollbar-hide justify-start sm:justify-center mt-8 mb-12">
@@ -439,6 +457,88 @@
                 </button>
               ))}
             </div>
+
+            {/* Quick color filter — selação visual fluida com swatches.
+                Sincroniza com `coresSelecionadas` (mesmo estado dos filtros
+                avançados), de forma que clicar aqui re-filtra a grid e troca
+                as imagens dos cards (cada card auto-prioriza sua cor). */}
+            {coresDisponiveis.length > 0 && (
+              <div className="mb-10 -mt-2">
+                <div className="flex items-end justify-between mb-3">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                      Filtrar por cor
+                    </span>
+                    <h3 className="font-serif text-lg sm:text-xl text-foreground mt-0.5">
+                      Paleta da coleção
+                    </h3>
+                  </div>
+                  {coresSelecionadas.length > 0 && (
+                    <button
+                      onClick={() => { setCoresSelecionadas([]); setPaginaAtual(1); }}
+                      className="text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Limpar cores
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {coresDisponiveis.map((cor) => {
+                    const active = coresSelecionadas.includes(cor);
+                    const swatch = COLOR_SWATCH[cor] || "#D4C5B9";
+                    const isLight = ["#FFFFFF", "#F8F8F8", "#FFDB58", "#EAB308", "#D4C5B9", "#E5D4C1"].includes(swatch);
+                    return (
+                      <button
+                        key={cor}
+                        onClick={() => {
+                          setCoresSelecionadas((prev) =>
+                            prev.includes(cor) ? prev.filter((c) => c !== cor) : [...prev, cor]
+                          );
+                          setPaginaAtual(1);
+                        }}
+                        aria-pressed={active}
+                        aria-label={`Filtrar pela cor ${cor}`}
+                        className={cn(
+                          "group flex flex-col items-center gap-2 min-w-[56px] sm:min-w-[64px] transition-all duration-300 ease-out",
+                          active ? "opacity-100" : "opacity-80 hover:opacity-100",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "relative w-11 h-11 sm:w-14 sm:h-14 rounded-full transition-all duration-300 ease-out",
+                            "ring-offset-2 ring-offset-background",
+                            active
+                              ? "ring-2 ring-primary scale-110 shadow-md"
+                              : "ring-1 ring-border group-hover:scale-105 group-hover:shadow-sm",
+                            isLight && "border border-border/60",
+                          )}
+                          style={{ backgroundColor: swatch }}
+                        >
+                          {active && (
+                            <span
+                              className={cn(
+                                "absolute inset-0 flex items-center justify-center text-[11px] font-bold",
+                                isLight ? "text-foreground" : "text-white"
+                              )}
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[10px] sm:text-[11px] uppercase tracking-wider transition-colors",
+                            active ? "text-foreground font-semibold" : "text-muted-foreground"
+                          )}
+                        >
+                          {cor}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Sidebar Filters - Desktop */}

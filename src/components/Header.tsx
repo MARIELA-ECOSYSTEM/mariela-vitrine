@@ -193,6 +193,7 @@ export const Header = () => {
   const navLinks = [
     { path: '/#home', basePath: '/', label: 'Início', scrollTo: 'home', section: 'home' },
     { path: '/products', basePath: '/products', label: 'Produtos', scrollTo: undefined as string | undefined, section: 'products' },
+    { path: '/colecoes', basePath: '/colecoes', label: 'Coleções', scrollTo: undefined as string | undefined, section: undefined as string | undefined },
     { path: '/monte-seu-look', basePath: '/monte-seu-look', label: 'Monte Seu Look', scrollTo: undefined as string | undefined, section: undefined as string | undefined },
     { path: '/#contact', basePath: '/', label: 'Contato', scrollTo: 'contact', section: 'contact' },
   ];
