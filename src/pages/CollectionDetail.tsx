@@ -396,6 +396,15 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
       return () => window.clearTimeout(t);
     }, [gridFadeKey, loading]);
 
+    // Fade suave ao trocar de página (sem refetch — slice client-side).
+    const [isPageChanging, setIsPageChanging] = useState(false);
+    useEffect(() => {
+      if (loading) return;
+      setIsPageChanging(true);
+      const t = window.setTimeout(() => setIsPageChanging(false), 260);
+      return () => window.clearTimeout(t);
+    }, [paginaAtual, itensPorPagina, loading]);
+
     const totalCategoriasNaColecao = useMemo(() => {
       const s = new Set<string>();
       produtos.forEach((p) => s.add(p.categoria.toLowerCase()));
@@ -708,7 +717,11 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
               <>
                 <div
                   key={gridFadeKey}
-                  className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 animate-in fade-in duration-500"
+                  aria-busy={isPageChanging}
+                  className={cn(
+                    "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 animate-in fade-in duration-500 transition-opacity",
+                    isPageChanging && "opacity-50 pointer-events-none",
+                  )}
                 >
                   {produtosFiltrados.map((produto, index) => (
                     <div
