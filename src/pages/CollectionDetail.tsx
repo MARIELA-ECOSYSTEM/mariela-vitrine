@@ -42,6 +42,17 @@
     "acessorios": "💍",
   };
 
+  // Espelha o mapa do ProductCard para que o filtro visual de cores na
+  // coleção use exatamente a mesma paleta dos swatches dos cards.
+  const COLOR_SWATCH: Record<string, string> = {
+    "Preto": "#000000", "Branco": "#FFFFFF", "Vermelho": "#DC2626",
+    "Azul": "#2563EB", "Verde": "#16A34A", "Amarelo": "#EAB308",
+    "Rosa": "#EC4899", "Roxo": "#9333EA", "Laranja": "#EA580C",
+    "Marrom": "#92400E", "Cinza": "#6B7280", "Bege": "#D4C5B9",
+    "Nude": "#E5D4C1", "Caqui": "#BDB76B", "Vinho": "#722F37",
+    "Mostarda": "#FFDB58", "Off White": "#F8F8F8", "Caramelo": "#C68642",
+  };
+
   const produtosPorPagina = 12;
  
  const CollectionDetail = () => {
