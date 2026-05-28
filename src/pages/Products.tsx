@@ -380,13 +380,24 @@ const Products = () => {
     if (paginaAtual > 1) adjacentes.push(paginaAtual - 1);
     if (paginaAtual < totalPaginas) adjacentes.push(paginaAtual + 1);
     if (adjacentes.length === 0) return;
+    let cancelled = false;
     const handle = window.setTimeout(() => {
+      if (cancelled) return;
       adjacentes.forEach((p) => {
         const offset = (p - 1) * itensPorPagina;
-        vitrineApiService.getProdutosPage(getProdutosQuery(offset)).catch(() => {});
+        vitrineApiService
+          .getProdutosPage(getProdutosQuery(offset))
+          .then(() => {
+            // Resposta antiga: filtros/página/perPage mudaram — ignorar.
+            if (cancelled) return;
+          })
+          .catch(() => {});
       });
     }, 250);
-    return () => window.clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, [paginaAtual, itensPorPagina, totalProdutos, catalogLoading, getProdutosQuery]);
 
   // Scroll suave ao topo da grid quando o usuário navega entre páginas.
@@ -869,29 +880,39 @@ const Products = () => {
                 </div>
               ) : produtosOrdenados.length > 0 ? (
                 <>
-                  <div
-                    aria-busy={pageTransitioning}
-                    className={cn(
-                      visualizacao === "grade"
-                        ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
-                        : "space-y-3 sm:space-y-4",
-                      "transition-opacity duration-300",
-                      pageTransitioning && "opacity-50 pointer-events-none animate-pulse",
-                    )}
-                  >
-                    {produtosOrdenados.map((produto, index) => (
-                        <div 
-                          key={produto.id} 
+                  {pageTransitioning ? (
+                    <div
+                      aria-busy="true"
+                      className={cn(
+                        visualizacao === "grade"
+                          ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                          : "space-y-3 sm:space-y-4",
+                        "animate-fade-in",
+                      )}
+                    >
+                      {Array.from({ length: Math.min(itensPorPagina, produtosOrdenados.length || itensPorPagina) }).map((_, i) => (
+                        <ProductSkeleton key={i} layoutMode={visualizacao} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        visualizacao === "grade"
+                          ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                          : "space-y-3 sm:space-y-4",
+                      )}
+                    >
+                      {produtosOrdenados.map((produto, index) => (
+                        <div
+                          key={produto.id}
                           className="animate-fade-in"
                           style={{ animationDelay: `${index * 0.05}s` }}
                         >
-                          <ProductCard 
-                            produto={produto}
-                            layoutMode={visualizacao}
-                          />
+                          <ProductCard produto={produto} layoutMode={visualizacao} />
                         </div>
                       ))}
-                  </div>
+                    </div>
+                  )}
 
                   <ProductsPagination
                     paginaAtual={paginaAtual}

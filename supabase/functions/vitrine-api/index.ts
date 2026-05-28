@@ -76,11 +76,14 @@ serve(async (req) => {
       // 3. Proxy Padrão para Produção
       let targetPath = path.startsWith('/') ? path : `/${path}`;
       // A API de produção expõe o detalhe em `/produtos/:id` (plural).
-      // O cliente ainda chama `/produto/:id` (singular legado) — reescrevemos
-      // aqui para evitar 404 "Rota não encontrada" no PDV.
-      const singularMatch = targetPath.match(/^\/produto\/([^/?]+)\/?$/);
+      // O cliente ainda chama `/produto/:id|:slug` (singular legado) e até
+      // `/produto` puro — reescrevemos aqui para evitar 404 "Rota não
+      // encontrada" no PDV. Cobre query strings, barras finais e identificadores
+      // alfanuméricos/slug.
+      const singularMatch = targetPath.match(/^\/produto(?:\/([^/?#]+))?\/?$/i);
       if (singularMatch) {
-        targetPath = `/produtos/${singularMatch[1]}`;
+        const id = singularMatch[1];
+        targetPath = id ? `/produtos/${id}` : `/produtos`;
       }
       const targetUrl = new URL(`${PRODUCTION_API_URL}${targetPath}${url.search}`);
       
