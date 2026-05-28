@@ -132,7 +132,6 @@ export const HeroBannerCarousel = () => {
 
   return (
     <section
-      id="home"
       ref={containerRef}
       className="relative w-full h-[25vh] sm:h-[34vh] md:h-[42vh] lg:h-[48vh] overflow-hidden cursor-pointer"
       onClick={handleBannerClick}

@@ -84,7 +84,11 @@ function isAvailable(produto: Produto) {
         {(loadingProducts || loadingBlocks) && <LoadingOverlay />}
         <WelcomeDialog />
         <Header />
-       <HeroBannerCarousel />
+       {/* Âncora "home" estável: garante que scroll-spy e scroll programático
+           funcionem mesmo se o carrossel não renderizar (sem coleções ativas). */}
+       <section id="home" aria-label="Início" className="scroll-mt-20 md:scroll-mt-24">
+         <HeroBannerCarousel />
+       </section>
  
         <div id="home-content" className="relative">
           {isDebugIntegracao && (
@@ -109,11 +113,14 @@ function isAvailable(produto: Produto) {
             </div>
           )}
 
-         <DynamicHomeRenderer 
-           blocks={homeBlocks} 
-           loading={loadingBlocks} 
-           debug={isDebugHome} 
-         />
+         {/* Âncora estável para scroll-spy e navegação por hash (#products). */}
+         <section id="products" aria-label="Produtos em destaque" className="scroll-mt-20 md:scroll-mt-24">
+           <DynamicHomeRenderer 
+             blocks={homeBlocks} 
+             loading={loadingBlocks} 
+             debug={isDebugHome} 
+           />
+         </section>
  
          {isEmpty && (
            <section className="py-12 sm:py-20 bg-background">

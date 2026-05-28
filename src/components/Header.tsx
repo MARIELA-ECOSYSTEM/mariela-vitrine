@@ -39,14 +39,19 @@ export const Header = () => {
   const overlayTextLight = bannerTone === "light"; // banner escuro → texto branco
 
   useEffect(() => {
-    const FADE_DISTANCE = 160; // px ao longo dos quais a transição acontece
+    // Distância em px na qual o header transita de overlay → opaco.
+    // Maior = transição mais suave e perceptível entre topo e meio da página.
+    const FADE_DISTANCE = 320;
+    // Easing "smoothstep" para evitar mudança linear/abrupta de opacidade/blur.
+    const smoothstep = (t: number) => t * t * (3 - 2 * t);
     let frame = 0;
     const handleScroll = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
         const y = window.scrollY;
-        const progress = Math.min(1, Math.max(0, y / FADE_DISTANCE));
+        const raw = Math.min(1, Math.max(0, y / FADE_DISTANCE));
+        const progress = smoothstep(raw);
         setScrollProgress(progress);
       });
     };
@@ -61,7 +66,8 @@ export const Header = () => {
   // Ao trocar de rota, reavalia o estado de rolagem e fecha menu mobile.
   useEffect(() => {
     const y = window.scrollY;
-    setScrollProgress(Math.min(1, Math.max(0, y / 160)));
+    const raw = Math.min(1, Math.max(0, y / 320));
+    setScrollProgress(raw * raw * (3 - 2 * raw));
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
@@ -177,14 +183,17 @@ export const Header = () => {
     return false;
   };
 
-  // Faz scroll até uma âncora com retentativas — garante funcionamento
-  // mesmo quando navegamos de outra rota e a seção ainda não foi montada.
+  // Faz scroll até uma âncora com retentativas — garante funcionamento mesmo
+  // quando navegamos de outra rota e a seção ainda não foi montada. Compensa
+  // a altura do header fixo (60px mobile / 68px desktop) para não cortar a seção.
   const scrollToAnchor = (id: string, maxAttempts = 30) => {
     let attempts = 0;
     const tick = () => {
       const el = document.getElementById(id);
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const headerOffset = window.matchMedia("(min-width: 768px)").matches ? 76 : 68;
+        const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         return;
       }
       attempts += 1;
@@ -435,66 +444,38 @@ export const Header = () => {
 
         {/* Menu mobile dropdown */}
         {isMobileMenuOpen && (
-          <div className="mt-4 flex flex-col gap-4 md:hidden animate-slide-down rounded-md bg-background/95 backdrop-blur-md border border-border/50 p-4 shadow-lg">
-            <Link 
-              to="/" 
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                scrollToAnchor('home');
-              }}
-              className={cn(
-                "text-sm font-medium",
-                isLinkActive({ path: '/', section: 'home', scrollTo: 'home' }) ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Início
-            </Link>
-            <Link 
-              to="/products" 
+          <div className="mt-3 flex flex-col gap-1 md:hidden animate-slide-down rounded-lg bg-background border border-border/60 p-2 shadow-xl">
+            {navLinks.map((link) => (
+              <Link
+                key={`m-${link.path}-${link.label}`}
+                to={link.path}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  if (link.scrollTo) scrollToAnchor(link.scrollTo);
+                }}
+                className={cn(
+                  "text-sm font-medium px-3 py-2.5 rounded-md transition-colors",
+                  isLinkActive(link)
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted hover:text-primary",
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              to="/instalar"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={cn(
-                "text-sm font-medium",
-                isLinkActive({ path: '/products', section: 'products' }) ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Produtos
-            </Link>
-            <Link 
-              to="/monte-seu-look" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={cn(
-                "text-sm font-medium",
-                isActive('/monte-seu-look') ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Monte Seu Look
-            </Link>
-            <Link 
-              to="/instalar" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-2"
+              className="text-sm font-medium px-3 py-2.5 rounded-md text-foreground hover:bg-muted hover:text-primary flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
               Instalar App
-            </Link>
-            <Link 
-              to="/" 
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                scrollToAnchor('contact');
-              }}
-              className={cn(
-                "text-sm font-medium",
-                isLinkActive({ path: '/', section: 'contact', scrollTo: 'contact' }) ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Contato
             </Link>
             
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleTheme}
-              className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors py-1"
+              className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md text-foreground hover:bg-muted hover:text-primary transition-colors"
             >
               {theme === "dark" ? (
                 <>
