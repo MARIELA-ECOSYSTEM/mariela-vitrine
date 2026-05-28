@@ -21,6 +21,9 @@ export const Header = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0); // 0 (topo) → 1 (totalmente opaco)
+  // Bloqueia atualizações de scrollProgress durante scroll programático para
+  // evitar piscadas de opacidade/blur enquanto o navegador interpola a posição.
+  const programmaticScrollUntil = useState<{ value: number }>(() => ({ value: 0 }))[0];
   const { items } = useCart();
   const { refreshProducts } = useProducts();
   const navigate = useNavigate();
@@ -49,6 +52,11 @@ export const Header = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
+        // Durante o scroll programático, mantém o header opaco e estável.
+        if (Date.now() < programmaticScrollUntil.value) {
+          setScrollProgress(1);
+          return;
+        }
         const y = window.scrollY;
         const raw = Math.min(1, Math.max(0, y / FADE_DISTANCE));
         const progress = smoothstep(raw);
@@ -61,7 +69,7 @@ export const Header = () => {
       window.removeEventListener("scroll", handleScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [programmaticScrollUntil]);
 
   // Ao trocar de rota, reavalia o estado de rolagem e fecha menu mobile.
   useEffect(() => {
