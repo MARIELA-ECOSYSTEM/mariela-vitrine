@@ -123,6 +123,7 @@ const Products = () => {
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [itensPorPagina, setItensPorPagina] = useState<number>(DEFAULT_PAGE_SIZE);
 
   // Aplicar filtros da URL
   useEffect(() => {
@@ -305,7 +306,7 @@ const Products = () => {
     const categoriaApi = resolveCategoriaApiValue(categoriasApi, categoriaSelecionada);
 
     return {
-      limit: produtosPorPagina,
+      limit: itensPorPagina,
       offset,
       busca: searchQuery.trim() || undefined,
       categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
@@ -314,15 +315,15 @@ const Products = () => {
       preco_min: precoAlterado && faixaPrecoSegura[0] > 0 ? faixaPrecoSegura[0] : undefined,
       preco_max: precoAlterado && faixaPrecoSegura[1] > 0 ? faixaPrecoSegura[1] : undefined,
     };
-  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoAlterado, searchQuery]);
+  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoAlterado, searchQuery, itensPorPagina]);
 
   useEffect(() => {
     let active = true;
     setCatalogLoading(true);
     setProdutosCatalogo([]);
-    setPaginaAtual(1);
 
-    const query = getProdutosQuery(0);
+    const offset = (paginaAtual - 1) * itensPorPagina;
+    const query = getProdutosQuery(offset);
     if (query.categoria) {
       console.info("[vitrine-api] filtro categoria", {
         selecionada: categoriaSelecionada,
@@ -346,36 +347,20 @@ const Products = () => {
     return () => {
       active = false;
     };
-  }, [categoriaSelecionada, getProdutosQuery]);
-
-  const handleCarregarMais = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-
-    setLoadingMore(true);
-    try {
-      const page = await vitrineApiService.getProdutosPage(getProdutosQuery(produtosCatalogo.length));
-      setProdutosCatalogo((current) => {
-        const ids = new Set(current.map((produto) => produto.id));
-        const novos = page.items.filter((produto) => !ids.has(produto.id));
-        return [...current, ...novos];
-      });
-      setHasMore(page.hasMore);
-      setTotalProdutos(page.total);
-    } catch {
-      toast({
-        title: "Erro ao carregar mais",
-        description: "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [getProdutosQuery, hasMore, loadingMore, produtosCatalogo.length, toast]);
+  }, [categoriaSelecionada, getProdutosQuery, paginaAtual, itensPorPagina]);
   
-  // Reset página quando filtros mudarem
+  // Reset página quando filtros mudarem (não inclui paginaAtual nem itensPorPagina).
   useEffect(() => {
     setPaginaAtual(1);
-  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery, itensPorPagina]);
+
+  // Scroll suave ao topo da grid quando o usuário navega entre páginas.
+  const gridRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (paginaAtual > 1) {
+      gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [paginaAtual]);
 
   // Handler para pull-to-refresh
   const handlePullRefresh = useCallback(async () => {
