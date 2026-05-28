@@ -21,6 +21,7 @@ import type { Produto } from "@/data/products";
  import { absoluteUrl } from "@/lib/seo";
  import { SEOMeta } from "@/components/seo/SEOMeta";
 import { selectNovidadesIds } from "@/lib/novidades";
+import { ProductsPagination, DEFAULT_PAGE_SIZE } from "@/components/ProductsPagination";
 import {
   Select,
   SelectContent,
@@ -50,8 +51,6 @@ const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) =
   // não o label plural exibido na UI (ex.: "Blusas").
   apiValue: categoria.dbValue ?? categoria.label,
 }));
-
-const produtosPorPagina = 12;
 
 function getBadgeValue(produto: Produto) {
   return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
