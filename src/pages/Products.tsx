@@ -115,15 +115,24 @@ const Products = () => {
   const [colecoesApi, setColecoesApi] = useState<CatalogFilterOption[]>([]);
   const [produtosCatalogo, setProdutosCatalogo] = useState<Produto[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
+  // Loading "suave" para troca de página: mantém a grid anterior visível
+  // com um fade/overlay enquanto o refetch acontece (evita tela vazia).
+  const [pageTransitioning, setPageTransitioning] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [totalProdutos, setTotalProdutos] = useState(0);
   const [coresSelecionadas, setCoresSelecionadas] = useState<string[]>([]);
   const [tamanhosSelecionados, setTamanhosSelecionados] = useState<string[]>([]);
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
-  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [paginaAtual, setPaginaAtual] = useState<number>(() => {
+    const p = Number(searchParams.get("page"));
+    return p > 0 ? p : 1;
+  });
   const [searchQuery, setSearchQuery] = useState("");
-  const [itensPorPagina, setItensPorPagina] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [itensPorPagina, setItensPorPagina] = useState<number>(() => {
+    const pp = Number(searchParams.get("perPage"));
+    return pp > 0 ? pp : DEFAULT_PAGE_SIZE;
+  });
 
   // Aplicar filtros da URL
   useEffect(() => {
@@ -205,11 +214,13 @@ const Products = () => {
     categoriaSelecionada !== "todas" ? next.set("categoria", categoriaSelecionada) : next.delete("categoria");
     colecaoSelecionada !== "todas" ? next.set("colecao", colecaoSelecionada) : next.delete("colecao");
     mostrarPromocao ? next.set("filter", "promocoes") : mostrarNovidades ? next.set("filter", "novidades") : mostrarMaisProcurados ? next.set("filter", "mais_procurado") : next.delete("filter");
+    paginaAtual > 1 ? next.set("page", String(paginaAtual)) : next.delete("page");
+    itensPorPagina !== DEFAULT_PAGE_SIZE ? next.set("perPage", String(itensPorPagina)) : next.delete("perPage");
 
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, searchParams, setSearchParams]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, paginaAtual, itensPorPagina, searchParams, setSearchParams]);
 
   useEffect(() => {
     let active = true;
@@ -319,8 +330,11 @@ const Products = () => {
 
   useEffect(() => {
     let active = true;
-    setCatalogLoading(true);
-    setProdutosCatalogo([]);
+    // Primeira carga (sem produtos) usa o skeleton cheio.
+    // Trocas de página usam fade/overlay mantendo a grid anterior visível.
+    const isFirstLoad = produtosCatalogo.length === 0;
+    if (isFirstLoad) setCatalogLoading(true);
+    else setPageTransitioning(true);
 
     const offset = (paginaAtual - 1) * itensPorPagina;
     const query = getProdutosQuery(offset);
@@ -337,22 +351,43 @@ const Products = () => {
       setHasMore(page.hasMore);
       setTotalProdutos(page.total);
       setCatalogLoading(false);
+      setPageTransitioning(false);
     }).catch(() => {
       if (!active) return;
       setHasMore(false);
       setTotalProdutos(0);
       setCatalogLoading(false);
+      setPageTransitioning(false);
     });
 
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoriaSelecionada, getProdutosQuery, paginaAtual, itensPorPagina]);
-  
-  // Reset página quando filtros mudarem (não inclui paginaAtual nem itensPorPagina).
+
+  // Reset página quando filtros mudarem — preservando itensPorPagina.
   useEffect(() => {
     setPaginaAtual(1);
-  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery, itensPorPagina]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
+
+  // Prefetch das páginas adjacentes (anterior e próxima) — a resposta fica
+  // no cache de `vitrineApiService`, tornando a navegação instantânea.
+  useEffect(() => {
+    if (catalogLoading || totalProdutos === 0) return;
+    const totalPaginas = Math.max(1, Math.ceil(totalProdutos / itensPorPagina));
+    const adjacentes: number[] = [];
+    if (paginaAtual > 1) adjacentes.push(paginaAtual - 1);
+    if (paginaAtual < totalPaginas) adjacentes.push(paginaAtual + 1);
+    if (adjacentes.length === 0) return;
+    const handle = window.setTimeout(() => {
+      adjacentes.forEach((p) => {
+        const offset = (p - 1) * itensPorPagina;
+        vitrineApiService.getProdutosPage(getProdutosQuery(offset)).catch(() => {});
+      });
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [paginaAtual, itensPorPagina, totalProdutos, catalogLoading, getProdutosQuery]);
 
   // Scroll suave ao topo da grid quando o usuário navega entre páginas.
   const gridRef = useRef<HTMLDivElement>(null);
