@@ -396,6 +396,15 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
       return () => window.clearTimeout(t);
     }, [gridFadeKey, loading]);
 
+    // Fade suave ao trocar de página (sem refetch — slice client-side).
+    const [isPageChanging, setIsPageChanging] = useState(false);
+    useEffect(() => {
+      if (loading) return;
+      setIsPageChanging(true);
+      const t = window.setTimeout(() => setIsPageChanging(false), 260);
+      return () => window.clearTimeout(t);
+    }, [paginaAtual, itensPorPagina, loading]);
+
     const totalCategoriasNaColecao = useMemo(() => {
       const s = new Set<string>();
       produtos.forEach((p) => s.add(p.categoria.toLowerCase()));
