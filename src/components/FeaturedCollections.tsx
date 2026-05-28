@@ -6,6 +6,7 @@ import {
   type ColecaoDestaque,
 } from "@/services/vitrineApiService";
 import { cn } from "@/lib/utils";
+import { slugify } from "@/lib/slug";
 
 /**
  * Banners dinâmicos de coleções em destaque na Home.
@@ -49,11 +50,12 @@ function buildCollectionHref(search: string, colecao: { id: string; nome: string
   } catch {
     /* ignore — montamos sem UTMs */
   }
-   const baseUrl = colecao.id ? `/collections/${colecao.id}` : `/products`;
-   
-   if (!colecao.id) {
-     params.set("colecao", colecao.nome);
-   }
+  // URL legível por slug (ex.: /collections/verao-2025). Mantemos `?id=`
+  // como hint para a página resolver sem ambiguidade caso duas coleções
+  // diferentes gerem o mesmo slug.
+  const slug = slugify(colecao.nome) || colecao.id;
+  const baseUrl = `/collections/${slug}`;
+  if (colecao.id) params.set("id", colecao.id);
    
    const queryString = params.toString();
    return queryString ? `${baseUrl}?${queryString}` : baseUrl;

@@ -21,6 +21,9 @@ export const Header = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0); // 0 (topo) → 1 (totalmente opaco)
+  // Bloqueia atualizações de scrollProgress durante scroll programático para
+  // evitar piscadas de opacidade/blur enquanto o navegador interpola a posição.
+  const programmaticScrollUntil = useState<{ value: number }>(() => ({ value: 0 }))[0];
   const { items } = useCart();
   const { refreshProducts } = useProducts();
   const navigate = useNavigate();
@@ -49,6 +52,11 @@ export const Header = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
+        // Durante o scroll programático, mantém o header opaco e estável.
+        if (Date.now() < programmaticScrollUntil.value) {
+          setScrollProgress(1);
+          return;
+        }
         const y = window.scrollY;
         const raw = Math.min(1, Math.max(0, y / FADE_DISTANCE));
         const progress = smoothstep(raw);
@@ -61,7 +69,7 @@ export const Header = () => {
       window.removeEventListener("scroll", handleScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [programmaticScrollUntil]);
 
   // Ao trocar de rota, reavalia o estado de rolagem e fecha menu mobile.
   useEffect(() => {
@@ -179,21 +187,24 @@ export const Header = () => {
     return location.pathname.startsWith(path);
   };
 
+  // `path` é o destino do react-router. Para itens que rolam para uma âncora,
+  // usamos `/#section` — assim funciona inclusive vindo de outra rota:
+  // a navegação acontece e o effect de hash (abaixo) cuida do scroll.
   const navLinks = [
-    { path: '/', label: 'Início', scrollTo: 'home', section: 'home' },
-    { path: '/products', label: 'Produtos', scrollTo: undefined as string | undefined, section: 'products' },
-    { path: '/monte-seu-look', label: 'Monte Seu Look', scrollTo: undefined as string | undefined, section: undefined as string | undefined },
-    { path: '/', label: 'Contato', scrollTo: 'contact', section: 'contact' },
+    { path: '/#home', basePath: '/', label: 'Início', scrollTo: 'home', section: 'home' },
+    { path: '/products', basePath: '/products', label: 'Produtos', scrollTo: undefined as string | undefined, section: 'products' },
+    { path: '/monte-seu-look', basePath: '/monte-seu-look', label: 'Monte Seu Look', scrollTo: undefined as string | undefined, section: undefined as string | undefined },
+    { path: '/#contact', basePath: '/', label: 'Contato', scrollTo: 'contact', section: 'contact' },
   ];
 
   // Helper para definir se um link do menu está "ativo" considerando rota + scroll-spy.
-  const isLinkActive = (link: { path: string; scrollTo?: string; section?: string }) => {
+  const isLinkActive = (link: { basePath: string; scrollTo?: string; section?: string }) => {
     if (isHome && link.section) {
       // Antes do scroll-spy detectar a primeira seção, considera "Início" como ativo no topo.
       if (activeSection === null && link.section === "home") return true;
       return activeSection === link.section;
     }
-    if (!link.scrollTo) return isActive(link.path);
+    if (!link.scrollTo) return isActive(link.basePath);
     return false;
   };
 
@@ -211,7 +222,17 @@ export const Header = () => {
           .getPropertyValue("--header-height")
           .trim();
         const headerOffset = parseInt(raw, 10) || 68;
-        const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+        // Considera também o `scroll-margin-top` definido no elemento (CSS),
+        // o que permite que cada seção ajuste seu próprio offset sem alterar
+        // a lógica aqui. Usa o maior valor entre os dois.
+        const styles = getComputedStyle(el);
+        const scrollMargin = parseInt(styles.scrollMarginTop, 10) || 0;
+        const offset = Math.max(headerOffset, scrollMargin);
+        const top = el.getBoundingClientRect().top + window.scrollY - offset;
+        // Lock visual do header durante a animação (≈700ms) — evita flicker
+        // de opacidade/blur enquanto o navegador interpola a posição.
+        programmaticScrollUntil.value = Date.now() + 700;
+        setScrollProgress(1);
         window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         return;
       }
@@ -328,7 +349,9 @@ export const Header = () => {
                 key={`${link.path}-${link.label}`}
                 to={link.path}
                 onClick={() => {
-                  if (link.scrollTo) {
+                  // Se já estamos na rota base do link, faz scroll imediato
+                  // (o hash não muda quando é o mesmo, então o effect não roda).
+                  if (link.scrollTo && location.pathname === link.basePath) {
                     scrollToAnchor(link.scrollTo);
                   }
                 }}
@@ -470,7 +493,9 @@ export const Header = () => {
                 to={link.path}
                 onClick={() => {
                   setIsMobileMenuOpen(false);
-                  if (link.scrollTo) scrollToAnchor(link.scrollTo);
+                  if (link.scrollTo && location.pathname === link.basePath) {
+                    scrollToAnchor(link.scrollTo);
+                  }
                 }}
                 className={cn(
                   "text-sm font-medium px-3 py-2.5 rounded-md transition-colors",
