@@ -2,7 +2,7 @@ import { MessageCircle, Instagram, MapPin } from "lucide-react";
 
 export const QuickActions = () => {
   return (
-    <section className="py-6 sm:py-10 bg-secondary/30 border-y border-border/50" id="contact">
+    <section className="py-6 sm:py-10 bg-secondary/30 border-y border-border/50 scroll-mt-20 md:scroll-mt-24" id="contact">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-4 max-w-3xl mx-auto">
           <a
