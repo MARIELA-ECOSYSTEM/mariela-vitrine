@@ -406,7 +406,7 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
                 <img
                   src={colecao.banner_url || colecao.imagem_capa_url || ""}
                   alt={colecao?.nome || "Coleção"}
-                  className="absolute inset-0 w-full h-full object-cover scale-105 motion-safe:animate-[zoomOut_18s_ease-out_forwards]"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
