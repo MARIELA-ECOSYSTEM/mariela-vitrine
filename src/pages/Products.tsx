@@ -872,11 +872,12 @@ const Products = () => {
                   <div
                     aria-busy={pageTransitioning}
                     className={cn(
+                      "relative",
                       visualizacao === "grade"
                         ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
                         : "space-y-3 sm:space-y-4",
                       "transition-opacity duration-300",
-                      pageTransitioning && "opacity-50 pointer-events-none animate-pulse",
+                      pageTransitioning && "opacity-0 pointer-events-none",
                     )}
                   >
                     {produtosOrdenados.map((produto, index) => (
@@ -892,6 +893,22 @@ const Products = () => {
                         </div>
                       ))}
                   </div>
+                  {pageTransitioning && (
+                    <div
+                      aria-hidden="true"
+                      className={cn(
+                        "absolute inset-x-0 mt-[-1px]",
+                        visualizacao === "grade"
+                          ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
+                          : "space-y-3 sm:space-y-4",
+                      )}
+                      style={{ transform: "translateY(calc(-100% - 0px))" }}
+                    >
+                      {Array.from({ length: Math.min(itensPorPagina, produtosOrdenados.length) }).map((_, i) => (
+                        <ProductSkeleton key={i} layoutMode={visualizacao} />
+                      ))}
+                    </div>
+                  )}
 
                   <ProductsPagination
                     paginaAtual={paginaAtual}
