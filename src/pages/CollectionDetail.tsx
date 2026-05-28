@@ -335,6 +335,50 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, ShoppingBag, X, ArrowDown } from
       setOrdenarPor("padrao");
     };
 
+    // Sheet de filtros (botão único "Filtros")
+    const [filtersOpen, setFiltersOpen] = useState(false);
+
+    // Fade-key da grid: muda a cada alteração de filtro para um
+    // crossfade suave (evita o "piscar" da grid ao re-filtrar).
+    const gridFadeKey = useMemo(
+      () =>
+        `${categoriaSelecionada}|${coresSelecionadas.join(",")}|${tamanhosSelecionados.join(",")}|${ordenarPor}|${precoAlterado ? faixaPreco.join("-") : ""}`,
+      [categoriaSelecionada, coresSelecionadas, tamanhosSelecionados, ordenarPor, faixaPreco, precoAlterado],
+    );
+
+    // Pré-carrega as imagens dos cards quando uma cor é selecionada,
+    // para que a troca da foto (cor → imagem correspondente) não cause
+    // flash/placeholder no grid.
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+      if (coresSelecionadas.length === 0) return;
+      const urls = new Set<string>();
+      produtosFiltradosFull.slice(0, 24).forEach((p) => {
+        coresSelecionadas.forEach((cor) => {
+          const c = p.cores?.find((cc) => cc.cor === cor);
+          const url = c?.imagem_card_url || c?.imagem_full || c?.imagem_thumb;
+          if (url) urls.add(url);
+        });
+      });
+      urls.forEach((u) => {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = u;
+      });
+    }, [coresSelecionadas, produtosFiltradosFull]);
+
+    const totalCategoriasNaColecao = useMemo(() => {
+      const s = new Set<string>();
+      produtos.forEach((p) => s.add(p.categoria.toLowerCase()));
+      return s.size;
+    }, [produtos]);
+
+    const activeFiltersCount =
+      (categoriaSelecionada !== "todas" ? 1 : 0) +
+      coresSelecionadas.length +
+      tamanhosSelecionados.length +
+      (precoAlterado ? 1 : 0);
+
     if (error) {
       return (
         <div className="min-h-screen flex flex-col">
