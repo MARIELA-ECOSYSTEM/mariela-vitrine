@@ -25,6 +25,8 @@ const ROUTE_NAMES: Record<string, string> = {
 const CANONICAL_PATHS: Record<string, string> = {
   catalogo: "/products",
   produtos: "/products",
+  collections: "/colecoes",
+  colecoes: "/colecoes",
 };
 
 export const Breadcrumbs = ({ items, currentPage }: BreadcrumbsProps) => {
