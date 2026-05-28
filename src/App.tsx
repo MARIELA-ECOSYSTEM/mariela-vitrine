@@ -15,6 +15,7 @@ import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import MonteSeuLook from "./pages/MonteSeuLook";
  import CollectionDetail from "./pages/CollectionDetail";
+ import Colecoes from "./pages/Colecoes";
  import Cart from "./pages/Cart";
 import Instalar from "./pages/Instalar";
 import Health from "./pages/Health";
@@ -55,6 +56,8 @@ const AppContent = () => {
           <Route path="/produtos/:slug" element={<Navigate to={`/products/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
           <Route path="/produto/:slug" element={<Navigate to={`/products/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
           <Route path="/monte-seu-look" element={<MonteSeuLook />} />
+           <Route path="/colecoes" element={<Colecoes />} />
+           <Route path="/collections" element={<Navigate to="/colecoes" replace />} />
            <Route path="/collections/:id" element={<CollectionDetail />} />
            <Route path="/colecoes/:id" element={<Navigate to={`/collections/${location.pathname.split('/').pop() || ''}${location.search}`} replace />} />
           <Route path="/cart" element={<Cart />} />
