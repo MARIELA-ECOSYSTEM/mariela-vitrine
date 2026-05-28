@@ -818,13 +818,14 @@ const Products = () => {
               </div>
 
               {/* Grid/Lista de Produtos */}
+              <div ref={gridRef} />
               {catalogLoading ? (
                 <div className={`${
                   visualizacao === "grade"
                     ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
                     : "space-y-3 sm:space-y-4"
                 }`}>
-                  {Array.from({ length: produtosPorPagina }).map((_, index) => (
+                  {Array.from({ length: itensPorPagina }).map((_, index) => (
                     <ProductSkeleton 
                       key={index} 
                       layoutMode={visualizacao}
@@ -852,25 +853,17 @@ const Products = () => {
                       ))}
                   </div>
 
-                  {/* Contador */}
-                  <div className="text-center mt-8">
-                    <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {totalProdutos || produtosOrdenados.length} produtos encontrados
-                    </span>
-                  </div>
-
-                  {hasMore && (
-                    <div className="flex items-center justify-center mt-4 animate-fade-in">
-                      <Button
-                        variant="outline"
-                        onClick={handleCarregarMais}
-                        disabled={loadingMore}
-                        className="transition-all hover:scale-105"
-                      >
-                        {loadingMore ? "Carregando..." : "Carregar mais"}
-                      </Button>
-                    </div>
-                  )}
+                  <ProductsPagination
+                    paginaAtual={paginaAtual}
+                    itensPorPagina={itensPorPagina}
+                    totalItens={totalProdutos || produtosOrdenados.length}
+                    itensVisiveisNaPagina={produtosOrdenados.length}
+                    onPaginaChange={setPaginaAtual}
+                    onItensPorPaginaChange={(n) => {
+                      setItensPorPagina(n);
+                      setPaginaAtual(1);
+                    }}
+                  />
                 </>
               ) : (
                 <div className="text-center py-12">
