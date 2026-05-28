@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter
 import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { Button } from "@/components/ui/button";
+  import { ProductsPagination, DEFAULT_PAGE_SIZE } from "@/components/ProductsPagination";
   import {
     Select,
     SelectContent,
