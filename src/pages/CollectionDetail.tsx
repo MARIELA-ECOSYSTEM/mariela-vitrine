@@ -405,6 +405,65 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
       return () => window.clearTimeout(t);
     }, [paginaAtual, itensPorPagina, loading]);
 
+    // Prefetch silencioso das imagens das páginas adjacentes (anterior e
+    // próxima). Como o slicing é client-side, basta aquecer o cache do
+    // navegador para as URLs de capa dos próximos itens. Cancelado quando
+    // filtros/ordenação/page/perPage mudam para evitar prefetch obsoleto.
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+      if (loading || produtosFiltradosFull.length === 0) return;
+      const totalPaginas = Math.max(
+        1,
+        Math.ceil(produtosFiltradosFull.length / itensPorPagina),
+      );
+      const adjacentes: number[] = [];
+      if (paginaAtual > 1) adjacentes.push(paginaAtual - 1);
+      if (paginaAtual < totalPaginas) adjacentes.push(paginaAtual + 1);
+      if (adjacentes.length === 0) return;
+
+      let cancelled = false;
+      const urls = new Set<string>();
+      for (const p of adjacentes) {
+        const start = (p - 1) * itensPorPagina;
+        const slice = produtosFiltradosFull.slice(start, start + itensPorPagina);
+        for (const prod of slice) {
+          const corBase = prod.cores?.[0];
+          const url =
+            corBase?.imagem_card_url ||
+            corBase?.imagem_full ||
+            corBase?.imagem_thumb ||
+            (prod as unknown as { imagem?: string }).imagem;
+          if (url) urls.add(url);
+        }
+      }
+      if (urls.size === 0) return;
+
+      const run = () => {
+        if (cancelled) return;
+        urls.forEach((u) => {
+          if (cancelled) return;
+          const img = new Image();
+          img.decoding = "async";
+          img.loading = "eager";
+          img.src = u;
+        });
+      };
+      const handle = window.setTimeout(run, 250);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(handle);
+      };
+    }, [
+      paginaAtual,
+      itensPorPagina,
+      produtosFiltradosFull,
+      loading,
+      ordenarPor,
+      categoriaSelecionada,
+      coresSelecionadas,
+      tamanhosSelecionados,
+    ]);
+
     const totalCategoriasNaColecao = useMemo(() => {
       const s = new Set<string>();
       produtos.forEach((p) => s.add(p.categoria.toLowerCase()));
