@@ -444,66 +444,38 @@ export const Header = () => {
 
         {/* Menu mobile dropdown */}
         {isMobileMenuOpen && (
-          <div className="mt-4 flex flex-col gap-4 md:hidden animate-slide-down rounded-md bg-background/95 backdrop-blur-md border border-border/50 p-4 shadow-lg">
-            <Link 
-              to="/" 
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                scrollToAnchor('home');
-              }}
-              className={cn(
-                "text-sm font-medium",
-                isLinkActive({ path: '/', section: 'home', scrollTo: 'home' }) ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Início
-            </Link>
-            <Link 
-              to="/products" 
+          <div className="mt-3 flex flex-col gap-1 md:hidden animate-slide-down rounded-lg bg-background border border-border/60 p-2 shadow-xl">
+            {navLinks.map((link) => (
+              <Link
+                key={`m-${link.path}-${link.label}`}
+                to={link.path}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  if (link.scrollTo) scrollToAnchor(link.scrollTo);
+                }}
+                className={cn(
+                  "text-sm font-medium px-3 py-2.5 rounded-md transition-colors",
+                  isLinkActive(link)
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted hover:text-primary",
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              to="/instalar"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={cn(
-                "text-sm font-medium",
-                isLinkActive({ path: '/products', section: 'products' }) ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Produtos
-            </Link>
-            <Link 
-              to="/monte-seu-look" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={cn(
-                "text-sm font-medium",
-                isActive('/monte-seu-look') ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Monte Seu Look
-            </Link>
-            <Link 
-              to="/instalar" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-2"
+              className="text-sm font-medium px-3 py-2.5 rounded-md text-foreground hover:bg-muted hover:text-primary flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
               Instalar App
-            </Link>
-            <Link 
-              to="/" 
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                scrollToAnchor('contact');
-              }}
-              className={cn(
-                "text-sm font-medium",
-                isLinkActive({ path: '/', section: 'contact', scrollTo: 'contact' }) ? "text-primary" : "text-foreground hover:text-primary"
-              )}
-            >
-              Contato
             </Link>
             
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleTheme}
-              className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors py-1"
+              className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md text-foreground hover:bg-muted hover:text-primary transition-colors"
             >
               {theme === "dark" ? (
                 <>
