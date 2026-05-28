@@ -101,6 +101,20 @@ export const Header = () => {
     return () => observer.disconnect();
   }, [isHome, setActiveSection]);
 
+  // Suporte a hash na URL (ex.: /#contact, /#products) ao abrir/navegar:
+  // sincroniza o estado ativo do menu e rola até a âncora com o offset do header.
+  useEffect(() => {
+    if (!isHome) return;
+    const hash = location.hash?.replace(/^#/, "");
+    if (!hash) return;
+    if (["home", "products", "contact", "monte-seu-look"].includes(hash)) {
+      setActiveSection(hash === "monte-seu-look" ? null : hash);
+      // Aguarda o próximo frame para garantir que as seções estejam montadas.
+      requestAnimationFrame(() => scrollToAnchor(hash));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHome, location.hash]);
+
   useEffect(() => {
     if (refreshState === 'success') {
       const timer = setTimeout(() => setRefreshState('idle'), 1500);
@@ -191,7 +205,12 @@ export const Header = () => {
     const tick = () => {
       const el = document.getElementById(id);
       if (el) {
-        const headerOffset = window.matchMedia("(min-width: 768px)").matches ? 76 : 68;
+        // Lê a altura real do header da variável CSS (--header-height) para manter
+        // o cálculo correto em todos os breakpoints e em ajustes futuros de layout.
+        const raw = getComputedStyle(document.documentElement)
+          .getPropertyValue("--header-height")
+          .trim();
+        const headerOffset = parseInt(raw, 10) || 68;
         const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
         window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         return;

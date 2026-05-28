@@ -54,6 +54,14 @@ All colors MUST be HSL.
     --shadow-hover: 0 8px 24px rgba(168, 85, 247, 0.15);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Altura do header fixo — usada para compensar scroll programático
+       e scroll-margin de âncoras. Sobrescrita em md+ via media query. */
+    --header-height: 60px;
+  }
+
+  @media (min-width: 768px) {
+    :root { --header-height: 76px; }
   }
 
   .dark {
