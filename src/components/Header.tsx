@@ -183,14 +183,17 @@ export const Header = () => {
     return false;
   };
 
-  // Faz scroll até uma âncora com retentativas — garante funcionamento
-  // mesmo quando navegamos de outra rota e a seção ainda não foi montada.
+  // Faz scroll até uma âncora com retentativas — garante funcionamento mesmo
+  // quando navegamos de outra rota e a seção ainda não foi montada. Compensa
+  // a altura do header fixo (60px mobile / 68px desktop) para não cortar a seção.
   const scrollToAnchor = (id: string, maxAttempts = 30) => {
     let attempts = 0;
     const tick = () => {
       const el = document.getElementById(id);
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const headerOffset = window.matchMedia("(min-width: 768px)").matches ? 76 : 68;
+        const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         return;
       }
       attempts += 1;
