@@ -410,310 +410,329 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, ShoppingBag, X, ArrowDown } from
          <Header />
         
         <main className="flex-grow">
-          {/* Hero Section Premium */}
-          <section className="relative w-full h-[60vh] min-h-[400px] overflow-hidden bg-muted">
-            {loading ? (
-              <div className="absolute inset-0 animate-pulse bg-muted-foreground/10" />
-            ) : (colecao?.banner_url || colecao?.imagem_capa_url) ? (
-              <>
-                <img 
-                  src={colecao.banner_url || colecao.imagem_capa_url || ""} 
-                  alt={colecao.nome}
-                  className="absolute inset-0 w-full h-full object-cover"
+          {/* ============ HERO EDITORIAL ============ */}
+          <section className="relative w-full overflow-hidden bg-muted">
+            <div className="relative h-[80vh] min-h-[520px] max-h-[820px] w-full">
+              {loading ? (
+                <div className="absolute inset-0 animate-pulse bg-muted-foreground/10" />
+              ) : (colecao?.banner_url || colecao?.imagem_capa_url) ? (
+                <img
+                  src={colecao.banner_url || colecao.imagem_capa_url || ""}
+                  alt={colecao?.nome || "Coleção"}
+                  className="absolute inset-0 w-full h-full object-cover scale-105 motion-safe:animate-[zoomOut_18s_ease-out_forwards]"
                 />
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-              </>
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <ImageOff className="w-12 h-12 text-muted-foreground/30" />
-              </div>
-            )}
-
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center">
-              <Link 
-                to="/" 
-                className="absolute top-8 left-8 flex items-center gap-2 text-sm uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity"
-              >
-                <ArrowLeft className="w-4 h-4" /> Voltar
-              </Link>
-
-              {!loading && (
-                <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] uppercase tracking-[0.2em] mb-6">
-                    <Sparkles className="w-3 h-3" /> Coleção Exclusiva
-                  </span>
-                  <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-light mb-6 tracking-tight">
-                    {colecao?.nome}
-                  </h1>
-                  {colecao?.descricao && (
-                    <p className="text-lg sm:text-xl font-light text-white/90 max-w-2xl mx-auto leading-relaxed italic">
-                      "{colecao.descricao}"
-                    </p>
-                  )}
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <ImageOff className="w-12 h-12 text-muted-foreground/30" />
                 </div>
               )}
-            </div>
+              {/* Gradient compositional — top-left vinheta + bottom panel para info */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-black/75 via-black/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/60 to-transparent" />
+              {colecao?.cor_destaque && (
+                <span
+                  aria-hidden
+                  style={{ backgroundColor: colecao.cor_destaque }}
+                  className="absolute top-0 left-0 right-0 h-[3px]"
+                />
+              )}
 
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-50">
-              <div className="w-[1px] h-12 bg-white" />
+              {/* Voltar */}
+              <Link
+                to="/colecoes"
+                className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-[11px] uppercase tracking-[0.2em] hover:bg-white/20 transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Coleções
+              </Link>
+
+              {/* Conteúdo do hero — alinhado bottom-left, magazine-style */}
+              <div className="absolute inset-x-0 bottom-0 z-10">
+                <PageContainer className="pb-10 sm:pb-14 lg:pb-16">
+                  {!loading && colecao && (
+                    <div className="max-w-4xl text-white animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] uppercase tracking-[0.25em] mb-4 sm:mb-6">
+                        <Sparkles className="w-3 h-3" /> Coleção em Destaque
+                      </span>
+                      <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-light leading-[0.95] tracking-tight">
+                        {colecao.nome}
+                      </h1>
+                      {colecao.descricao && (
+                        <p className="mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg lg:text-xl font-light text-white/90 leading-relaxed italic">
+                          "{colecao.descricao}"
+                        </p>
+                      )}
+
+                      {/* Barra de info útil — dá função ao banner */}
+                      <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-white/90">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-serif text-2xl sm:text-3xl font-light leading-none">
+                            {produtos.length}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-[0.25em] text-white/70">
+                            Peças
+                          </span>
+                        </div>
+                        <span className="w-px h-6 bg-white/30 hidden sm:block" />
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-serif text-2xl sm:text-3xl font-light leading-none">
+                            {totalCategoriasNaColecao}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-[0.25em] text-white/70">
+                            Categorias
+                          </span>
+                        </div>
+                        {coresDisponiveis.length > 0 && (
+                          <>
+                            <span className="w-px h-6 bg-white/30 hidden sm:block" />
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] uppercase tracking-[0.25em] text-white/70">
+                                Paleta
+                              </span>
+                              <div className="flex -space-x-1.5">
+                                {coresDisponiveis.slice(0, 6).map((cor) => (
+                                  <span
+                                    key={cor}
+                                    title={cor}
+                                    style={{ backgroundColor: COLOR_SWATCH[cor] || "#D4C5B9" }}
+                                    className="w-5 h-5 rounded-full ring-2 ring-white/80 shadow"
+                                  />
+                                ))}
+                                {coresDisponiveis.length > 6 && (
+                                  <span className="w-5 h-5 rounded-full ring-2 ring-white/80 bg-black/60 text-[9px] flex items-center justify-center font-medium">
+                                    +{coresDisponiveis.length - 6}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* CTA scroll para os produtos */}
+                      <button
+                        onClick={() => {
+                          scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                        className="mt-7 sm:mt-9 group inline-flex items-center gap-3 text-sm uppercase tracking-[0.25em] border-b border-white/70 pb-1 hover:border-white transition-colors"
+                      >
+                        Ver a coleção
+                        <ArrowDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+                      </button>
+                    </div>
+                  )}
+                </PageContainer>
+              </div>
             </div>
           </section>
 
+          {/* ============ CONTEÚDO ============ */}
+          <div ref={scrollRef} />
           <PageContainer className="py-8 sm:py-12">
             <Breadcrumbs
               items={[{ label: "Coleções", path: "/colecoes" }]}
               currentPage={colecao?.nome || "Coleção"}
             />
 
-            {/* Category Icons Navigation */}
-            <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scrollbar-hide justify-start sm:justify-center mt-8 mb-12">
-              <button
-                onClick={() => setCategoriaSelecionada("todas")}
-                className={cn(
-                  "flex flex-col items-center gap-2 min-w-[64px] transition-all",
-                  categoriaSelecionada === "todas" ? "scale-105" : "opacity-60 hover:opacity-100"
-                )}
-              >
-                <div className={cn(
-                  "w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all border",
-                  categoriaSelecionada === "todas" ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-transparent"
-                )}>
-                  <ShoppingBag className="h-5 w-5 sm:h-7 sm:w-7" />
-                </div>
-                <span className="text-[10px] sm:text-xs font-medium uppercase tracking-tighter">Todos</span>
-              </button>
-
-              {CATEGORIAS_DB.filter(c => c.value !== "todas" && c.value !== "outros").map((cat) => (
-                <button
-                  key={cat.value}
-                  onClick={() => setCategoriaSelecionada(cat.value)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 min-w-[64px] transition-all",
-                    categoriaSelecionada === cat.value ? "scale-105" : "opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <div className={cn(
-                    "w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all border text-xl sm:text-2xl",
-                    categoriaSelecionada === cat.value ? "bg-primary border-primary" : "bg-muted border-transparent"
-                  )}>
-                    {categoryEmojis[cat.value] || "✨"}
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-medium uppercase tracking-tighter">{cat.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Quick color filter — selação visual fluida com swatches.
-                Sincroniza com `coresSelecionadas` (mesmo estado dos filtros
-                avançados), de forma que clicar aqui re-filtra a grid e troca
-                as imagens dos cards (cada card auto-prioriza sua cor). */}
-            {coresDisponiveis.length > 0 && (
-              <div className="mb-10 -mt-2">
-                <div className="flex items-end justify-between mb-3">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-                      Filtrar por cor
-                    </span>
-                    <h3 className="font-serif text-lg sm:text-xl text-foreground mt-0.5">
-                      Paleta da coleção
-                    </h3>
-                  </div>
-                  {coresSelecionadas.length > 0 && (
-                    <button
-                      onClick={() => { setCoresSelecionadas([]); setPaginaAtual(1); }}
-                      className="text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+            {/* Toolbar mínima — só Filtros + Ordenação + contagem */}
+            <div className="mt-8 mb-10 flex items-center justify-between gap-4 pb-5 border-b border-border/70 sticky top-[var(--header-height)] z-20 bg-background/85 backdrop-blur-md -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full border-border/80 uppercase tracking-[0.2em] text-[11px] h-10 px-4 gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
-                      Limpar cores
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                  {coresDisponiveis.map((cor) => {
-                    const active = coresSelecionadas.includes(cor);
-                    const swatch = COLOR_SWATCH[cor] || "#D4C5B9";
-                    const isLight = ["#FFFFFF", "#F8F8F8", "#FFDB58", "#EAB308", "#D4C5B9", "#E5D4C1"].includes(swatch);
-                    return (
-                      <button
-                        key={cor}
-                        onClick={() => {
-                          setCoresSelecionadas((prev) =>
-                            prev.includes(cor) ? prev.filter((c) => c !== cor) : [...prev, cor]
-                          );
-                          setPaginaAtual(1);
-                        }}
-                        aria-pressed={active}
-                        aria-label={`Filtrar pela cor ${cor}`}
-                        className={cn(
-                          "group flex flex-col items-center gap-2 min-w-[56px] sm:min-w-[64px] transition-all duration-300 ease-out",
-                          active ? "opacity-100" : "opacity-80 hover:opacity-100",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "relative w-11 h-11 sm:w-14 sm:h-14 rounded-full transition-all duration-300 ease-out",
-                            "ring-offset-2 ring-offset-background",
-                            active
-                              ? "ring-2 ring-primary scale-110 shadow-md"
-                              : "ring-1 ring-border group-hover:scale-105 group-hover:shadow-sm",
-                            isLight && "border border-border/60",
-                          )}
-                          style={{ backgroundColor: swatch }}
-                        >
-                          {active && (
-                            <span
-                              className={cn(
-                                "absolute inset-0 flex items-center justify-center text-[11px] font-bold",
-                                isLight ? "text-foreground" : "text-white"
-                              )}
-                            >
-                              ✓
-                            </span>
-                          )}
+                      <Filter className="w-3.5 h-3.5" />
+                      Filtros
+                      {activeFiltersCount > 0 && (
+                        <span className="ml-1 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1.5">
+                          {activeFiltersCount}
                         </span>
-                        <span
-                          className={cn(
-                            "text-[10px] sm:text-[11px] uppercase tracking-wider transition-colors",
-                            active ? "text-foreground font-semibold" : "text-muted-foreground"
-                          )}
-                        >
-                          {cor}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Sidebar Filters - Desktop */}
-              <aside className="hidden lg:block w-64 space-y-8 shrink-0">
-                <div className="sticky top-24">
-                  <h3 className="font-serif text-xl mb-6 border-b pb-2">Filtros</h3>
-                    <ProductFilters 
-                      categoriaSelecionada={categoriaSelecionada}
-                      setCategoriaSelecionada={setCategoriaSelecionada}
-                      coresSelecionadas={coresSelecionadas}
-                      setCoresSelecionadas={setCoresSelecionadas}
-                      tamanhosSelecionados={tamanhosSelecionados}
-                      setTamanhosSelecionados={setTamanhosSelecionados}
-                      faixaPreco={faixaPreco}
-                      setFaixaPreco={setFaixaPreco}
-                      setPrecoAlterado={setPrecoAlterado}
-                      precoAlterado={precoAlterado}
-                      coresDisponiveis={coresDisponiveis}
-                      tamanhosDisponiveis={tamanhosDisponiveis}
-                      precoMin={precoMinMax.min}
-                      precoMax={precoMinMax.max}
-                      onLimparFiltros={handleLimparFiltros}
-                      setPaginaAtual={setPaginaAtual}
-                      activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
-                      produtosFiltradosParcial={produtos}
-                    />
-                </div>
-              </aside>
-
-              <div className="flex-grow">
-                {/* Controls Bar */}
-                <div className="flex items-center justify-between mb-8 pb-4 border-b">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground uppercase tracking-widest hidden sm:inline">
-                      {produtosFiltrados.length} Peças Encontradas
-                    </span>
-                    {/* Mobile Filter Trigger */}
-                    <div className="lg:hidden">
-                      <ProductFilters 
-                        categoriaSelecionada={draftFilters.categoria ?? categoriaSelecionada}
-                        setCategoriaSelecionada={(val) => setDraftFilters(prev => ({ ...prev, categoria: val }))}
-                        coresSelecionadas={draftFilters.cores ?? coresSelecionadas}
-                        setCoresSelecionadas={(val) => setDraftFilters(prev => ({ ...prev, cores: val }))}
-                        tamanhosSelecionados={draftFilters.tamanhos ?? tamanhosSelecionados}
-                        setTamanhosSelecionados={(val) => setDraftFilters(prev => ({ ...prev, tamanhos: val }))}
-                        faixaPreco={draftFilters.preco ?? faixaPreco}
-                        setFaixaPreco={(val) => setDraftFilters(prev => ({ ...prev, preco: val }))}
-                        setPrecoAlterado={(val) => setDraftFilters(prev => ({ ...prev, precoAlterado: val }))}
-                        precoAlterado={draftFilters.precoAlterado ?? precoAlterado}
+                      )}
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle className="font-serif text-2xl text-left">Refinar coleção</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6 pb-24">
+                      <FiltersContent
+                        categoriaSelecionada={categoriaSelecionada}
+                        setCategoriaSelecionada={(v) => { setCategoriaSelecionada(v); setPaginaAtual(1); }}
+                        coresSelecionadas={coresSelecionadas}
+                        setCoresSelecionadas={(v) => { setCoresSelecionadas(v); setPaginaAtual(1); }}
+                        tamanhosSelecionados={tamanhosSelecionados}
+                        setTamanhosSelecionados={(v) => { setTamanhosSelecionados(v); setPaginaAtual(1); }}
+                        faixaPreco={faixaPreco}
+                        setFaixaPreco={setFaixaPreco}
+                        setPrecoAlterado={setPrecoAlterado}
+                        precoAlterado={precoAlterado}
                         coresDisponiveis={coresDisponiveis}
                         tamanhosDisponiveis={tamanhosDisponiveis}
                         precoMin={precoMinMax.min}
                         precoMax={precoMinMax.max}
-                        onLimparFiltros={() => {
-                          setDraftFilters({
-                            categoria: "todas",
-                            cores: [],
-                            tamanhos: [],
-                            preco: [precoMinMax.min, precoMinMax.max],
-                            precoAlterado: false
-                          });
-                        }}
+                        onLimparFiltros={handleLimparFiltros}
                         setPaginaAtual={setPaginaAtual}
-                        activeFiltersCount={(categoriaSelecionada !== "todas" ? 1 : 0) + coresSelecionadas.length + tamanhosSelecionados.length + (precoAlterado ? 1 : 0)}
+                        activeFiltersCount={activeFiltersCount}
                         produtosFiltradosParcial={produtos}
-                        onApplyFilters={applyMobileFilters}
                       />
                     </div>
-                  </div>
+                    <div className="absolute inset-x-0 bottom-0 p-4 bg-background border-t flex gap-2">
+                      <Button variant="outline" className="flex-1" onClick={handleLimparFiltros}>
+                        Limpar
+                      </Button>
+                      <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
+                        Ver {produtosFiltradosFull.length} peças
+                      </Button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
 
-                  <div className="flex items-center gap-4">
-                    <Select value={ordenarPor} onValueChange={setOrdenarPor}>
-                      <SelectTrigger className="w-[180px] bg-transparent border-none focus:ring-0 text-xs uppercase tracking-widest">
-                        <SelectValue placeholder="ORDENAR POR" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="padrao">LANÇAMENTOS</SelectItem>
-                        <SelectItem value="preco-asc">MENOR PREÇO</SelectItem>
-                        <SelectItem value="preco-desc">MAIOR PREÇO</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {activeFiltersCount > 0 && (
+                  <button
+                    onClick={handleLimparFiltros}
+                    className="hidden sm:inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-3 h-3" /> Limpar
+                  </button>
+                )}
+
+                <span className="hidden md:inline text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+                  {produtosFiltradosFull.length} {produtosFiltradosFull.length === 1 ? "peça" : "peças"}
+                </span>
+              </div>
+
+              <Select value={ordenarPor} onValueChange={(v) => { setOrdenarPor(v); setPaginaAtual(1); }}>
+                <SelectTrigger className="w-auto sm:w-[200px] bg-transparent border-none focus:ring-0 text-[11px] uppercase tracking-[0.2em] h-10">
+                  <SelectValue placeholder="ORDENAR" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="padrao">Lançamentos</SelectItem>
+                  <SelectItem value="preco-asc">Menor preço</SelectItem>
+                  <SelectItem value="preco-desc">Maior preço</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Chips de filtros ativos */}
+            {activeFiltersCount > 0 && !loading && (
+              <div className="mb-8 flex flex-wrap gap-2">
+                {categoriaSelecionada !== "todas" && (
+                  <Badge variant="secondary" className="rounded-full pl-3 pr-2 py-1 gap-1.5 capitalize">
+                    {categoriaSelecionada}
+                    <button onClick={() => setCategoriaSelecionada("todas")} aria-label="Remover categoria">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {coresSelecionadas.map((cor) => (
+                  <Badge key={cor} variant="secondary" className="rounded-full pl-2 pr-2 py-1 gap-1.5">
+                    <span
+                      className="w-3 h-3 rounded-full border border-border/60"
+                      style={{ backgroundColor: COLOR_SWATCH[cor] || "#D4C5B9" }}
+                    />
+                    {cor}
+                    <button onClick={() => setCoresSelecionadas(coresSelecionadas.filter((c) => c !== cor))} aria-label={`Remover ${cor}`}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {tamanhosSelecionados.map((t) => (
+                  <Badge key={t} variant="secondary" className="rounded-full pl-3 pr-2 py-1 gap-1.5 uppercase">
+                    {t}
+                    <button onClick={() => setTamanhosSelecionados(tamanhosSelecionados.filter((x) => x !== t))} aria-label={`Remover ${t}`}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {precoAlterado && (
+                  <Badge variant="secondary" className="rounded-full pl-3 pr-2 py-1 gap-1.5">
+                    R$ {faixaPreco[0]} – {faixaPreco[1]}
+                    <button onClick={() => { setPrecoAlterado(false); setFaixaPreco([precoMinMax.min, precoMinMax.max]); }} aria-label="Remover preço">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Grid editorial — destaque maior no primeiro card */}
+            {loading ? (
+              <ProductsLoadingSkeleton count={8} />
+            ) : produtosFiltrados.length > 0 ? (
+              <>
+                <div
+                  key={gridFadeKey}
+                  className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-7 animate-in fade-in duration-500"
+                >
+                  {produtosFiltrados.map((produto, idx) => {
+                    // Layout editorial: primeiro card ocupa 2x no desktop ("hero piece").
+                    const isFeatured = idx === 0;
+                    return (
+                      <div
+                        key={produto.id}
+                        className={cn(
+                          "group relative transition-all duration-500",
+                          isFeatured && "col-span-2 lg:row-span-2",
+                        )}
+                      >
+                        {isFeatured && (
+                          <span className="absolute -top-2 left-2 z-10 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] uppercase tracking-[0.2em] font-semibold shadow-md">
+                            <Sparkles className="w-2.5 h-2.5" /> Destaque
+                          </span>
+                        )}
+                        <div
+                          className={cn(
+                            "rounded-xl overflow-hidden bg-card transition-shadow duration-500",
+                            isFeatured
+                              ? "ring-1 ring-border/60 shadow-sm hover:shadow-xl"
+                              : "hover:shadow-md",
+                          )}
+                        >
+                          <ProductCard produto={produto} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {loading ? (
-                  <ProductsLoadingSkeleton count={6} />
-                ) : produtosFiltrados.length > 0 ? (
-                  <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-12">
-                      {produtosFiltrados.map((produto) => (
-                        <ProductCard key={produto.id} produto={produto} />
-                      ))}
-                    </div>
-                    
-                    {hasMore && (
-                      <div className="mt-16 text-center">
-                        <Button 
-                          variant="outline" 
-                          size="lg" 
-                          onClick={carregarMais}
-                          disabled={loadingMore}
-                          className="min-w-[200px] uppercase tracking-widest text-xs border-primary/20 hover:bg-primary/5"
-                        >
-                          {loadingMore ? (
-                            <span className="flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
-                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
-                              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
-                            </span>
-                          ) : "Carregar Mais Peças"}
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="py-24 text-center">
-                    <p className="text-muted-foreground font-light italic text-lg">
-                      Nenhum produto encontrado com estes filtros.
-                    </p>
-                    <Button 
-                      variant="link" 
-                      onClick={handleLimparFiltros}
-                      className="mt-4 uppercase tracking-widest text-xs"
+                {hasMore && (
+                  <div className="mt-16 sm:mt-20 text-center">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={carregarMais}
+                      disabled={loadingMore}
+                      className="min-w-[220px] uppercase tracking-[0.25em] text-[11px] rounded-full border-primary/30 hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
-                      Limpar todos os filtros
+                      {loadingMore ? (
+                        <span className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.3s]" />
+                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.15s]" />
+                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
+                        </span>
+                      ) : (
+                        "Carregar mais peças"
+                      )}
                     </Button>
                   </div>
                 )}
+              </>
+            ) : (
+              <div className="py-24 text-center">
+                <p className="text-muted-foreground font-light italic text-lg">
+                  Nenhuma peça encontrada com estes filtros.
+                </p>
+                <Button
+                  variant="link"
+                  onClick={handleLimparFiltros}
+                  className="mt-4 uppercase tracking-[0.25em] text-[11px]"
+                >
+                  Limpar todos os filtros
+                </Button>
               </div>
-            </div>
+            )}
           </PageContainer>
         </main>
 
