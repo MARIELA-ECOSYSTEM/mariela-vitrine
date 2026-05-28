@@ -699,7 +699,7 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
             {loading ? (
               <ProductsLoadingSkeleton count={10} />
             ) : isFiltering ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {Array.from({ length: Math.min(produtosFiltrados.length || 10, 10) }).map((_, i) => (
                   <ProductSkeleton key={i} />
                 ))}
@@ -708,60 +708,30 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
               <>
                 <div
                   key={gridFadeKey}
-                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 animate-in fade-in duration-500"
+                  className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 animate-in fade-in duration-500"
                 >
-                  {produtosFiltrados.map((produto, idx) => {
-                    // Destaque sutil no primeiro card — sem ocupar múltiplas
-                    // colunas para manter os cards num tamanho menor.
-                    const isFeatured = idx === 0;
-                    return (
-                      <div
-                        key={produto.id}
-                        className={cn(
-                          "group relative transition-all duration-500",
-                        )}
-                      >
-                        {isFeatured && (
-                          <span className="absolute -top-2 left-2 z-10 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] uppercase tracking-[0.2em] font-semibold shadow-md">
-                            <Sparkles className="w-2.5 h-2.5" /> Destaque
-                          </span>
-                        )}
-                        <div
-                          className={cn(
-                            "rounded-xl overflow-hidden bg-card transition-shadow duration-500",
-                            isFeatured
-                              ? "ring-1 ring-border/60 shadow-sm hover:shadow-xl"
-                              : "hover:shadow-md",
-                          )}
-                        >
-                          <ProductCard produto={produto} />
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {produtosFiltrados.map((produto, index) => (
+                    <div
+                      key={produto.id}
+                      className="animate-fade-in"
+                      style={{ animationDelay: `${index * 0.04}s` }}
+                    >
+                      <ProductCard produto={produto} />
+                    </div>
+                  ))}
                 </div>
 
-                {hasMore && (
-                  <div className="mt-16 sm:mt-20 text-center">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={carregarMais}
-                      disabled={loadingMore}
-                      className="min-w-[220px] uppercase tracking-[0.25em] text-[11px] rounded-full border-primary/30 hover:bg-primary hover:text-primary-foreground transition-colors"
-                    >
-                      {loadingMore ? (
-                        <span className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.3s]" />
-                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.15s]" />
-                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
-                        </span>
-                      ) : (
-                        "Carregar mais peças"
-                      )}
-                    </Button>
-                  </div>
-                )}
+                <ProductsPagination
+                  paginaAtual={paginaAtual}
+                  itensPorPagina={itensPorPagina}
+                  totalItens={produtosFiltradosFull.length}
+                  itensVisiveisNaPagina={produtosFiltrados.length}
+                  onPaginaChange={setPaginaAtual}
+                  onItensPorPaginaChange={(n) => {
+                    setItensPorPagina(n);
+                    setPaginaAtual(1);
+                  }}
+                />
               </>
             ) : (
               <div className="py-24 text-center">
