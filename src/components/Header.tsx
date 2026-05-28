@@ -440,9 +440,7 @@ export const Header = () => {
               to="/" 
               onClick={() => {
                 setIsMobileMenuOpen(false);
-                setTimeout(() => {
-                  document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
+                scrollToAnchor('home');
               }}
               className={cn(
                 "text-sm font-medium",
@@ -483,9 +481,7 @@ export const Header = () => {
               to="/" 
               onClick={() => {
                 setIsMobileMenuOpen(false);
-                setTimeout(() => {
-                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
+                scrollToAnchor('contact');
               }}
               className={cn(
                 "text-sm font-medium",
