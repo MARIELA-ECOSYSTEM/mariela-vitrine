@@ -109,11 +109,14 @@ function isAvailable(produto: Produto) {
             </div>
           )}
 
-         <DynamicHomeRenderer 
-           blocks={homeBlocks} 
-           loading={loadingBlocks} 
-           debug={isDebugHome} 
-         />
+         {/* Âncora estável para scroll-spy e navegação por hash (#products). */}
+         <section id="products" aria-label="Produtos em destaque" className="scroll-mt-20 md:scroll-mt-24">
+           <DynamicHomeRenderer 
+             blocks={homeBlocks} 
+             loading={loadingBlocks} 
+             debug={isDebugHome} 
+           />
+         </section>
  
          {isEmpty && (
            <section className="py-12 sm:py-20 bg-background">
