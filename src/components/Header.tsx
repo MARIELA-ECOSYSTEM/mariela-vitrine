@@ -493,7 +493,9 @@ export const Header = () => {
                 to={link.path}
                 onClick={() => {
                   setIsMobileMenuOpen(false);
-                  if (link.scrollTo) scrollToAnchor(link.scrollTo);
+                  if (link.scrollTo && location.pathname === link.basePath) {
+                    scrollToAnchor(link.scrollTo);
+                  }
                 }}
                 className={cn(
                   "text-sm font-medium px-3 py-2.5 rounded-md transition-colors",
