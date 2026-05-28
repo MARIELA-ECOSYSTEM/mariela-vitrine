@@ -191,7 +191,12 @@ export const Header = () => {
     const tick = () => {
       const el = document.getElementById(id);
       if (el) {
-        const headerOffset = window.matchMedia("(min-width: 768px)").matches ? 76 : 68;
+        // Lê a altura real do header da variável CSS (--header-height) para manter
+        // o cálculo correto em todos os breakpoints e em ajustes futuros de layout.
+        const raw = getComputedStyle(document.documentElement)
+          .getPropertyValue("--header-height")
+          .trim();
+        const headerOffset = parseInt(raw, 10) || 68;
         const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
         window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         return;
