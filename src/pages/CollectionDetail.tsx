@@ -774,24 +774,31 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
               </div>
             ) : produtosFiltrados.length > 0 ? (
               <>
-                <div
-                  key={gridFadeKey}
-                  aria-busy={isPageChanging}
-                  className={cn(
-                    "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 animate-in fade-in duration-500 transition-opacity",
-                    isPageChanging && "opacity-50 pointer-events-none",
-                  )}
-                >
-                  {produtosFiltrados.map((produto, index) => (
-                    <div
-                      key={produto.id}
-                      className="animate-fade-in"
-                      style={{ animationDelay: `${index * 0.04}s` }}
-                    >
-                      <ProductCard produto={produto} />
-                    </div>
-                  ))}
-                </div>
+                {isPageChanging ? (
+                  <div
+                    aria-busy="true"
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 animate-fade-in"
+                  >
+                    {Array.from({ length: produtosFiltrados.length || Math.min(itensPorPagina, 12) }).map((_, i) => (
+                      <ProductSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    key={gridFadeKey}
+                    className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 animate-in fade-in duration-500"
+                  >
+                    {produtosFiltrados.map((produto, index) => (
+                      <div
+                        key={produto.id}
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${index * 0.04}s` }}
+                      >
+                        <ProductCard produto={produto} />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <ProductsPagination
                   paginaAtual={paginaAtual}
