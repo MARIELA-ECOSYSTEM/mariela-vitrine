@@ -177,7 +177,10 @@ export const Header = () => {
   // Usamos hsl(var(--background)) para respeitar o tema (claro/escuro).
   const headerBgStyle = useMemo(() => {
     if (!isHome) return undefined;
-    const alpha = isMobileMenuOpen ? 1 : scrollProgress;
+    // Em banners claros (texto escuro) aplicamos um leve "véu" branco translúcido
+    // mesmo no topo, garantindo contraste AA sem perder a sensação de overlay.
+    const overlayFloor = !overlayTextLight ? 0.55 : 0;
+    const alpha = isMobileMenuOpen ? 1 : Math.max(scrollProgress, overlayFloor);
     return {
       backgroundColor: `hsl(var(--background) / ${alpha})`,
       borderBottomColor: `hsl(var(--border) / ${alpha * 0.5})`,
@@ -185,7 +188,7 @@ export const Header = () => {
       backdropFilter: alpha > 0.05 && alpha < 0.95 ? `blur(${Math.round(alpha * 12)}px)` : undefined,
       WebkitBackdropFilter: alpha > 0.05 && alpha < 0.95 ? `blur(${Math.round(alpha * 12)}px)` : undefined,
     } as React.CSSProperties;
-  }, [isHome, isMobileMenuOpen, scrollProgress]);
+  }, [isHome, isMobileMenuOpen, scrollProgress, overlayTextLight]);
 
   return (
     <>
