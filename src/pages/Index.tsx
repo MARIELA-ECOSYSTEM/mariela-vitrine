@@ -84,6 +84,8 @@ function isAvailable(produto: Produto) {
         {(loadingProducts || loadingBlocks) && <LoadingOverlay />}
         <WelcomeDialog />
         <Header />
+       {/* Âncora "home" garantida mesmo se o carrossel não renderizar (sem coleções). */}
+       <div id="home" aria-hidden className="absolute top-0 left-0 h-1 w-1 pointer-events-none" />
        <HeroBannerCarousel />
  
         <div id="home-content" className="relative">
