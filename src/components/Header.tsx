@@ -349,7 +349,9 @@ export const Header = () => {
                 key={`${link.path}-${link.label}`}
                 to={link.path}
                 onClick={() => {
-                  if (link.scrollTo) {
+                  // Se já estamos na rota base do link, faz scroll imediato
+                  // (o hash não muda quando é o mesmo, então o effect não roda).
+                  if (link.scrollTo && location.pathname === link.basePath) {
                     scrollToAnchor(link.scrollTo);
                   }
                 }}
