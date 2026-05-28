@@ -18,10 +18,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter
   import type { Produto } from "@/data/products";
   import { absoluteUrl } from "@/lib/seo";
   import { SEOMeta } from "@/components/seo/SEOMeta";
-import { ArrowLeft, Sparkles, ImageOff, Filter, ShoppingBag, X, ArrowDown } from "lucide-react";
+import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { Button } from "@/components/ui/button";
-  import { CATEGORIAS_DB } from "@/data/categories";
   import {
     Select,
     SelectContent,
@@ -30,18 +29,6 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, ShoppingBag, X, ArrowDown } from
     SelectValue,
   } from "@/components/ui/select";
   import { Badge } from "@/components/ui/badge";
-
-  const categoryEmojis: Record<string, string> = {
-    "vestidos": "👗",
-    "blusas": "👚",
-    "calças": "👖",
-    "saias": "🩱",
-    "shorts": "🩳",
-    "short-saias": "✨",
-    "conjuntos": "💎",
-    "bolsas": "👜",
-    "acessorios": "💍",
-  };
 
   // Espelha o mapa do ProductCard para que o filtro visual de cores na
   // coleção use exatamente a mesma paleta dos swatches dos cards.
