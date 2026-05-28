@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -21,6 +21,7 @@ import type { Produto } from "@/data/products";
  import { absoluteUrl } from "@/lib/seo";
  import { SEOMeta } from "@/components/seo/SEOMeta";
 import { selectNovidadesIds } from "@/lib/novidades";
+import { ProductsPagination, DEFAULT_PAGE_SIZE } from "@/components/ProductsPagination";
 import {
   Select,
   SelectContent,
@@ -50,8 +51,6 @@ const defaultCategorias: CatalogFilterOption[] = CATEGORIAS_DB.map((categoria) =
   // não o label plural exibido na UI (ex.: "Blusas").
   apiValue: categoria.dbValue ?? categoria.label,
 }));
-
-const produtosPorPagina = 12;
 
 function getBadgeValue(produto: Produto) {
   return produto.badgePublico || produto.publicBadge || produto.destaque_publico || produto.recomendacao_publica || null;
@@ -124,6 +123,7 @@ const Products = () => {
   const [visualizacao, setVisualizacao] = useState<"grade" | "lista">("grade");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [itensPorPagina, setItensPorPagina] = useState<number>(DEFAULT_PAGE_SIZE);
 
   // Aplicar filtros da URL
   useEffect(() => {
@@ -306,7 +306,7 @@ const Products = () => {
     const categoriaApi = resolveCategoriaApiValue(categoriasApi, categoriaSelecionada);
 
     return {
-      limit: produtosPorPagina,
+      limit: itensPorPagina,
       offset,
       busca: searchQuery.trim() || undefined,
       categoria: categoriaSelecionada !== "todas" ? categoriaApi : undefined,
@@ -315,15 +315,15 @@ const Products = () => {
       preco_min: precoAlterado && faixaPrecoSegura[0] > 0 ? faixaPrecoSegura[0] : undefined,
       preco_max: precoAlterado && faixaPrecoSegura[1] > 0 ? faixaPrecoSegura[1] : undefined,
     };
-  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoAlterado, searchQuery]);
+  }, [categoriaSelecionada, categoriasApi, colecaoSelecionada, faixaPrecoSegura, ordenarPor, precoAlterado, searchQuery, itensPorPagina]);
 
   useEffect(() => {
     let active = true;
     setCatalogLoading(true);
     setProdutosCatalogo([]);
-    setPaginaAtual(1);
 
-    const query = getProdutosQuery(0);
+    const offset = (paginaAtual - 1) * itensPorPagina;
+    const query = getProdutosQuery(offset);
     if (query.categoria) {
       console.info("[vitrine-api] filtro categoria", {
         selecionada: categoriaSelecionada,
@@ -347,36 +347,20 @@ const Products = () => {
     return () => {
       active = false;
     };
-  }, [categoriaSelecionada, getProdutosQuery]);
-
-  const handleCarregarMais = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-
-    setLoadingMore(true);
-    try {
-      const page = await vitrineApiService.getProdutosPage(getProdutosQuery(produtosCatalogo.length));
-      setProdutosCatalogo((current) => {
-        const ids = new Set(current.map((produto) => produto.id));
-        const novos = page.items.filter((produto) => !ids.has(produto.id));
-        return [...current, ...novos];
-      });
-      setHasMore(page.hasMore);
-      setTotalProdutos(page.total);
-    } catch {
-      toast({
-        title: "Erro ao carregar mais",
-        description: "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [getProdutosQuery, hasMore, loadingMore, produtosCatalogo.length, toast]);
+  }, [categoriaSelecionada, getProdutosQuery, paginaAtual, itensPorPagina]);
   
-  // Reset página quando filtros mudarem
+  // Reset página quando filtros mudarem (não inclui paginaAtual nem itensPorPagina).
   useEffect(() => {
     setPaginaAtual(1);
-  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery]);
+  }, [categoriaSelecionada, colecaoSelecionada, mostrarPromocao, mostrarNovidades, mostrarMaisProcurados, coresSelecionadas, tamanhosSelecionados, ordenarPor, searchQuery, itensPorPagina]);
+
+  // Scroll suave ao topo da grid quando o usuário navega entre páginas.
+  const gridRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (paginaAtual > 1) {
+      gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [paginaAtual]);
 
   // Handler para pull-to-refresh
   const handlePullRefresh = useCallback(async () => {
@@ -834,13 +818,14 @@ const Products = () => {
               </div>
 
               {/* Grid/Lista de Produtos */}
+              <div ref={gridRef} />
               {catalogLoading ? (
                 <div className={`${
                   visualizacao === "grade"
                     ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
                     : "space-y-3 sm:space-y-4"
                 }`}>
-                  {Array.from({ length: produtosPorPagina }).map((_, index) => (
+                  {Array.from({ length: itensPorPagina }).map((_, index) => (
                     <ProductSkeleton 
                       key={index} 
                       layoutMode={visualizacao}
@@ -868,25 +853,17 @@ const Products = () => {
                       ))}
                   </div>
 
-                  {/* Contador */}
-                  <div className="text-center mt-8">
-                    <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      {totalProdutos || produtosOrdenados.length} produtos encontrados
-                    </span>
-                  </div>
-
-                  {hasMore && (
-                    <div className="flex items-center justify-center mt-4 animate-fade-in">
-                      <Button
-                        variant="outline"
-                        onClick={handleCarregarMais}
-                        disabled={loadingMore}
-                        className="transition-all hover:scale-105"
-                      >
-                        {loadingMore ? "Carregando..." : "Carregar mais"}
-                      </Button>
-                    </div>
-                  )}
+                  <ProductsPagination
+                    paginaAtual={paginaAtual}
+                    itensPorPagina={itensPorPagina}
+                    totalItens={totalProdutos || produtosOrdenados.length}
+                    itensVisiveisNaPagina={produtosOrdenados.length}
+                    onPaginaChange={setPaginaAtual}
+                    onItensPorPaginaChange={(n) => {
+                      setItensPorPagina(n);
+                      setPaginaAtual(1);
+                    }}
+                  />
                 </>
               ) : (
                 <div className="text-center py-12">

@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter
 import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { Button } from "@/components/ui/button";
+  import { ProductsPagination, DEFAULT_PAGE_SIZE } from "@/components/ProductsPagination";
   import {
     Select,
     SelectContent,
@@ -41,8 +42,6 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
     "Mostarda": "#FFDB58", "Off White": "#F8F8F8", "Caramelo": "#C68642",
   };
 
-  const produtosPorPagina = 12;
- 
  const CollectionDetail = () => {
    const { id: slugOrId } = useParams<{ id: string }>();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -60,7 +59,10 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
     const [paginaAtual, setPaginaAtual] = useState(() => {
       return Number(searchParams.get("page")) || 1;
     });
-    const [loadingMore, setLoadingMore] = useState(false);
+    const [itensPorPagina, setItensPorPagina] = useState<number>(() => {
+      const fromUrl = Number(searchParams.get("perPage"));
+      return fromUrl > 0 ? fromUrl : DEFAULT_PAGE_SIZE;
+    });
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Estado "rascunho" para filtros mobile
@@ -147,13 +149,14 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
       }
       if (ordenarPor !== "padrao") params.set("sort", ordenarPor);
       if (paginaAtual > 1) params.set("page", paginaAtual.toString());
+      if (itensPorPagina !== DEFAULT_PAGE_SIZE) params.set("perPage", String(itensPorPagina));
 
       const currentParams = searchParams.toString();
       const nextParams = params.toString();
       if (currentParams !== nextParams) {
         setSearchParams(params, { replace: true });
       }
-    }, [categoriaSelecionada, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado, ordenarPor, paginaAtual, setSearchParams]);
+    }, [categoriaSelecionada, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado, ordenarPor, paginaAtual, itensPorPagina, setSearchParams]);
 
     // Carregar filtros da URL no mount
     useEffect(() => {
@@ -211,21 +214,22 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
       return filtrados;
     }, [produtos, categoriaSelecionada, ordenarPor, coresSelecionadas, tamanhosSelecionados, faixaPreco, precoAlterado]);
 
-    // Paginação
+    // Paginação por página (slice do conjunto filtrado completo)
     const produtosFiltrados = useMemo(() => {
-      return produtosFiltradosFull.slice(0, paginaAtual * produtosPorPagina);
-    }, [produtosFiltradosFull, paginaAtual]);
+      const start = (paginaAtual - 1) * itensPorPagina;
+      return produtosFiltradosFull.slice(start, start + itensPorPagina);
+    }, [produtosFiltradosFull, paginaAtual, itensPorPagina]);
 
-    const hasMore = produtosFiltrados.length < produtosFiltradosFull.length;
+    // Se a página atual ficar "vazia" após mudança de filtro/perPage, recolhe para a 1.
+    useEffect(() => {
+      const totalPaginas = Math.max(1, Math.ceil(produtosFiltradosFull.length / itensPorPagina));
+      if (paginaAtual > totalPaginas) setPaginaAtual(1);
+    }, [produtosFiltradosFull.length, itensPorPagina, paginaAtual]);
 
-    const carregarMais = useCallback(() => {
-      if (!hasMore || loadingMore) return;
-      setLoadingMore(true);
-      setTimeout(() => {
-        setPaginaAtual(prev => prev + 1);
-        setLoadingMore(false);
-      }, 600); // Shimmer feel
-    }, [hasMore, loadingMore]);
+    // Scroll suave ao topo da grid quando o usuário troca de página.
+    useEffect(() => {
+      if (paginaAtual > 1) scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [paginaAtual]);
 
     // Handler para aplicar filtros mobile (Delayed update)
     const applyMobileFilters = useCallback(() => {
@@ -695,7 +699,7 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
             {loading ? (
               <ProductsLoadingSkeleton count={10} />
             ) : isFiltering ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {Array.from({ length: Math.min(produtosFiltrados.length || 10, 10) }).map((_, i) => (
                   <ProductSkeleton key={i} />
                 ))}
@@ -704,60 +708,30 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
               <>
                 <div
                   key={gridFadeKey}
-                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 animate-in fade-in duration-500"
+                  className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 animate-in fade-in duration-500"
                 >
-                  {produtosFiltrados.map((produto, idx) => {
-                    // Destaque sutil no primeiro card — sem ocupar múltiplas
-                    // colunas para manter os cards num tamanho menor.
-                    const isFeatured = idx === 0;
-                    return (
-                      <div
-                        key={produto.id}
-                        className={cn(
-                          "group relative transition-all duration-500",
-                        )}
-                      >
-                        {isFeatured && (
-                          <span className="absolute -top-2 left-2 z-10 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] uppercase tracking-[0.2em] font-semibold shadow-md">
-                            <Sparkles className="w-2.5 h-2.5" /> Destaque
-                          </span>
-                        )}
-                        <div
-                          className={cn(
-                            "rounded-xl overflow-hidden bg-card transition-shadow duration-500",
-                            isFeatured
-                              ? "ring-1 ring-border/60 shadow-sm hover:shadow-xl"
-                              : "hover:shadow-md",
-                          )}
-                        >
-                          <ProductCard produto={produto} />
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {produtosFiltrados.map((produto, index) => (
+                    <div
+                      key={produto.id}
+                      className="animate-fade-in"
+                      style={{ animationDelay: `${index * 0.04}s` }}
+                    >
+                      <ProductCard produto={produto} />
+                    </div>
+                  ))}
                 </div>
 
-                {hasMore && (
-                  <div className="mt-16 sm:mt-20 text-center">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={carregarMais}
-                      disabled={loadingMore}
-                      className="min-w-[220px] uppercase tracking-[0.25em] text-[11px] rounded-full border-primary/30 hover:bg-primary hover:text-primary-foreground transition-colors"
-                    >
-                      {loadingMore ? (
-                        <span className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.3s]" />
-                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.15s]" />
-                          <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
-                        </span>
-                      ) : (
-                        "Carregar mais peças"
-                      )}
-                    </Button>
-                  </div>
-                )}
+                <ProductsPagination
+                  paginaAtual={paginaAtual}
+                  itensPorPagina={itensPorPagina}
+                  totalItens={produtosFiltradosFull.length}
+                  itensVisiveisNaPagina={produtosFiltrados.length}
+                  onPaginaChange={setPaginaAtual}
+                  onItensPorPaginaChange={(n) => {
+                    setItensPorPagina(n);
+                    setPaginaAtual(1);
+                  }}
+                />
               </>
             ) : (
               <div className="py-24 text-center">
