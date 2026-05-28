@@ -380,13 +380,24 @@ const Products = () => {
     if (paginaAtual > 1) adjacentes.push(paginaAtual - 1);
     if (paginaAtual < totalPaginas) adjacentes.push(paginaAtual + 1);
     if (adjacentes.length === 0) return;
+    let cancelled = false;
     const handle = window.setTimeout(() => {
+      if (cancelled) return;
       adjacentes.forEach((p) => {
         const offset = (p - 1) * itensPorPagina;
-        vitrineApiService.getProdutosPage(getProdutosQuery(offset)).catch(() => {});
+        vitrineApiService
+          .getProdutosPage(getProdutosQuery(offset))
+          .then(() => {
+            // Resposta antiga: filtros/página/perPage mudaram — ignorar.
+            if (cancelled) return;
+          })
+          .catch(() => {});
       });
     }, 250);
-    return () => window.clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, [paginaAtual, itensPorPagina, totalProdutos, catalogLoading, getProdutosQuery]);
 
   // Scroll suave ao topo da grid quando o usuário navega entre páginas.
