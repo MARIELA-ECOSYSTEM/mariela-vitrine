@@ -187,21 +187,24 @@ export const Header = () => {
     return location.pathname.startsWith(path);
   };
 
+  // `path` é o destino do react-router. Para itens que rolam para uma âncora,
+  // usamos `/#section` — assim funciona inclusive vindo de outra rota:
+  // a navegação acontece e o effect de hash (abaixo) cuida do scroll.
   const navLinks = [
-    { path: '/', label: 'Início', scrollTo: 'home', section: 'home' },
-    { path: '/products', label: 'Produtos', scrollTo: undefined as string | undefined, section: 'products' },
-    { path: '/monte-seu-look', label: 'Monte Seu Look', scrollTo: undefined as string | undefined, section: undefined as string | undefined },
-    { path: '/', label: 'Contato', scrollTo: 'contact', section: 'contact' },
+    { path: '/#home', basePath: '/', label: 'Início', scrollTo: 'home', section: 'home' },
+    { path: '/products', basePath: '/products', label: 'Produtos', scrollTo: undefined as string | undefined, section: 'products' },
+    { path: '/monte-seu-look', basePath: '/monte-seu-look', label: 'Monte Seu Look', scrollTo: undefined as string | undefined, section: undefined as string | undefined },
+    { path: '/#contact', basePath: '/', label: 'Contato', scrollTo: 'contact', section: 'contact' },
   ];
 
   // Helper para definir se um link do menu está "ativo" considerando rota + scroll-spy.
-  const isLinkActive = (link: { path: string; scrollTo?: string; section?: string }) => {
+  const isLinkActive = (link: { basePath: string; scrollTo?: string; section?: string }) => {
     if (isHome && link.section) {
       // Antes do scroll-spy detectar a primeira seção, considera "Início" como ativo no topo.
       if (activeSection === null && link.section === "home") return true;
       return activeSection === link.section;
     }
-    if (!link.scrollTo) return isActive(link.path);
+    if (!link.scrollTo) return isActive(link.basePath);
     return false;
   };
 
