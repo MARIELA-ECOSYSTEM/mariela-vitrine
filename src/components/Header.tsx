@@ -168,9 +168,29 @@ export const Header = () => {
 
   // Helper para definir se um link do menu está "ativo" considerando rota + scroll-spy.
   const isLinkActive = (link: { path: string; scrollTo?: string; section?: string }) => {
-    if (isHome && link.section) return activeSection === link.section;
+    if (isHome && link.section) {
+      // Antes do scroll-spy detectar a primeira seção, considera "Início" como ativo no topo.
+      if (activeSection === null && link.section === "home") return true;
+      return activeSection === link.section;
+    }
     if (!link.scrollTo) return isActive(link.path);
     return false;
+  };
+
+  // Faz scroll até uma âncora com retentativas — garante funcionamento
+  // mesmo quando navegamos de outra rota e a seção ainda não foi montada.
+  const scrollToAnchor = (id: string, maxAttempts = 30) => {
+    let attempts = 0;
+    const tick = () => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      attempts += 1;
+      if (attempts < maxAttempts) setTimeout(tick, 100);
+    };
+    tick();
   };
 
   // Estilo inline para opacidade progressiva do fundo do header.
@@ -281,9 +301,7 @@ export const Header = () => {
                 to={link.path}
                 onClick={() => {
                   if (link.scrollTo) {
-                    setTimeout(() => {
-                      document.getElementById(link.scrollTo!)?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
+                    scrollToAnchor(link.scrollTo);
                   }
                 }}
                 className={cn(
@@ -422,9 +440,7 @@ export const Header = () => {
               to="/" 
               onClick={() => {
                 setIsMobileMenuOpen(false);
-                setTimeout(() => {
-                  document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
+                scrollToAnchor('home');
               }}
               className={cn(
                 "text-sm font-medium",
@@ -465,9 +481,7 @@ export const Header = () => {
               to="/" 
               onClick={() => {
                 setIsMobileMenuOpen(false);
-                setTimeout(() => {
-                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
+                scrollToAnchor('contact');
               }}
               className={cn(
                 "text-sm font-medium",
