@@ -65,6 +65,7 @@ const ProductDetail = () => {
   const produtoFromList = produtos.find(p => matchesProductSlug(p, productParam));
   const [produtoDetalhe, setProdutoDetalhe] = useState<Produto | null>(null);
   const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+  const [detalheNotFound, setDetalheNotFound] = useState(false);
   // Marca o id já buscado para evitar refetch quando `produtoFromList` muda de
   // referência (ex.: refresh silencioso da lista pelo `useProducts`).
   const fetchedIdRef = useRef<string | null>(null);
@@ -93,10 +94,19 @@ const ProductDetail = () => {
     let cancelled = false;
     fetchedIdRef.current = idDetalhe;
     setLoadingDetalhe(true);
+    setDetalheNotFound(false);
     vitrineApiService
       .getProdutoById(idDetalhe)
       .then((detalhe) => {
-        if (!cancelled && detalhe) setProdutoDetalhe(detalhe);
+        if (cancelled) return;
+        if (detalhe) {
+          setProdutoDetalhe(detalhe);
+        } else {
+          // API respondeu explicitamente com data: null — produto removido
+          // ou indisponível no PDV. Marca como não encontrado para que a UI
+          // exiba mensagem elegante em vez de manter o fallback da lista.
+          setDetalheNotFound(true);
+        }
       })
       .catch(() => { /* silencioso — fallback permanece o produto da lista */ })
       .finally(() => {
@@ -681,16 +691,23 @@ const ProductDetail = () => {
     return <ProductDetailSkeleton />;
   }
 
-  if (!produto && !loading && !loadingDetalhe) {
+  if ((!produto || detalheNotFound) && !loading && !loadingDetalhe) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <SEOMeta title="Produto não encontrado" noIndex={true} />
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <h1 className="font-serif text-3xl font-bold mb-4">Produto não encontrado</h1>
-          <p className="text-muted-foreground mb-8">O produto que você procura pode ter sido removido ou o link está incorreto.</p>
-          <Link to="/products">
-            <Button>Voltar para Produtos</Button>
-          </Link>
+          <p className="text-muted-foreground mb-8">
+            Este produto pode ter sido removido ou esgotado. Explore nossa coleção completa para descobrir peças semelhantes.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Voltar
+            </Button>
+            <Link to="/products">
+              <Button className="w-full sm:w-auto">Ver todos os produtos</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
