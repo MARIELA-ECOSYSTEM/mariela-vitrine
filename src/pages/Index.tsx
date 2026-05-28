@@ -148,6 +148,8 @@ function isAvailable(produto: Produto) {
            </section>
          )}
        </div>
+      {/* Âncora fixa para navegação por hash (#monte-seu-look) ou via scrollToAnchor. */}
+      <div id="monte-seu-look" aria-hidden className="scroll-mt-20 md:scroll-mt-24" />
       <QuickActions />
       <Footer />
     </div>
