@@ -339,20 +339,58 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
     useEffect(() => {
       if (typeof window === "undefined") return;
       if (coresSelecionadas.length === 0) return;
+      // Limite controlado para não impactar a performance:
+      // top N produtos × dedupe por URL.
+      const PRELOAD_LIMIT = 12;
       const urls = new Set<string>();
-      produtosFiltradosFull.slice(0, 24).forEach((p) => {
-        coresSelecionadas.forEach((cor) => {
+      for (const p of produtosFiltradosFull.slice(0, PRELOAD_LIMIT)) {
+        for (const cor of coresSelecionadas) {
           const c = p.cores?.find((cc) => cc.cor === cor);
           const url = c?.imagem_card_url || c?.imagem_full || c?.imagem_thumb;
           if (url) urls.add(url);
+        }
+      }
+      // Roda em idle para não competir com o render dos cards.
+      const run = () => {
+        urls.forEach((u) => {
+          const img = new Image();
+          img.decoding = "async";
+          img.loading = "eager";
+          img.src = u;
         });
-      });
-      urls.forEach((u) => {
-        const img = new Image();
-        img.decoding = "async";
-        img.src = u;
-      });
+      };
+      const ric: ((cb: () => void) => number) | undefined =
+        (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+      const handle = ric ? ric(run) : window.setTimeout(run, 50);
+      return () => {
+        const cic: ((h: number) => void) | undefined =
+          (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
+        if (ric && cic) cic(handle);
+        else window.clearTimeout(handle);
+      };
     }, [coresSelecionadas, produtosFiltradosFull]);
+
+    // Quantidades por categoria (badges no Sheet) — calculada sobre o
+    // recorte de produtos respeitando os demais filtros ativos, como
+    // FiltersContent já faz para cores/tamanhos via produtosFiltradosParcial.
+    const categoriasCount = useMemo(() => {
+      const map: Record<string, number> = { todas: produtos.length };
+      produtos.forEach((p) => {
+        const cat = (p.categoria || "").toLowerCase();
+        map[cat] = (map[cat] ?? 0) + 1;
+      });
+      return map;
+    }, [produtos]);
+
+    // Skeleton elegante durante a troca de filtros — evita "piscadas" em
+    // conexões lentas mantendo a percepção de continuidade.
+    const [isFiltering, setIsFiltering] = useState(false);
+    useEffect(() => {
+      if (loading) return;
+      setIsFiltering(true);
+      const t = window.setTimeout(() => setIsFiltering(false), 220);
+      return () => window.clearTimeout(t);
+    }, [gridFadeKey, loading]);
 
     const totalCategoriasNaColecao = useMemo(() => {
       const s = new Set<string>();
