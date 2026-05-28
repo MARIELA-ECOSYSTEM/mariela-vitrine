@@ -24,6 +24,8 @@ export const SEOMeta = ({
       <title>{safeTitle}</title>
       <meta name="description" content={safeDescription} />
       <link rel="canonical" href={safeUrl} />
+      <link rel="alternate" hrefLang="pt-BR" href={safeUrl} />
+      <link rel="alternate" hrefLang="x-default" href={safeUrl} />
       <meta name="theme-color" content="#ffffff" />
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
