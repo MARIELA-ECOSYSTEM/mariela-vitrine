@@ -601,14 +601,23 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
                         setPaginaAtual={setPaginaAtual}
                         activeFiltersCount={activeFiltersCount}
                         produtosFiltradosParcial={produtos}
+                        categoriasCount={categoriasCount}
                       />
                     </div>
                     <div className="absolute inset-x-0 bottom-0 p-4 bg-background border-t flex gap-2">
-                      <Button variant="outline" className="flex-1" onClick={handleLimparFiltros}>
-                        Limpar
+                      <Button
+                        variant="outline"
+                        className="flex-1 uppercase tracking-[0.15em] text-xs"
+                        onClick={handleLimparFiltros}
+                        disabled={activeFiltersCount === 0}
+                      >
+                        <X className="w-3.5 h-3.5 mr-1.5" /> Limpar
                       </Button>
-                      <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
-                        Ver {produtosFiltradosFull.length} peças
+                      <Button
+                        className="flex-1 uppercase tracking-[0.15em] text-xs"
+                        onClick={() => setFiltersOpen(false)}
+                      >
+                        Aplicar · {produtosFiltradosFull.length}
                       </Button>
                     </div>
                   </SheetContent>
@@ -633,7 +642,7 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
                   <SelectValue placeholder="ORDENAR" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="padrao">Lançamentos</SelectItem>
+                  <SelectItem value="padrao">Padrão</SelectItem>
                   <SelectItem value="preco-asc">Menor preço</SelectItem>
                   <SelectItem value="preco-desc">Maior preço</SelectItem>
                 </SelectContent>
@@ -684,22 +693,28 @@ import { ArrowLeft, Sparkles, ImageOff, Filter, X, ArrowDown } from "lucide-reac
 
             {/* Grid editorial — destaque maior no primeiro card */}
             {loading ? (
-              <ProductsLoadingSkeleton count={8} />
+              <ProductsLoadingSkeleton count={10} />
+            ) : isFiltering ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
+                {Array.from({ length: Math.min(produtosFiltrados.length || 10, 10) }).map((_, i) => (
+                  <ProductSkeleton key={i} />
+                ))}
+              </div>
             ) : produtosFiltrados.length > 0 ? (
               <>
                 <div
                   key={gridFadeKey}
-                  className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-7 animate-in fade-in duration-500"
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 animate-in fade-in duration-500"
                 >
                   {produtosFiltrados.map((produto, idx) => {
-                    // Layout editorial: primeiro card ocupa 2x no desktop ("hero piece").
+                    // Destaque sutil no primeiro card — sem ocupar múltiplas
+                    // colunas para manter os cards num tamanho menor.
                     const isFeatured = idx === 0;
                     return (
                       <div
                         key={produto.id}
                         className={cn(
                           "group relative transition-all duration-500",
-                          isFeatured && "col-span-2 lg:row-span-2",
                         )}
                       >
                         {isFeatured && (
