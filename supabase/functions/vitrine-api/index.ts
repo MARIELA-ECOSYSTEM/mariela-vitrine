@@ -74,7 +74,14 @@ serve(async (req) => {
       }
 
       // 3. Proxy Padrão para Produção
-      const targetPath = path.startsWith('/') ? path : `/${path}`;
+      let targetPath = path.startsWith('/') ? path : `/${path}`;
+      // A API de produção expõe o detalhe em `/produtos/:id` (plural).
+      // O cliente ainda chama `/produto/:id` (singular legado) — reescrevemos
+      // aqui para evitar 404 "Rota não encontrada" no PDV.
+      const singularMatch = targetPath.match(/^\/produto\/([^/?]+)\/?$/);
+      if (singularMatch) {
+        targetPath = `/produtos/${singularMatch[1]}`;
+      }
       const targetUrl = new URL(`${PRODUCTION_API_URL}${targetPath}${url.search}`);
       
       const headers: Record<string, string> = { 'Accept': 'application/json' };
@@ -89,6 +96,13 @@ serve(async (req) => {
         const errorText = await response.text();
         console.error(`[vitrine-api] Production Error on ${path}: ${response.status}`, errorText);
         
+        // Detalhe de produto: 404 retorna null silenciosamente (sem blank-screen no cliente)
+        if (singularMatch || /^\/produtos\/[^/?]+\/?$/.test(targetPath)) {
+          return new Response(JSON.stringify({ data: null }), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
         // Proteção para o catálogo: se der erro (PDV indisponível ou bug interno), retornamos estrutura vazia em vez de 500
         if (path.includes('produtos') || path.includes('destaques')) {
           return new Response(JSON.stringify({ items: [], total: 0, limit: 20, offset: 0, hasMore: false }), {
