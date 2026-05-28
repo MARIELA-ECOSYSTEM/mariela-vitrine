@@ -113,58 +113,81 @@ export const ProductSkeleton = ({ layoutMode = "grade" }: ProductSkeletonProps) 
 
   // Layout em grade (vertical - padrão) - MOBILE OPTIMIZED
   return (
-    <Card className="overflow-hidden border-border bg-card flex flex-col h-full animate-fade-in group">
-      <CardContent className="p-0 flex flex-col h-full">
-        {/* Imagem com shimmer e efeito elegante */}
-        <div className="relative aspect-square overflow-hidden">
+    // Espelha 1:1 a estrutura do <ProductCard layoutMode="grade"> para que o
+    // refetch em /products e /collections/:slug não cause "salto" de altura
+    // entre skeleton e card real. As mesmas classes de padding, gap e
+    // tamanhos de tipografia são reutilizadas.
+    <Card className="overflow-hidden border-border bg-card flex flex-col animate-fade-in group">
+      <CardContent className="p-0 flex flex-col flex-1">
+        {/* Imagem — mesmo aspect-square + bg-muted do card real */}
+        <div className="relative aspect-square overflow-hidden bg-muted flex-shrink-0">
           <ShimmerSkeleton className="absolute inset-0" />
-          {/* Badge placeholder */}
-          <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2">
+          {/* Badge placeholder — mesma posição do card (top-1.5/top-3) */}
+          <div className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-1.5 items-end">
             <PulseSkeleton className="h-4 sm:h-5 w-12 sm:w-16" delay={100} />
           </div>
-          {/* Indicadores de imagem */}
+          {/* Indicadores de imagem (dots) */}
           <div className="absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5 sm:gap-1">
             {[...Array(3)].map((_, i) => (
-              <CircleSkeleton key={i} size="sm" delay={150 + i * 30} />
+              <span
+                key={i}
+                className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-muted-foreground/40"
+                style={{ animationDelay: `${150 + i * 30}ms` }}
+              />
             ))}
           </div>
         </div>
-        
+
+        {/* Bloco textual — mesmo padding e gaps do card real */}
         <div className="p-2.5 sm:p-4 md:p-5 flex flex-col gap-1.5 sm:gap-3 flex-1">
-          <div className="flex-1 space-y-1 sm:space-y-2">
-            {/* Título */}
-            <PulseSkeleton className="h-4 sm:h-5 md:h-6 w-4/5" delay={50} />
-            {/* Descrição - responsivo */}
-            <div className="hidden xs:block space-y-1 sm:space-y-1.5 min-h-[1rem] sm:min-h-[2.5rem]">
+          <div>
+            {/* Título (line-clamp-1 → altura única) */}
+            <PulseSkeleton className="h-4 sm:h-5 md:h-6 w-4/5 mb-1 sm:mb-2" delay={50} />
+            {/* Descrição: oculta no menor breakpoint, igual ao card */}
+            <div className="hidden xs:block min-h-[1rem] sm:min-h-[2.5rem] space-y-1 sm:space-y-1.5 mb-1 sm:mb-2">
               <PulseSkeleton className="h-3 sm:h-4 w-full" delay={100} />
               <PulseSkeleton className="h-3 sm:h-4 w-3/4 hidden sm:block" delay={150} />
             </div>
-            {/* Cores disponíveis - bolinhas */}
-            <div className="flex items-center gap-1 min-h-[1rem] sm:min-h-[1.25rem]">
-              {[...Array(4)].map((_, i) => (
-                <CircleSkeleton key={i} size="sm" delay={200 + i * 40} />
+
+            {/* Desktop: 3 linhas de cor (bolinha + nome + tamanhos) */}
+            <div className="hidden sm:flex flex-col gap-1">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <CircleSkeleton size="sm" delay={200 + i * 40} />
+                  <PulseSkeleton className="h-3 w-12" delay={210 + i * 40} />
+                  <PulseSkeleton className="h-3 w-20" delay={220 + i * 40} />
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile: até 2 pills (cor + tamanhos) */}
+            <div className="flex sm:hidden flex-col gap-1 mt-1.5">
+              {[...Array(2)].map((_, i) => (
+                <PulseSkeleton key={i} className="h-[26px] w-3/4 rounded-lg" delay={200 + i * 60} />
               ))}
             </div>
           </div>
-          
-          <div className="flex flex-col gap-1 sm:gap-2">
+
+          <div className="flex flex-col gap-1.5 sm:gap-2">
             {/* Preço */}
-            <PulseSkeleton className="h-5 sm:h-6 md:h-7 w-20 sm:w-28" delay={350} />
-            
-            {/* Seletor de cor - responsivo */}
-            <div className="hidden xs:block min-h-[3rem] sm:min-h-[4.5rem]">
-              <PulseSkeleton className="h-2.5 sm:h-3 w-16 sm:w-24 mb-1 sm:mb-2" delay={400} />
-              <div className="flex flex-wrap gap-0.5 sm:gap-1">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <PulseSkeleton className="h-4 sm:h-5 md:h-6 w-20 sm:w-28" delay={350} />
+            </div>
+
+            {/* Desktop: seletor de cor (chips com bolinha) — reserva espaço */}
+            <div className="hidden sm:block min-h-[4.5rem]">
+              <PulseSkeleton className="h-3 w-10 mb-1" delay={400} />
+              <div className="flex flex-wrap gap-1">
                 {[...Array(3)].map((_, i) => (
-                  <PulseSkeleton key={i} className="h-5 sm:h-7 w-8 sm:w-12" delay={450 + i * 50} />
+                  <PulseSkeleton key={i} className="h-7 w-16 rounded-md" delay={450 + i * 50} />
                 ))}
               </div>
             </div>
-            
-            {/* Botões */}
+
+            {/* Botões — mesma altura/gap do card real (h-7 sm:h-9) */}
             <div className="flex gap-1 sm:gap-2 mt-auto">
-              <PulseSkeleton className="h-7 sm:h-9 flex-1" delay={600} />
-              <PulseSkeleton className="h-7 sm:h-9 flex-1" delay={650} />
+              <PulseSkeleton className="h-7 sm:h-9 flex-1 rounded-md" delay={600} />
+              <PulseSkeleton className="h-7 sm:h-9 flex-1 rounded-md" delay={650} />
             </div>
           </div>
         </div>
