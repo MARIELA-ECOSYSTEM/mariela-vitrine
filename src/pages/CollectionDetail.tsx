@@ -250,24 +250,28 @@
  
      const seoData = useMemo(() => {
        if (!colecao || !config) return null;
+       const origin = typeof window !== "undefined" ? window.location.origin : "";
+       const slug = slugify(colecao.nome) || colecao.id;
+       const canonical = `${origin}/collections/${slug}`;
        return {
-         title: `${colecao.nome} | ${config.nomeLoja}`,
-         description: colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea na ${config.nomeLoja}.`,
+          title: `Coleção ${colecao.nome} | ${config.nomeLoja}`,
+          description: (colecao.descricao || `Curadoria exclusiva da coleção ${colecao.nome}. Peças selecionadas para a mulher contemporânea na ${config.nomeLoja}.`).slice(0, 160),
          image: colecao.banner_url || colecao.imagem_capa_url || undefined,
-         url: window.location.href,
+          url: canonical,
           jsonLd: [
             {
               "@type": "BreadcrumbList",
               "itemListElement": [
-                { "@type": "ListItem", "position": 1, "name": "Início", "item": window.location.origin },
-                { "@type": "ListItem", "position": 2, "name": "Coleções", "item": `${window.location.origin}/products` },
-                { "@type": "ListItem", "position": 3, "name": colecao.nome, "item": window.location.href }
+                 { "@type": "ListItem", "position": 1, "name": "Início", "item": `${origin}/` },
+                 { "@type": "ListItem", "position": 2, "name": "Coleções", "item": `${origin}/colecoes` },
+                 { "@type": "ListItem", "position": 3, "name": colecao.nome, "item": canonical }
               ]
             },
             {
               "@type": "CollectionPage",
               "name": colecao.nome,
               "description": colecao.descricao,
+               "url": canonical,
               "image": colecao.banner_url || colecao.imagem_capa_url
             },
             {
@@ -400,7 +404,10 @@
           </section>
 
           <PageContainer className="py-8 sm:py-12">
-            <Breadcrumbs currentPage={colecao?.nome || "Coleção"} />
+            <Breadcrumbs
+              items={[{ label: "Coleções", path: "/colecoes" }]}
+              currentPage={colecao?.nome || "Coleção"}
+            />
 
             {/* Category Icons Navigation */}
             <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scrollbar-hide justify-start sm:justify-center mt-8 mb-12">
