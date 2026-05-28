@@ -1,5 +1,6 @@
   import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-  import { useParams, Link, useSearchParams } from "react-router-dom";
+  import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+  import { slugify, isUuidLike } from "@/lib/slug";
  import { Header } from "@/components/Header";
  import { Footer } from "@/components/Footer";
   import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -44,8 +45,9 @@
   const produtosPorPagina = 12;
  
  const CollectionDetail = () => {
-   const { id } = useParams<{ id: string }>();
+   const { id: slugOrId } = useParams<{ id: string }>();
     const [searchParams, setSearchParams] = useSearchParams();
+   const navigate = useNavigate();
    const [colecao, setColecao] = useState<ColecaoDestaque | null>(null);
    const [produtos, setProdutos] = useState<Produto[]>([]);
    const [loading, setLoading] = useState(true);
@@ -72,7 +74,7 @@
     }>({});
  
    useEffect(() => {
-     if (!id) return;
+     if (!slugOrId) return;
  
      let active = true;
      setLoading(true);
@@ -82,14 +84,30 @@
        try {
          // 1. Buscar a coleção específica
          const colecoes = await vitrineApiService.getColecoesDestaque();
-         const match = colecoes.find((c) => c.id === id);
+         // Resolução por slug (URL legível), com fallback para id quando
+         // o parâmetro for UUID (URLs antigas) ou quando vier hint `?id=`.
+         const hintId = searchParams.get("id");
+         const match =
+           colecoes.find((c) => slugify(c.nome) === slugOrId) ||
+           (hintId ? colecoes.find((c) => c.id === hintId) : null) ||
+           (isUuidLike(slugOrId) ? colecoes.find((c) => c.id === slugOrId) : null);
          
          if (!match) {
            if (active) setError(true);
            return;
          }
  
-         if (active) setColecao(match);
+         if (active) {
+           setColecao(match);
+           // Normaliza URL para slug, removendo o hint `?id=` se houver.
+           const desiredSlug = slugify(match.nome);
+           if (desiredSlug && (slugOrId !== desiredSlug || hintId)) {
+             const params = new URLSearchParams(searchParams);
+             params.delete("id");
+             const qs = params.toString();
+             navigate(`/collections/${desiredSlug}${qs ? `?${qs}` : ""}`, { replace: true });
+           }
+         }
  
          // 2. Buscar produtos desta coleção
          const productsPage = await vitrineApiService.getProdutosPage({
@@ -115,7 +133,8 @@
       return () => {
         active = false;
       };
-    }, [id]);
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [slugOrId]);
 
     // Sincronizar filtros com URL
     useEffect(() => {
