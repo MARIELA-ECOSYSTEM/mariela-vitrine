@@ -458,6 +458,88 @@
               ))}
             </div>
 
+            {/* Quick color filter — selação visual fluida com swatches.
+                Sincroniza com `coresSelecionadas` (mesmo estado dos filtros
+                avançados), de forma que clicar aqui re-filtra a grid e troca
+                as imagens dos cards (cada card auto-prioriza sua cor). */}
+            {coresDisponiveis.length > 0 && (
+              <div className="mb-10 -mt-2">
+                <div className="flex items-end justify-between mb-3">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                      Filtrar por cor
+                    </span>
+                    <h3 className="font-serif text-lg sm:text-xl text-foreground mt-0.5">
+                      Paleta da coleção
+                    </h3>
+                  </div>
+                  {coresSelecionadas.length > 0 && (
+                    <button
+                      onClick={() => { setCoresSelecionadas([]); setPaginaAtual(1); }}
+                      className="text-[11px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Limpar cores
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {coresDisponiveis.map((cor) => {
+                    const active = coresSelecionadas.includes(cor);
+                    const swatch = COLOR_SWATCH[cor] || "#D4C5B9";
+                    const isLight = ["#FFFFFF", "#F8F8F8", "#FFDB58", "#EAB308", "#D4C5B9", "#E5D4C1"].includes(swatch);
+                    return (
+                      <button
+                        key={cor}
+                        onClick={() => {
+                          setCoresSelecionadas((prev) =>
+                            prev.includes(cor) ? prev.filter((c) => c !== cor) : [...prev, cor]
+                          );
+                          setPaginaAtual(1);
+                        }}
+                        aria-pressed={active}
+                        aria-label={`Filtrar pela cor ${cor}`}
+                        className={cn(
+                          "group flex flex-col items-center gap-2 min-w-[56px] sm:min-w-[64px] transition-all duration-300 ease-out",
+                          active ? "opacity-100" : "opacity-80 hover:opacity-100",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "relative w-11 h-11 sm:w-14 sm:h-14 rounded-full transition-all duration-300 ease-out",
+                            "ring-offset-2 ring-offset-background",
+                            active
+                              ? "ring-2 ring-primary scale-110 shadow-md"
+                              : "ring-1 ring-border group-hover:scale-105 group-hover:shadow-sm",
+                            isLight && "border border-border/60",
+                          )}
+                          style={{ backgroundColor: swatch }}
+                        >
+                          {active && (
+                            <span
+                              className={cn(
+                                "absolute inset-0 flex items-center justify-center text-[11px] font-bold",
+                                isLight ? "text-foreground" : "text-white"
+                              )}
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[10px] sm:text-[11px] uppercase tracking-wider transition-colors",
+                            active ? "text-foreground font-semibold" : "text-muted-foreground"
+                          )}
+                        >
+                          {cor}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Sidebar Filters - Desktop */}
               <aside className="hidden lg:block w-64 space-y-8 shrink-0">
